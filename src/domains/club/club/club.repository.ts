@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import { isUniqueViolation } from '../../../foundation/database/database-errors.js';
-import { type PaletteColor, Part, PartName } from '../part/part.js';
+import { Label, type PaletteColor } from '../label/label.js';
+import { Part } from '../part/part.js';
 import { Club } from './club.js';
 import { ClubName } from './club-name.js';
 import { InviteCode } from './invite-code.js';
@@ -34,10 +35,10 @@ type ClubRow = {
 
 export interface NewClub {
   readonly name: ClubName;
-  readonly parts: readonly { name: PartName; color: PaletteColor }[];
+  readonly parts: readonly { name: Label; color: PaletteColor }[];
   readonly creatorUserId: string;
   /** One of `parts`. */
-  readonly creatorPartName: PartName;
+  readonly creatorPartName: Label;
   readonly creatorRoleId: string;
 }
 
@@ -119,7 +120,7 @@ export class ClubRepository {
         (part) =>
           new Part(
             part.id,
-            PartName.fromStored(part.name),
+            Label.fromStored(part.name),
             part.color as PaletteColor,
           ),
       ),

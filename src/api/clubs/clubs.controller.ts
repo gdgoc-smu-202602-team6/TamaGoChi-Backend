@@ -14,7 +14,7 @@ import type { Club } from '../../domains/club/club/club.js';
 import { ClubName } from '../../domains/club/club/club-name.js';
 import { ClubRepository } from '../../domains/club/club/club.repository.js';
 import { InviteCode } from '../../domains/club/club/invite-code.js';
-import { PartName } from '../../domains/club/part/part.js';
+import { Label } from '../../domains/club/label/label.js';
 import { RoleRepository } from '../../domains/club/role/role.repository.js';
 import type { ClubAccess } from '../../foundation/access/access-resolver.js';
 import {
@@ -53,7 +53,7 @@ export class ClubsController {
     const name = parseField('/body/name', () => ClubName.parse(body.name));
     const parts = body.parts.map((part, index) => ({
       name: parseField(`/body/parts/${index}/name`, () =>
-        PartName.parse(part.name),
+        Label.parse(part.name),
       ),
       color: part.color,
     }));
@@ -64,7 +64,7 @@ export class ClubsController {
       ]);
     }
     const creatorPartName = parseField('/body/myPartName', () =>
-      PartName.parse(body.myPartName),
+      Label.parse(body.myPartName),
     );
     if (!names.includes(creatorPartName.value)) {
       throw new BadRequest([
