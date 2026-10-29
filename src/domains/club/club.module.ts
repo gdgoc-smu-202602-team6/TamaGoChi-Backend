@@ -4,7 +4,10 @@ import { MemberAccessResolver } from './member/member-access-resolver.js';
 import { RoleRepository } from './role/role.repository.js';
 
 @Module({
-  providers: [{ provide: AccessResolver, useClass: MemberAccessResolver }, RoleRepository],
+  providers: [
+    { provide: AccessResolver, useClass: MemberAccessResolver },
+    RoleRepository,
+  ],
   exports: [AccessResolver, RoleRepository],
 })
 export class ClubModule {}

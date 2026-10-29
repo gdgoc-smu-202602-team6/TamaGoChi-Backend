@@ -10,7 +10,10 @@ export class UserRepository {
   constructor(private readonly database: DatabaseClient) {}
 
   async find(id: string): Promise<User | null> {
-    const row = await this.database.user.findUnique({ where: { id }, select: userColumns });
+    const row = await this.database.user.findUnique({
+      where: { id },
+      select: userColumns,
+    });
     return row ? toUser(row) : null;
   }
 

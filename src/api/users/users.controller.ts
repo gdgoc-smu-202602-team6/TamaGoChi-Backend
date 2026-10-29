@@ -1,9 +1,21 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Put,
+} from '@nestjs/common';
 import { DeviceTokenRepository } from '../../domains/account/device-token/device-token.repository.js';
 import { Nickname } from '../../domains/account/user/nickname.js';
 import type { User } from '../../domains/account/user/user.js';
 import { UserRepository } from '../../domains/account/user/user.repository.js';
-import { CurrentUser, type AuthenticatedUser } from '../../foundation/auth/authenticated-user.js';
+import {
+  CurrentUser,
+  type AuthenticatedUser,
+} from '../../foundation/auth/authenticated-user.js';
 import type { components } from '../../foundation/contract/openapi.js';
 import { BadRequest } from '../../foundation/problem/problems/bad-request.js';
 import { NotFound } from '../../foundation/problem/problems/not-found.js';
@@ -26,29 +38,41 @@ export class UsersController {
 
   /** updateMe */
   @Patch()
-  async updateMe(@CurrentUser() caller: AuthenticatedUser, @Body() body: UserUpdateBody): Promise<UserBody> {
+  async updateMe(
+    @CurrentUser() caller: AuthenticatedUser,
+    @Body() body: UserUpdateBody,
+  ): Promise<UserBody> {
     if (body.nickname === undefined) return this.getMe(caller);
-    return toBody(found(await this.users.rename(caller.id, parseNickname(body.nickname))));
+    return toBody(
+      found(await this.users.rename(caller.id, parseNickname(body.nickname))),
+    );
   }
 
   /** deleteMe */
   @Delete()
   @HttpCode(204)
   async deleteMe(@CurrentUser() caller: AuthenticatedUser): Promise<void> {
-    if (!(await this.users.delete(caller.id))) throw new NotFound('user not found');
+    if (!(await this.users.delete(caller.id)))
+      throw new NotFound('user not found');
   }
 
   /** putDeviceToken */
   @Put('deviceTokens/:token')
   @HttpCode(204)
-  async putDeviceToken(@CurrentUser() caller: AuthenticatedUser, @Param('token') token: string): Promise<void> {
+  async putDeviceToken(
+    @CurrentUser() caller: AuthenticatedUser,
+    @Param('token') token: string,
+  ): Promise<void> {
     await this.deviceTokens.register(caller.id, token);
   }
 
   /** deleteDeviceToken */
   @Delete('deviceTokens/:token')
   @HttpCode(204)
-  async deleteDeviceToken(@CurrentUser() caller: AuthenticatedUser, @Param('token') token: string): Promise<void> {
+  async deleteDeviceToken(
+    @CurrentUser() caller: AuthenticatedUser,
+    @Param('token') token: string,
+  ): Promise<void> {
     await this.deviceTokens.unregister(caller.id, token);
   }
 }
@@ -66,7 +90,10 @@ function parseNickname(input: string): Nickname {
   try {
     return Nickname.parse(input);
   } catch (error) {
-    if (error instanceof RangeError) throw new BadRequest([{ field: '/body/nickname', message: error.message }]);
+    if (error instanceof RangeError)
+      throw new BadRequest([
+        { field: '/body/nickname', message: error.message },
+      ]);
     throw error;
   }
 }

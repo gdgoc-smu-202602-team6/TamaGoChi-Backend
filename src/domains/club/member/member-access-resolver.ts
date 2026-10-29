@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { AccessResolver, type ClubAccess } from '../../../foundation/access/access-resolver.js';
+import {
+  AccessResolver,
+  type ClubAccess,
+} from '../../../foundation/access/access-resolver.js';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import { roleColumns, toRole } from '../role/role.repository.js';
 
@@ -10,11 +13,16 @@ export class MemberAccessResolver extends AccessResolver {
     super();
   }
 
-  async permissionsOf(userId: string, clubId: string): Promise<ClubAccess | null> {
+  async permissionsOf(
+    userId: string,
+    clubId: string,
+  ): Promise<ClubAccess | null> {
     const member = await this.database.clubMember.findUnique({
       where: { clubId_userId: { clubId, userId } },
       select: { id: true, role: { select: roleColumns } },
     });
-    return member ? { memberId: member.id, permissions: toRole(member.role).permissions } : null;
+    return member
+      ? { memberId: member.id, permissions: toRole(member.role).permissions }
+      : null;
   }
 }

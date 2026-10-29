@@ -9,8 +9,13 @@ import { ProblemFilter } from './foundation/problem/problem.filter.js';
 export const applicationOptions: NestApplicationOptions = { bodyParser: false };
 
 /** Wires the application the same way for the server and for end-to-end tests. */
-export function configureApp(app: NestExpressApplication): NestExpressApplication {
-  app.getHttpAdapter().getInstance().all(`${authBasePath}/{*path}`, toNodeHandler(app.get<Auth>(AUTH)));
+export function configureApp(
+  app: NestExpressApplication,
+): NestExpressApplication {
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .all(`${authBasePath}/{*path}`, toNodeHandler(app.get<Auth>(AUTH)));
   app.useBodyParser('json');
 
   app.useGlobalFilters(new ProblemFilter(!app.get(AppConfig).production));

@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, Injectable, SetMetadata, createParamDecorator } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  SetMetadata,
+  createParamDecorator,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { AuthenticatedRequest } from '../auth/authenticated-user.js';
 import { Forbidden } from '../problem/problems/forbidden.js';
@@ -12,18 +18,26 @@ const clubAccessKey = Symbol('ClubAccess');
  * Marks a route under /clubs/{clubId} as members only, and when a permission is given, as needing it.
  * Not a member: 404 (the club is not visible). A member without the permission: 403.
  */
-export const RequireClubAccess = (permission?: Permission) => SetMetadata(clubAccessKey, { permission });
+export const RequireClubAccess = (permission?: Permission) =>
+  SetMetadata(clubAccessKey, { permission });
 
 interface ClubAccessRequest extends AuthenticatedRequest {
   clubAccess?: ClubAccess;
 }
 
 /** The caller's ClubAccess on a route marked with RequireClubAccess. */
-export const CurrentClubAccess = createParamDecorator((_: unknown, context: ExecutionContext): ClubAccess => {
-  const access = context.switchToHttp().getRequest<ClubAccessRequest>().clubAccess;
-  if (!access) throw new Error('CurrentClubAccess used on a route without RequireClubAccess');
-  return access;
-});
+export const CurrentClubAccess = createParamDecorator(
+  (_: unknown, context: ExecutionContext): ClubAccess => {
+    const access = context
+      .switchToHttp()
+      .getRequest<ClubAccessRequest>().clubAccess;
+    if (!access)
+      throw new Error(
+        'CurrentClubAccess used on a route without RequireClubAccess',
+      );
+    return access;
+  },
+);
 
 @Injectable()
 export class ClubAccessGuard implements CanActivate {
@@ -33,13 +47,17 @@ export class ClubAccessGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const rule = this.reflector.get<{ permission?: Permission } | undefined>(clubAccessKey, context.getHandler());
+    const rule = this.reflector.get<{ permission?: Permission } | undefined>(
+      clubAccessKey,
+      context.getHandler(),
+    );
     if (!rule) return true;
 
     const request = context.switchToHttp().getRequest<ClubAccessRequest>();
     const clubId = request.params.clubId;
     const user = request.authenticatedUser;
-    if (!user || typeof clubId !== 'string') throw new Error('RequireClubAccess needs a secured route with :clubId');
+    if (!user || typeof clubId !== 'string')
+      throw new Error('RequireClubAccess needs a secured route with :clubId');
 
     const access = await this.resolver.permissionsOf(user.id, clubId);
     if (!access) throw new NotFound('club not found');

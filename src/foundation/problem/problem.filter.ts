@@ -1,4 +1,10 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  Logger,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { STATUS_CODES } from 'node:http';
 import { Problem } from './problem.js';
@@ -36,15 +42,32 @@ export class ProblemFilter implements ExceptionFilter {
       response
         .status(status)
         .set('Content-Type', contentType)
-        .send(JSON.stringify({ type: 'about:blank', title: STATUS_CODES[status], status, detail: error.message }));
+        .send(
+          JSON.stringify({
+            type: 'about:blank',
+            title: STATUS_CODES[status],
+            status,
+            detail: error.message,
+          }),
+        );
       return;
     }
 
     this.logger.error(error);
-    const detail = this.exposeInternalErrors && error instanceof Error ? error.stack : undefined;
+    const detail =
+      this.exposeInternalErrors && error instanceof Error
+        ? error.stack
+        : undefined;
     response
       .status(500)
       .set('Content-Type', contentType)
-      .send(JSON.stringify({ type: 'about:blank', title: STATUS_CODES[500], status: 500, detail }));
+      .send(
+        JSON.stringify({
+          type: 'about:blank',
+          title: STATUS_CODES[500],
+          status: 500,
+          detail,
+        }),
+      );
   }
 }

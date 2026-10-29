@@ -8,7 +8,11 @@ const valid = {
 
 describe('AppConfig.fromEnv', () => {
   it('값이 맞으면 모든 값을 담는다', () => {
-    const config = AppConfig.fromEnv({ ...valid, PORT: '4000', NODE_ENV: 'production' });
+    const config = AppConfig.fromEnv({
+      ...valid,
+      PORT: '4000',
+      NODE_ENV: 'production',
+    });
 
     expect({
       port: config.port,
@@ -30,18 +34,26 @@ describe('AppConfig.fromEnv', () => {
   });
 
   it('PORT가 65536이면 실패한다', () => {
-    expect(() => AppConfig.fromEnv({ ...valid, PORT: '65536' })).toThrow(/PORT/);
+    expect(() => AppConfig.fromEnv({ ...valid, PORT: '65536' })).toThrow(
+      /PORT/,
+    );
   });
 
   it('DATABASE_URL이 없으면 실패한다', () => {
-    expect(() => AppConfig.fromEnv({ ...valid, DATABASE_URL: undefined })).toThrow(/DATABASE_URL/);
+    expect(() =>
+      AppConfig.fromEnv({ ...valid, DATABASE_URL: undefined }),
+    ).toThrow(/DATABASE_URL/);
   });
 
   it('BETTER_AUTH_SECRET이 31자이면 실패한다', () => {
-    expect(() => AppConfig.fromEnv({ ...valid, BETTER_AUTH_SECRET: 'x'.repeat(31) })).toThrow(/BETTER_AUTH_SECRET/);
+    expect(() =>
+      AppConfig.fromEnv({ ...valid, BETTER_AUTH_SECRET: 'x'.repeat(31) }),
+    ).toThrow(/BETTER_AUTH_SECRET/);
   });
 
   it('PUBLIC_URL이 URL이 아니면 실패한다', () => {
-    expect(() => AppConfig.fromEnv({ ...valid, PUBLIC_URL: 'localhost' })).toThrow(/PUBLIC_URL/);
+    expect(() =>
+      AppConfig.fromEnv({ ...valid, PUBLIC_URL: 'localhost' }),
+    ).toThrow(/PUBLIC_URL/);
   });
 });

@@ -1,5 +1,13 @@
-import { DynamicModule, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { CONTRACT_IGNORED_PATHS, ContractMiddleware } from './contract.middleware.js';
+import {
+  DynamicModule,
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+} from '@nestjs/common';
+import {
+  CONTRACT_IGNORED_PATHS,
+  ContractMiddleware,
+} from './contract.middleware.js';
 
 @Module({})
 export class ContractModule implements NestModule {
@@ -7,7 +15,10 @@ export class ContractModule implements NestModule {
   static forRoot(ignoredPaths: RegExp): DynamicModule {
     return {
       module: ContractModule,
-      providers: [{ provide: CONTRACT_IGNORED_PATHS, useValue: ignoredPaths }, ContractMiddleware],
+      providers: [
+        { provide: CONTRACT_IGNORED_PATHS, useValue: ignoredPaths },
+        ContractMiddleware,
+      ],
     };
   }
 

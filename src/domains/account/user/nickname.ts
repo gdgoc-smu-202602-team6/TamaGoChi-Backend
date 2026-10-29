@@ -10,7 +10,9 @@ export class Nickname {
     const value = input.trim();
     const length = [...segmenter.segment(value)].length;
     if (length < 1 || length > Nickname.maxLength) {
-      throw new RangeError(`nickname must be 1 to ${Nickname.maxLength} characters`);
+      throw new RangeError(
+        `nickname must be 1 to ${Nickname.maxLength} characters`,
+      );
     }
     return new Nickname(value);
   }

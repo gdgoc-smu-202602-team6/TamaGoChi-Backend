@@ -35,6 +35,12 @@ export class AppConfig {
     if (problems.length > 0) {
       throw new Error(`Invalid environment: ${problems.join('; ')}`);
     }
-    return new AppConfig(port, databaseUrl, env.NODE_ENV === 'production', authSecret, publicUrl);
+    return new AppConfig(
+      port,
+      databaseUrl,
+      env.NODE_ENV === 'production',
+      authSecret,
+      publicUrl,
+    );
   }
 }

@@ -13,7 +13,9 @@ describe('club access and roles', () => {
   let operator: SignedInUser;
   let member: SignedInUser;
   let outsider: SignedInUser;
-  const as = (user: SignedInUser) => ({ Authorization: `Bearer ${user.token}` });
+  const as = (user: SignedInUser) => ({
+    Authorization: `Bearer ${user.token}`,
+  });
 
   beforeAll(async () => {
     ({ app, mailer } = await createTestApp());
@@ -30,16 +32,25 @@ describe('club access and roles', () => {
 
   afterAll(async () => {
     await database.club.delete({ where: { id: club.clubId } });
-    await database.user.deleteMany({ where: { email: { in: [operator.email, member.email, outsider.email] } } });
+    await database.user.deleteMany({
+      where: { email: { in: [operator.email, member.email, outsider.email] } },
+    });
     await app.close();
   });
 
   it('역할 목록에 운영진(모든 권한)과 부원(권한 없음)이 있다', async () => {
-    const response = await request(app.getHttpServer()).get('/roles').set(as(outsider));
+    const response = await request(app.getHttpServer())
+      .get('/roles')
+      .set(as(outsider));
 
     expect(response.status).toBe(200);
     const byName = Object.fromEntries(
-      response.body.items.map((role: { name: string; permissions: string[] }) => [role.name, role.permissions.length]),
+      response.body.items.map(
+        (role: { name: string; permissions: string[] }) => [
+          role.name,
+          role.permissions.length,
+        ],
+      ),
     );
     expect(byName).toEqual({ 운영진: 7, 부원: 0 });
   });
@@ -58,7 +69,10 @@ describe('club access and roles', () => {
       .get(`/clubs/${club.clubId}/members/me/permissions`)
       .set(as(member));
 
-    expect({ status: response.status, items: response.body.items }).toEqual({ status: 200, items: [] });
+    expect({ status: response.status, items: response.body.items }).toEqual({
+      status: 200,
+      items: [],
+    });
   });
 
   it('부원이 아니면 그 동아리는 404다', async () => {

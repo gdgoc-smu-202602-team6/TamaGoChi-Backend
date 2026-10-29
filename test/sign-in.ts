@@ -18,10 +18,16 @@ export async function signUpVerifiedUser(
   const password = 'correct horse battery';
   const server = app.getHttpServer();
 
-  await request(server).post('/auth/sign-up/email').send({ email, password, name: nickname }).expect(200);
+  await request(server)
+    .post('/auth/sign-up/email')
+    .send({ email, password, name: nickname })
+    .expect(200);
   const link = new URL(mailer.verificationUrls.get(email)!);
   await request(server).get(`${link.pathname}${link.search}`);
-  const response = await request(server).post('/auth/sign-in/email').send({ email, password }).expect(200);
+  const response = await request(server)
+    .post('/auth/sign-in/email')
+    .send({ email, password })
+    .expect(200);
 
   return { email, token: response.headers['set-auth-token'] };
 }

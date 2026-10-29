@@ -3,7 +3,9 @@ import { AppConfig } from './app-config.js';
 
 @Global()
 @Module({
-  providers: [{ provide: AppConfig, useFactory: () => AppConfig.fromEnv(process.env) }],
+  providers: [
+    { provide: AppConfig, useFactory: () => AppConfig.fromEnv(process.env) },
+  ],
   exports: [AppConfig],
 })
 export class ConfigModule {}

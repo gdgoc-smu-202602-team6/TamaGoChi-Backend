@@ -15,12 +15,17 @@ function nicknameOf(name: string): string {
   try {
     return Nickname.parse(name).value;
   } catch (error) {
-    if (error instanceof RangeError) throw new APIError('BAD_REQUEST', { message: error.message });
+    if (error instanceof RangeError)
+      throw new APIError('BAD_REQUEST', { message: error.message });
     throw error;
   }
 }
 
-export function createAuth(config: AppConfig, database: DatabaseClient, mailer: AuthMailer) {
+export function createAuth(
+  config: AppConfig,
+  database: DatabaseClient,
+  mailer: AuthMailer,
+) {
   return betterAuth({
     baseURL: config.publicUrl,
     basePath: authBasePath,
@@ -33,17 +38,25 @@ export function createAuth(config: AppConfig, database: DatabaseClient, mailer: 
     },
     emailVerification: {
       sendOnSignUp: true,
-      sendVerificationEmail: ({ user, url }) => mailer.sendVerification(user.email, url),
+      sendVerificationEmail: ({ user, url }) =>
+        mailer.sendVerification(user.email, url),
     },
     account: {
       accountLinking: { enabled: true, trustedProviders: ['google'] },
     },
     databaseHooks: {
       user: {
-        create: { before: (user) => Promise.resolve({ data: { ...user, name: nicknameOf(user.name) } }) },
+        create: {
+          before: (user) =>
+            Promise.resolve({ data: { ...user, name: nicknameOf(user.name) } }),
+        },
         update: {
           before: (user) =>
-            Promise.resolve(typeof user.name === 'string' ? { data: { ...user, name: nicknameOf(user.name) } } : undefined),
+            Promise.resolve(
+              typeof user.name === 'string'
+                ? { data: { ...user, name: nicknameOf(user.name) } }
+                : undefined,
+            ),
         },
       },
     },

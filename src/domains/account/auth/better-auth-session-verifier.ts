@@ -12,8 +12,12 @@ export class BetterAuthSessionVerifier extends SessionVerifier {
     super();
   }
 
-  async verify(headers: IncomingHttpHeaders): Promise<AuthenticatedUser | null> {
-    const session = await this.auth.api.getSession({ headers: fromNodeHeaders(headers) });
+  async verify(
+    headers: IncomingHttpHeaders,
+  ): Promise<AuthenticatedUser | null> {
+    const session = await this.auth.api.getSession({
+      headers: fromNodeHeaders(headers),
+    });
     return session ? { id: session.user.id } : null;
   }
 }

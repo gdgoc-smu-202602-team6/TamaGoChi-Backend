@@ -17,6 +17,8 @@ export class DeviceTokenRepository {
 
   /** Removes the token only if it is this user's. */
   async unregister(userId: string, token: string): Promise<void> {
-    await this.database.userDeviceToken.deleteMany({ where: { token, userId } });
+    await this.database.userDeviceToken.deleteMany({
+      where: { token, userId },
+    });
   }
 }

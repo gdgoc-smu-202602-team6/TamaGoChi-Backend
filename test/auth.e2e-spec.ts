@@ -19,7 +19,10 @@ describe('sign-up, sign-in and the current user', () => {
     await app.close();
   });
 
-  const signIn = () => request(app.getHttpServer()).post('/auth/sign-in/email').send({ email, password });
+  const signIn = () =>
+    request(app.getHttpServer())
+      .post('/auth/sign-in/email')
+      .send({ email, password });
 
   it('가입하면 인증 메일 링크가 생긴다', async () => {
     const response = await request(app.getHttpServer())
@@ -27,7 +30,9 @@ describe('sign-up, sign-in and the current user', () => {
       .send({ email, password, name: '  서연 ' });
 
     expect(response.status).toBe(200);
-    expect(mailer.verificationUrls.get(email)).toMatch(/\/auth\/verify-email\?token=/);
+    expect(mailer.verificationUrls.get(email)).toMatch(
+      /\/auth\/verify-email\?token=/,
+    );
   });
 
   it('닉네임이 공백뿐이면 가입을 400으로 거절한다', async () => {
@@ -49,17 +54,28 @@ describe('sign-up, sign-in and the current user', () => {
     await request(app.getHttpServer()).get(`${link.pathname}${link.search}`);
     const token = (await signIn()).headers['set-auth-token'];
 
-    const response = await request(app.getHttpServer()).get('/users/me').set('Authorization', `Bearer ${token}`);
+    const response = await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ id: expect.any(String), email, nickname: '서연' });
+    expect(response.body).toEqual({
+      id: expect.any(String),
+      email,
+      nickname: '서연',
+    });
   });
 
   it('틀린 토큰이면 401 Problem을 준다', async () => {
-    const response = await request(app.getHttpServer()).get('/users/me').set('Authorization', 'Bearer wrong');
+    const response = await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Authorization', 'Bearer wrong');
 
     expect(response.status).toBe(401);
     expect(response.headers['www-authenticate']).toBe('Bearer');
-    expect(JSON.parse(response.text)).toMatchObject({ type: '/problems/unauthorized', status: 401 });
+    expect(JSON.parse(response.text)).toMatchObject({
+      type: '/problems/unauthorized',
+      status: 401,
+    });
   });
 });

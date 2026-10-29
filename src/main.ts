@@ -14,7 +14,12 @@ function loadDotEnv(): void {
 
 async function bootstrap() {
   loadDotEnv();
-  const app = configureApp(await NestFactory.create<NestExpressApplication>(AppModule, applicationOptions));
+  const app = configureApp(
+    await NestFactory.create<NestExpressApplication>(
+      AppModule,
+      applicationOptions,
+    ),
+  );
   await app.listen(app.get(AppConfig).port);
 }
 await bootstrap();

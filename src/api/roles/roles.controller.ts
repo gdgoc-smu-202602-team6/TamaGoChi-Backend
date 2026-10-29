@@ -12,6 +12,12 @@ export class RolesController {
   @Get()
   async list(): Promise<{ items: RoleBody[] }> {
     const roles = await this.roles.list();
-    return { items: roles.map((role) => ({ id: role.id, name: role.name, permissions: [...role.permissions] })) };
+    return {
+      items: roles.map((role) => ({
+        id: role.id,
+        name: role.name,
+        permissions: [...role.permissions],
+      })),
+    };
   }
 }

@@ -1,4 +1,9 @@
-import { HttpException, Inject, Injectable, NestMiddleware } from '@nestjs/common';
+import {
+  HttpException,
+  Inject,
+  Injectable,
+  NestMiddleware,
+} from '@nestjs/common';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import * as OpenApiValidator from 'express-openapi-validator';
 import type { ValidationError } from 'express-openapi-validator/dist/framework/types.js';
@@ -47,7 +52,10 @@ function toProblem(error: ValidationError): Problem | HttpException {
   switch (error.status) {
     case 400:
       return new BadRequest(
-        error.errors.map((item) => ({ field: item.path, message: item.message })),
+        error.errors.map((item) => ({
+          field: item.path,
+          message: item.message,
+        })),
         error.message,
       );
     case 401:

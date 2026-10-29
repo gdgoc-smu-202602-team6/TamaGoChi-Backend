@@ -12,7 +12,11 @@ import { UserRepository } from './user/user.repository.js';
 @Module({
   providers: [
     { provide: AuthMailer, useClass: LoggingAuthMailer },
-    { provide: AUTH, inject: [AppConfig, DatabaseClient, AuthMailer], useFactory: createAuth },
+    {
+      provide: AUTH,
+      inject: [AppConfig, DatabaseClient, AuthMailer],
+      useFactory: createAuth,
+    },
     { provide: SessionVerifier, useClass: BetterAuthSessionVerifier },
     UserRepository,
     DeviceTokenRepository,

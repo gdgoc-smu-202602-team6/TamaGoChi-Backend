@@ -16,13 +16,18 @@ export class CapturingAuthMailer extends AuthMailer {
 }
 
 /** The application as the server builds it, with mail captured. */
-export async function createTestApp(): Promise<{ app: INestApplication; mailer: CapturingAuthMailer }> {
+export async function createTestApp(): Promise<{
+  app: INestApplication;
+  mailer: CapturingAuthMailer;
+}> {
   const mailer = new CapturingAuthMailer();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(AuthMailer)
     .useValue(mailer)
     .compile();
-  const app = configureApp(moduleRef.createNestApplication<NestExpressApplication>(applicationOptions));
+  const app = configureApp(
+    moduleRef.createNestApplication<NestExpressApplication>(applicationOptions),
+  );
   await app.init();
   return { app, mailer };
 }

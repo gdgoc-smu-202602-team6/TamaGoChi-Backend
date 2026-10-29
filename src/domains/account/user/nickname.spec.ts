@@ -6,7 +6,9 @@ describe('Nickname.parse', () => {
   });
 
   it('보이는 글자 10자는 받는다(이모지 포함)', () => {
-    expect(Nickname.parse('가나다라마바사아자👩‍💻').value).toBe('가나다라마바사아자👩‍💻');
+    expect(Nickname.parse('가나다라마바사아자👩‍💻').value).toBe(
+      '가나다라마바사아자👩‍💻',
+    );
   });
 
   it('11자이면 실패한다', () => {
