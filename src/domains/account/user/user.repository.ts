@@ -17,6 +17,15 @@ export class UserRepository {
     return row ? toUser(row) : null;
   }
 
+  /** The users that exist among `ids`, keyed by id. */
+  async findMany(ids: readonly string[]): Promise<Map<string, User>> {
+    const rows = await this.database.user.findMany({
+      where: { id: { in: [...ids] } },
+      select: userColumns,
+    });
+    return new Map(rows.map((row) => [row.id, toUser(row)]));
+  }
+
   /** Null when the user does not exist. */
   async rename(id: string, nickname: Nickname): Promise<User | null> {
     const { count } = await this.database.user.updateMany({
