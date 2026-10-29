@@ -2,6 +2,7 @@ export class AppConfig {
   private constructor(
     readonly port: number,
     readonly databaseUrl: string,
+    readonly production: boolean,
   ) {}
 
   static fromEnv(env: NodeJS.ProcessEnv): AppConfig {
@@ -20,6 +21,6 @@ export class AppConfig {
     if (problems.length > 0) {
       throw new Error(`Invalid environment: ${problems.join('; ')}`);
     }
-    return new AppConfig(port, databaseUrl);
+    return new AppConfig(port, databaseUrl, env.NODE_ENV === 'production');
   }
 }
