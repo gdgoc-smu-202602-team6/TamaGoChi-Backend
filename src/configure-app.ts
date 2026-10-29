@@ -1,0 +1,19 @@
+import type { INestApplication, NestApplicationOptions } from '@nestjs/common';
+import { toNodeHandler } from 'better-auth/node';
+import type { Express } from 'express';
+import { AUTH, authBasePath, type Auth } from './domains/account/auth/auth.js';
+import { AppConfig } from './foundation/config/app-config.js';
+import { ProblemFilter } from './foundation/problem/problem.filter.js';
+
+/** better-auth reads request bodies itself, so Nest's body parser is added after its handler. */
+export const applicationOptions: NestApplicationOptions = { bodyParser: false };
+
+/** Wires the application the same way for the server and for end-to-end tests. */
+export function configureApp(app: INestApplication): INestApplication {
+  const http = app.getHttpAdapter().getInstance() as Express;
+  http.all(`${authBasePath}/{*path}`, toNodeHandler(app.get<Auth>(AUTH)));
+  (app as INestApplication & { useBodyParser(type: 'json'): void }).useBodyParser('json');
+
+  app.useGlobalFilters(new ProblemFilter(!app.get(AppConfig).production));
+  return app;
+}

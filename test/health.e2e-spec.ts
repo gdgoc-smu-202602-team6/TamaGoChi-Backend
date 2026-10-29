@@ -1,13 +1,12 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { createApp } from '../src/create-app.js';
+import { createTestApp } from './test-app.js';
 
 describe('health and the contract', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    app = await createApp();
-    await app.init();
+    ({ app } = await createTestApp());
   });
 
   afterAll(async () => {

@@ -1,28 +1,47 @@
 import { AppConfig } from './app-config.js';
 
-const validDatabaseUrl = 'postgresql://u:p@localhost:5432/db';
+const valid = {
+  DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
+  BETTER_AUTH_SECRET: 'x'.repeat(32),
+  PUBLIC_URL: 'http://localhost:3000',
+};
 
 describe('AppConfig.fromEnv', () => {
-  it('값이 맞으면 포트와 DB 주소를 담는다', () => {
-    const config = AppConfig.fromEnv({ PORT: '4000', DATABASE_URL: validDatabaseUrl });
+  it('값이 맞으면 모든 값을 담는다', () => {
+    const config = AppConfig.fromEnv({ ...valid, PORT: '4000', NODE_ENV: 'production' });
 
-    expect({ port: config.port, databaseUrl: config.databaseUrl }).toEqual({
+    expect({
+      port: config.port,
+      databaseUrl: config.databaseUrl,
+      production: config.production,
+      authSecret: config.authSecret,
+      publicUrl: config.publicUrl,
+    }).toEqual({
       port: 4000,
-      databaseUrl: validDatabaseUrl,
+      databaseUrl: valid.DATABASE_URL,
+      production: true,
+      authSecret: valid.BETTER_AUTH_SECRET,
+      publicUrl: valid.PUBLIC_URL,
     });
   });
 
   it('PORT가 없으면 3000을 쓴다', () => {
-    const config = AppConfig.fromEnv({ DATABASE_URL: validDatabaseUrl });
-
-    expect(config.port).toBe(3000);
+    expect(AppConfig.fromEnv(valid).port).toBe(3000);
   });
 
   it('PORT가 65536이면 실패한다', () => {
-    expect(() => AppConfig.fromEnv({ PORT: '65536', DATABASE_URL: validDatabaseUrl })).toThrow(/PORT/);
+    expect(() => AppConfig.fromEnv({ ...valid, PORT: '65536' })).toThrow(/PORT/);
   });
 
   it('DATABASE_URL이 없으면 실패한다', () => {
-    expect(() => AppConfig.fromEnv({})).toThrow(/DATABASE_URL/);
+    expect(() => AppConfig.fromEnv({ ...valid, DATABASE_URL: undefined })).toThrow(/DATABASE_URL/);
+  });
+
+  it('BETTER_AUTH_SECRET이 31자이면 실패한다', () => {
+    expect(() => AppConfig.fromEnv({ ...valid, BETTER_AUTH_SECRET: 'x'.repeat(31) })).toThrow(/BETTER_AUTH_SECRET/);
+  });
+
+  it('PUBLIC_URL이 URL이 아니면 실패한다', () => {
+    expect(() => AppConfig.fromEnv({ ...valid, PUBLIC_URL: 'localhost' })).toThrow(/PUBLIC_URL/);
   });
 });

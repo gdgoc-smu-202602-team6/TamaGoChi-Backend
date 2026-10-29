@@ -1,4 +1,4 @@
-import { HttpException, Injectable, NestMiddleware } from '@nestjs/common';
+import { HttpException, Inject, Injectable, NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import * as OpenApiValidator from 'express-openapi-validator';
 import type { ValidationError } from 'express-openapi-validator/dist/framework/types.js';
@@ -11,18 +11,22 @@ import { Unauthorized } from '../problem/problems/unauthorized.js';
 /** The API contract. Requests are checked against it before any route runs. */
 export const contractPath = join(process.cwd(), 'openapi.yaml');
 
-/** Paths the contract does not describe because a library owns them. */
-const libraryPaths = /^\/auth\//;
+/** The injection token for the paths the contract does not describe. */
+export const CONTRACT_IGNORED_PATHS = Symbol('ContractIgnoredPaths');
 
 /** Checks each request against openapi.yaml and turns a violation into a Problem. */
 @Injectable()
 export class ContractMiddleware implements NestMiddleware {
-  private readonly validators: RequestHandler[] = OpenApiValidator.middleware({
-    apiSpec: contractPath,
-    validateRequests: { allErrors: true },
-    validateResponses: false,
-    ignorePaths: libraryPaths,
-  }) as RequestHandler[];
+  private readonly validators: RequestHandler[];
+
+  constructor(@Inject(CONTRACT_IGNORED_PATHS) ignoredPaths: RegExp) {
+    this.validators = OpenApiValidator.middleware({
+      apiSpec: contractPath,
+      validateRequests: { allErrors: true },
+      validateResponses: false,
+      ignorePaths: ignoredPaths,
+    }) as RequestHandler[];
+  }
 
   use(request: Request, response: Response, next: NextFunction): void {
     const run = (index: number): void => {

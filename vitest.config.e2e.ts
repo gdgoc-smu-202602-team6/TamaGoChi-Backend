@@ -6,9 +6,11 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
+    fileParallelism: false,
     env: {
-      DATABASE_URL:
-        process.env.DATABASE_URL ?? 'postgresql://tamagochi:tamagochi@localhost:5432/tamagochi',
+      DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://tamagochi:tamagochi@localhost:5432/tamagochi',
+      BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? 'e2e-secret-e2e-secret-e2e-secret-e2e',
+      PUBLIC_URL: process.env.PUBLIC_URL ?? 'http://localhost:3000',
     },
   },
 });
