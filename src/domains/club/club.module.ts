@@ -3,6 +3,7 @@ import { AccessResolver } from '../../foundation/access/access-resolver.js';
 import { ApplicationRepository } from './application/application.repository.js';
 import { ClubRepository } from './club/club.repository.js';
 import { MemberAccessResolver } from './member/member-access-resolver.js';
+import { MemberRepository } from './member/member.repository.js';
 import { NoticeCategoryRepository } from './notice-category/notice-category.repository.js';
 import { PartRepository } from './part/part.repository.js';
 import { RoleRepository } from './role/role.repository.js';
@@ -15,6 +16,7 @@ import { RoleRepository } from './role/role.repository.js';
     PartRepository,
     NoticeCategoryRepository,
     ApplicationRepository,
+    MemberRepository,
   ],
   exports: [
     AccessResolver,
@@ -23,6 +25,7 @@ import { RoleRepository } from './role/role.repository.js';
     PartRepository,
     NoticeCategoryRepository,
     ApplicationRepository,
+    MemberRepository,
   ],
 })
 export class ClubModule {}
