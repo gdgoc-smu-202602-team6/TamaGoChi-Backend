@@ -1,0 +1,15 @@
+// The generator and the datasource. Each area has its own file (<area>.prisma). CHECK constraints and partial
+// unique indexes are not expressible here; they are in the migration SQL.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../../src/foundation/database/generated"
+  runtime                = "nodejs"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+  generatedFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}

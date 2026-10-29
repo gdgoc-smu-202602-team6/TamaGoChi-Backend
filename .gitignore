@@ -6,3 +6,4 @@ coverage/
 .env.*
 !.env.example
 src/foundation/contract/openapi.d.ts
+src/foundation/database/generated/

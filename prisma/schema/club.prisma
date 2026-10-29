@@ -1,0 +1,138 @@
+// club area: clubs, their parts and notice categories, roles, applications and members.
+
+model Club {
+  id         String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name       String
+  inviteCode String   @unique @map("invite_code")
+  revision   Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  parts            ClubPart[]
+  noticeCategories ClubNoticeCategory[]
+  members          ClubMember[]
+  applications     ClubApplication[]
+  rules            ClubRules[]
+  notices          ClubNotice[]
+
+  @@map("clubs")
+}
+
+model ClubPart {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  clubId    String   @map("club_id") @db.Uuid
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  name      String
+  color     String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  members      ClubMember[]
+  applications ClubApplication[]
+
+  @@unique([clubId, name])
+  @@map("club_parts")
+}
+
+model ClubNoticeCategory {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  clubId    String   @map("club_id") @db.Uuid
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  name      String
+  color     String
+  /// "전체공지". One per club, never deleted.
+  preset    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  subcategories ClubNoticeCategorySubcategory[]
+  notices       ClubNotice[]
+
+  @@unique([clubId, name])
+  @@map("club_notice_categories")
+}
+
+model ClubNoticeCategorySubcategory {
+  id         String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  categoryId String             @map("category_id") @db.Uuid
+  category   ClubNoticeCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name       String
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz
+
+  notices ClubNotice[]
+
+  @@unique([categoryId, name])
+  @@map("club_notice_category_subcategories")
+}
+
+/// Seed data. Code never branches on a role's name; it reads the two assignment marks and the permissions.
+model Role {
+  id               String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name             String   @unique
+  assignedOnCreate Boolean  @default(false) @map("assigned_on_create")
+  assignedOnJoin   Boolean  @default(false) @map("assigned_on_join")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  permissions RolePermission[]
+  members     ClubMember[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  roleId     String   @map("role_id") @db.Uuid
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([roleId, permission])
+  @@map("role_permissions")
+}
+
+model ClubMember {
+  id              String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  clubId          String   @map("club_id") @db.Uuid
+  club            Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partId          String   @map("part_id") @db.Uuid
+  part            ClubPart @relation(fields: [partId], references: [id], onDelete: Restrict)
+  roleId          String   @map("role_id") @db.Uuid
+  role            Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  notificationsOn Boolean  @default(true) @map("notifications_on")
+  /// The day the member joined is day 1.
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  dailyGoals       ClubMemberDailyGoal[]
+  studySessions    ClubMemberStudySession[]
+  daySettlements   ClubMemberDaySettlement[]
+  items            ClubMemberItem[]
+  room             ClubMemberRoom?
+  likesReceived    ClubMemberLike[]           @relation("LikedRoom")
+  likesGiven       ClubMemberLike[]           @relation("Liker")
+  guestbookOfRoom  ClubMemberGuestbookEntry[] @relation("GuestbookHost")
+  guestbookWritten ClubMemberGuestbookEntry[] @relation("GuestbookAuthor")
+  noticesWritten   ClubNotice[]
+  noticeReads      ClubNoticeRead[]
+
+  @@unique([clubId, userId])
+  @@index([userId])
+  @@index([partId])
+  @@index([roleId])
+  @@map("club_members")
+}
+
+model ClubApplication {
+  id        String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  clubId    String    @map("club_id") @db.Uuid
+  club      Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partId    String    @map("part_id") @db.Uuid
+  part      ClubPart  @relation(fields: [partId], references: [id], onDelete: Restrict)
+  state     String    @default("PENDING")
+  decidedAt DateTime? @map("decided_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId])
+  @@index([partId])
+  @@index([clubId, state])
+  @@map("club_applications")
+}

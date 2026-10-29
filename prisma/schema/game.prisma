@@ -1,0 +1,168 @@
+// game area: rules and goals by start date, study sessions, day settlements, the item catalog, owned items, rooms,
+// likes and guestbooks.
+
+/// One version of a club's attendance and bug rules. The version for a day is the latest start_on on or before it.
+model ClubRules {
+  clubId             String   @map("club_id") @db.Uuid
+  club               Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  startOn            DateTime @map("start_on") @db.Date
+  attendanceMinutes  Int      @map("attendance_minutes")
+  absenceDaysForBugs Int      @map("absence_days_for_bugs")
+  minutesPerBug      Int      @map("minutes_per_bug")
+  maxSessionMinutes  Int      @map("max_session_minutes")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([clubId, startOn])
+  @@map("club_rules")
+}
+
+model ClubMemberDailyGoal {
+  memberId  String     @map("member_id") @db.Uuid
+  member    ClubMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  startOn   DateTime   @map("start_on") @db.Date
+  minutes   Int
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([memberId, startOn])
+  @@map("club_member_daily_goals")
+}
+
+model ClubMemberStudySession {
+  id        String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  memberId  String     @map("member_id") @db.Uuid
+  member    ClubMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  startedAt DateTime   @default(now()) @map("started_at") @db.Timestamptz
+  endedAt   DateTime?  @map("ended_at") @db.Timestamptz
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([memberId, startedAt])
+  @@map("club_member_study_sessions")
+}
+
+/// The confirmed result of a past day. Today is computed, never stored.
+model ClubMemberDaySettlement {
+  memberId           String     @map("member_id") @db.Uuid
+  member             ClubMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  day                DateTime   @db.Date
+  studiedSeconds     Int        @map("studied_seconds")
+  attended           Boolean
+  goalMet            Boolean    @map("goal_met")
+  hearts             Int
+  bugs               Int
+  bugProgressSeconds Int        @map("bug_progress_seconds")
+  attendanceStreak   Int        @map("attendance_streak")
+  absenceStreak      Int        @map("absence_streak")
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([memberId, day])
+  @@map("club_member_day_settlements")
+}
+
+/// The catalog, the same for every club. Seed data.
+model Item {
+  id            String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  code          String   @unique
+  kind          String
+  name          String
+  grade         String
+  price         Int
+  minLevel      Int      @default(1) @map("min_level")
+  roomSize      Int?     @map("room_size")
+  placeableKind String?  @map("placeable_kind")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  owners            ClubMemberItem[]
+  roomsSizedBy      ClubMemberRoom[]     @relation("RoomSize")
+  roomsPaperedBy    ClubMemberRoom[]     @relation("RoomWallpaper")
+  roomsEquippedWith ClubMemberRoomItem[]
+
+  @@map("items")
+}
+
+/// An item a member bought. Items with price 0 are owned without a row.
+model ClubMemberItem {
+  memberId  String     @map("member_id") @db.Uuid
+  member    ClubMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  itemId    String     @map("item_id") @db.Uuid
+  item      Item       @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  /// The price paid; stays when the catalog price changes.
+  price     Int
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([memberId, itemId])
+  @@index([itemId])
+  @@map("club_member_items")
+}
+
+/// A member's room. No row means the default room.
+model ClubMemberRoom {
+  memberId           String     @id @map("member_id") @db.Uuid
+  member             ClubMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  roomSizeItemId     String     @map("room_size_item_id") @db.Uuid
+  roomSizeItem       Item       @relation("RoomSize", fields: [roomSizeItemId], references: [id], onDelete: Restrict)
+  wallpaperItemId    String     @map("wallpaper_item_id") @db.Uuid
+  wallpaperItem      Item       @relation("RoomWallpaper", fields: [wallpaperItemId], references: [id], onDelete: Restrict)
+  guestbookCheckedAt DateTime?  @map("guestbook_checked_at") @db.Timestamptz
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  items      ClubMemberRoomItem[]
+  placements ClubMemberRoomPlacement[]
+
+  @@index([roomSizeItemId])
+  @@index([wallpaperItemId])
+  @@map("club_member_rooms")
+}
+
+/// Furniture and accessories equipped in a room.
+model ClubMemberRoomItem {
+  memberId  String         @map("member_id") @db.Uuid
+  room      ClubMemberRoom @relation(fields: [memberId], references: [memberId], onDelete: Cascade)
+  itemId    String         @map("item_id") @db.Uuid
+  item      Item           @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([memberId, itemId])
+  @@index([itemId])
+  @@map("club_member_room_items")
+}
+
+/// Where a placeable thing stands, in floor cells.
+model ClubMemberRoomPlacement {
+  memberId  String         @map("member_id") @db.Uuid
+  room      ClubMemberRoom @relation(fields: [memberId], references: [memberId], onDelete: Cascade)
+  kind      String
+  x         Float
+  y         Float
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([memberId, kind])
+  @@map("club_member_room_placements")
+}
+
+model ClubMemberLike {
+  /// The room's owner.
+  memberId      String     @map("member_id") @db.Uuid
+  member        ClubMember @relation("LikedRoom", fields: [memberId], references: [id], onDelete: Cascade)
+  likerMemberId String     @map("liker_member_id") @db.Uuid
+  liker         ClubMember @relation("Liker", fields: [likerMemberId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([memberId, likerMemberId])
+  @@index([likerMemberId])
+  @@map("club_member_likes")
+}
+
+model ClubMemberGuestbookEntry {
+  id             String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// The room's owner.
+  memberId       String     @map("member_id") @db.Uuid
+  member         ClubMember @relation("GuestbookHost", fields: [memberId], references: [id], onDelete: Cascade)
+  authorMemberId String     @map("author_member_id") @db.Uuid
+  author         ClubMember @relation("GuestbookAuthor", fields: [authorMemberId], references: [id], onDelete: Cascade)
+  body           String
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([memberId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([authorMemberId])
+  @@map("club_member_guestbook_entries")
+}

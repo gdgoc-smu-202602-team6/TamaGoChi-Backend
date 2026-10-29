@@ -30,6 +30,7 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
+    exclude: { path: '^src/foundation/database/generated/' },
     tsConfig: { fileName: 'tsconfig.json' },
     tsPreCompilationDeps: true,
   },
