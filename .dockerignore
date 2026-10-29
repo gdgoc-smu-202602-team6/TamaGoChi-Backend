@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+.git
+*.tsbuildinfo
+src/foundation/database/generated
+src/foundation/contract/openapi.d.ts
