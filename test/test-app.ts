@@ -1,4 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module.js';
 import { applicationOptions, configureApp } from '../src/configure-app.js';
@@ -21,7 +22,7 @@ export async function createTestApp(): Promise<{ app: INestApplication; mailer: 
     .overrideProvider(AuthMailer)
     .useValue(mailer)
     .compile();
-  const app = configureApp(moduleRef.createNestApplication(applicationOptions));
+  const app = configureApp(moduleRef.createNestApplication<NestExpressApplication>(applicationOptions));
   await app.init();
   return { app, mailer };
 }

@@ -1,6 +1,6 @@
-import type { INestApplication, NestApplicationOptions } from '@nestjs/common';
+import type { NestApplicationOptions } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { toNodeHandler } from 'better-auth/node';
-import type { Express } from 'express';
 import { AUTH, authBasePath, type Auth } from './domains/account/auth/auth.js';
 import { AppConfig } from './foundation/config/app-config.js';
 import { ProblemFilter } from './foundation/problem/problem.filter.js';
@@ -9,10 +9,9 @@ import { ProblemFilter } from './foundation/problem/problem.filter.js';
 export const applicationOptions: NestApplicationOptions = { bodyParser: false };
 
 /** Wires the application the same way for the server and for end-to-end tests. */
-export function configureApp(app: INestApplication): INestApplication {
-  const http = app.getHttpAdapter().getInstance() as Express;
-  http.all(`${authBasePath}/{*path}`, toNodeHandler(app.get<Auth>(AUTH)));
-  (app as INestApplication & { useBodyParser(type: 'json'): void }).useBodyParser('json');
+export function configureApp(app: NestExpressApplication): NestExpressApplication {
+  app.getHttpAdapter().getInstance().all(`${authBasePath}/{*path}`, toNodeHandler(app.get<Auth>(AUTH)));
+  app.useBodyParser('json');
 
   app.useGlobalFilters(new ProblemFilter(!app.get(AppConfig).production));
   return app;
