@@ -6,6 +6,7 @@ import { AUTH, createAuth } from './auth/auth.js';
 import { AuthMailer } from './auth/auth-mailer.js';
 import { BetterAuthSessionVerifier } from './auth/better-auth-session-verifier.js';
 import { LoggingAuthMailer } from './auth/logging-auth-mailer.js';
+import { DeviceTokenRepository } from './device-token/device-token.repository.js';
 import { UserRepository } from './user/user.repository.js';
 
 @Module({
@@ -14,7 +15,8 @@ import { UserRepository } from './user/user.repository.js';
     { provide: AUTH, inject: [AppConfig, DatabaseClient, AuthMailer], useFactory: createAuth },
     { provide: SessionVerifier, useClass: BetterAuthSessionVerifier },
     UserRepository,
+    DeviceTokenRepository,
   ],
-  exports: [AUTH, SessionVerifier, UserRepository],
+  exports: [AUTH, SessionVerifier, UserRepository, DeviceTokenRepository],
 })
 export class AccountModule {}
