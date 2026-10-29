@@ -2,7 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createApp } from '../src/create-app.js';
 
-describe('health and unknown paths', () => {
+describe('health and the contract', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -20,16 +20,33 @@ describe('health and unknown paths', () => {
     expect({ status: response.status, body: response.body }).toEqual({ status: 200, body: { status: 'ok' } });
   });
 
-  it('없는 경로이면 404 Problem Details를 준다', async () => {
+  it('명세에 없는 경로이면 404 Problem Details를 준다', async () => {
     const response = await request(app.getHttpServer()).get('/no-such-path');
 
     expect(response.status).toBe(404);
     expect(response.headers['content-type']).toMatch(/^application\/problem\+json/);
-    expect(JSON.parse(response.text)).toEqual({
-      type: 'about:blank',
-      title: 'Not Found',
-      status: 404,
-      detail: 'Cannot GET /no-such-path',
-    });
+    expect(JSON.parse(response.text)).toMatchObject({ type: '/problems/not-found', title: 'Not Found', status: 404 });
+  });
+
+  it('토큰 없이 인증이 필요한 경로를 부르면 401과 WWW-Authenticate를 준다', async () => {
+    const response = await request(app.getHttpServer()).get('/users/me');
+
+    expect(response.status).toBe(401);
+    expect(response.headers['www-authenticate']).toBe('Bearer');
+    expect(JSON.parse(response.text)).toMatchObject({ type: '/problems/unauthorized', status: 401 });
+  });
+
+  it('쿼리가 명세의 형식에 어긋나면 400과 필드별 오류를 준다', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/clubs/not-a-uuid/notices?pageSize=1000')
+      .set('Authorization', 'Bearer test');
+
+    expect(response.status).toBe(400);
+    const body = JSON.parse(response.text);
+    expect(body).toMatchObject({ type: '/problems/bad-request', status: 400 });
+    expect(body.errors.map((error: { field: string }) => error.field).sort()).toEqual([
+      '/params/clubId',
+      '/query/pageSize',
+    ]);
   });
 });
