@@ -1,16 +1,11 @@
-import { randomInt } from 'node:crypto';
+import { InviteCode } from '../src/domains/club/club/invite-code.js';
 import type { DatabaseClient } from '../src/foundation/database/database-client.js';
-
-const inviteAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 /** A club with one part, for tests that need a club before createClub is called. */
 export async function insertClub(
   database: DatabaseClient,
 ): Promise<{ clubId: string; partId: string }> {
-  const inviteCode = Array.from(
-    { length: 8 },
-    () => inviteAlphabet[randomInt(inviteAlphabet.length)],
-  ).join('');
+  const inviteCode = InviteCode.generate().value;
   const club = await database.club.create({
     data: {
       name: '테스트 동아리',

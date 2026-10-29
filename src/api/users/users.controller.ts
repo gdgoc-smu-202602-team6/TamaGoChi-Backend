@@ -17,7 +17,7 @@ import {
   type AuthenticatedUser,
 } from '../../foundation/auth/authenticated-user.js';
 import type { components } from '../../foundation/contract/openapi.js';
-import { BadRequest } from '../../foundation/problem/problems/bad-request.js';
+import { parseField } from '../../foundation/problem/parse-field.js';
 import { NotFound } from '../../foundation/problem/problems/not-found.js';
 
 type UserBody = components['schemas']['User'];
@@ -42,10 +42,10 @@ export class UsersController {
     @CurrentUser() caller: AuthenticatedUser,
     @Body() body: UserUpdateBody,
   ): Promise<UserBody> {
-    if (body.nickname === undefined) return this.getMe(caller);
-    return toBody(
-      found(await this.users.rename(caller.id, parseNickname(body.nickname))),
-    );
+    const input = body.nickname;
+    if (input === undefined) return this.getMe(caller);
+    const nickname = parseField('/body/nickname', () => Nickname.parse(input));
+    return toBody(found(await this.users.rename(caller.id, nickname)));
   }
 
   /** deleteMe */
@@ -84,16 +84,4 @@ function found(user: User | null): User {
 
 function toBody(user: User): UserBody {
   return { id: user.id, email: user.email, nickname: user.nickname.value };
-}
-
-function parseNickname(input: string): Nickname {
-  try {
-    return Nickname.parse(input);
-  } catch (error) {
-    if (error instanceof RangeError)
-      throw new BadRequest([
-        { field: '/body/nickname', message: error.message },
-      ]);
-    throw error;
-  }
 }
