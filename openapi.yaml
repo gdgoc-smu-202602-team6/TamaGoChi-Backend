@@ -968,6 +968,7 @@ components:
         nickname: { type: string, description: '1~10자, 중복 허용' }
     UserUpdate:
       type: object
+      additionalProperties: false
       properties:
         nickname: { type: string }
 
@@ -991,6 +992,7 @@ components:
         parts: { type: array, items: { $ref: '#/components/schemas/Part' } }
     ClubCreate:
       type: object
+      additionalProperties: false
       required: [name, parts, myPartName]
       properties:
         name: { type: string }
@@ -998,6 +1000,7 @@ components:
         myPartName: { type: string, description: parts 가운데 만든 사람의 파트 이름 }
     ClubUpdate:
       type: object
+      additionalProperties: false
       properties:
         name: { type: string }
     Part:
@@ -1009,6 +1012,7 @@ components:
         color: { $ref: '#/components/schemas/PaletteColor' }
     PartCreate:
       type: object
+      additionalProperties: false
       required: [name, color]
       properties:
         name: { type: string }
@@ -1024,6 +1028,7 @@ components:
         subcategories: { type: array, items: { $ref: '#/components/schemas/Subcategory' } }
     NoticeCategoryCreate:
       type: object
+      additionalProperties: false
       required: [name, color]
       properties:
         name: { type: string }
@@ -1036,6 +1041,7 @@ components:
         name: { type: string, description: 1~10자 }
     SubcategoryCreate:
       type: object
+      additionalProperties: false
       required: [name]
       properties:
         name: { type: string }
@@ -1057,11 +1063,13 @@ components:
         createdAt: { $ref: '#/components/schemas/DateTime' }
     ApplicationCreate:
       type: object
+      additionalProperties: false
       required: [partId]
       properties:
         partId: { $ref: '#/components/schemas/Id' }
     ApplicationDecision:
       type: object
+      additionalProperties: false
       required: [state]
       properties:
         state: { type: string, enum: [APPROVED, REJECTED] }
@@ -1092,6 +1100,7 @@ components:
         notificationsOn: { type: boolean, description: 본인일 때만 }
     MemberUpdate:
       type: object
+      additionalProperties: false
       properties:
         partId: { $ref: '#/components/schemas/Id' }
         roleId: { $ref: '#/components/schemas/Id' }
@@ -1112,6 +1121,7 @@ components:
         minutes: { type: integer, minimum: 30, maximum: 720, multipleOf: 10 }
     DailyGoalCreate:
       type: object
+      additionalProperties: false
       required: [startOn, minutes]
       properties:
         startOn: { $ref: '#/components/schemas/Date' }
@@ -1149,6 +1159,7 @@ components:
         levelAfter: { type: integer }
     StudySessionEnd:
       type: object
+      additionalProperties: false
       required: [state]
       properties:
         state: { type: string, const: ENDED }
@@ -1180,6 +1191,7 @@ components:
       enum: [DESK, BOOKSHELF, PLANT, RUG, CHARACTER]
     Placement:
       type: object
+      additionalProperties: false
       required: [target, x, y]
       properties:
         target: { $ref: '#/components/schemas/PlacementTarget' }
@@ -1187,6 +1199,7 @@ components:
         y: { type: number, description: 방 바닥 칸 단위 }
     EquippedItem:
       type: object
+      additionalProperties: false
       required: [slot, itemId]
       properties:
         slot: { $ref: '#/components/schemas/Slot' }
@@ -1204,6 +1217,7 @@ components:
         newGuestbookCount: { type: integer, description: 본인일 때만 }
     RoomUpdate:
       type: object
+      additionalProperties: false
       properties:
         equipped: { type: array, description: '장착 전체. ROOM을 반드시 포함', items: { $ref: '#/components/schemas/EquippedItem' } }
         placements: { type: array, items: { $ref: '#/components/schemas/Placement' } }
@@ -1270,6 +1284,7 @@ components:
         new: { type: boolean, description: 방 주인일 때만 }
     GuestbookEntryCreate:
       type: object
+      additionalProperties: false
       required: [body]
       properties:
         body: { type: string }
@@ -1300,6 +1315,7 @@ components:
         createdAt: { $ref: '#/components/schemas/DateTime' }
     NoticeCreate:
       type: object
+      additionalProperties: false
       required: [categoryId, title, body]
       properties:
         categoryId: { $ref: '#/components/schemas/Id' }
@@ -1310,6 +1326,7 @@ components:
         notify: { type: boolean, default: false }
     NoticeUpdate:
       type: object
+      additionalProperties: false
       properties:
         categoryId: { $ref: '#/components/schemas/Id' }
         subcategoryId: { type: [string, 'null'], format: uuid }

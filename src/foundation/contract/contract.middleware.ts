@@ -19,7 +19,10 @@ export const contractPath = join(process.cwd(), 'openapi.yaml');
 /** The injection token for the paths the contract does not describe. */
 export const CONTRACT_IGNORED_PATHS = Symbol('ContractIgnoredPaths');
 
-/** Checks each request against openapi.yaml and turns a violation into a Problem. */
+/**
+ * Checks each request against openapi.yaml and turns a violation into a Problem. Fields a request body schema
+ * closes off (`additionalProperties: false`) are dropped, so a route only ever sees the fields it declares.
+ */
 @Injectable()
 export class ContractMiddleware implements NestMiddleware {
   private readonly validators: RequestHandler[];
@@ -27,7 +30,7 @@ export class ContractMiddleware implements NestMiddleware {
   constructor(@Inject(CONTRACT_IGNORED_PATHS) ignoredPaths: RegExp) {
     this.validators = OpenApiValidator.middleware({
       apiSpec: contractPath,
-      validateRequests: { allErrors: true },
+      validateRequests: { allErrors: true, removeAdditional: true },
       validateResponses: false,
       ignorePaths: ignoredPaths,
     }) as RequestHandler[];

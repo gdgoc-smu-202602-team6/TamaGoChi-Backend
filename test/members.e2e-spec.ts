@@ -151,6 +151,16 @@ describe('members', () => {
     expect(response.status).toBe(403);
   });
 
+  it('계약에 없는 필드로는 역할을 바꿀 수 없다', async () => {
+    const response = await request(server())
+      .patch(path('me'))
+      .set(as(bob))
+      .send({ role: { connect: { id: operatorRoleId } } });
+
+    expect(response.status).toBe(200);
+    expect(response.body.roleId).toBe(memberRoleId);
+  });
+
   it('하나뿐인 운영진이 스스로 역할을 내려놓으면 409 last-manager다', async () => {
     const response = await request(server())
       .patch(path('me'))
