@@ -78,6 +78,30 @@ describe('sign-up, sign-in and the current user', () => {
     });
   });
 
+  it('비밀번호를 잊으면 재설정 링크로 바꾸고, 약한 새 비밀번호는 400이다', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/request-password-reset')
+      .send({ email })
+      .expect(200);
+    const link = new URL(mailer.passwordResetUrls.get(email)!);
+    const token = link.pathname.split('/').at(-1);
+    const newPassword = 'another horse 2';
+
+    const weak = await request(app.getHttpServer())
+      .post('/auth/reset-password')
+      .send({ token, newPassword: 'anotherhorse' });
+    const reset = await request(app.getHttpServer())
+      .post('/auth/reset-password')
+      .send({ token, newPassword });
+    const signedIn = await request(app.getHttpServer())
+      .post('/auth/sign-in/email')
+      .send({ email, password: newPassword });
+
+    expect([weak.status, reset.status, signedIn.status]).toEqual([
+      400, 200, 200,
+    ]);
+  });
+
   it('틀린 토큰이면 401 Problem을 준다', async () => {
     const response = await request(app.getHttpServer())
       .get('/users/me')

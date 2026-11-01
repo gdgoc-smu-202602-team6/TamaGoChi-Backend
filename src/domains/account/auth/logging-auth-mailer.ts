@@ -10,4 +10,9 @@ export class LoggingAuthMailer extends AuthMailer {
     this.logger.log(`email verification for ${to}: ${url}`);
     return Promise.resolve();
   }
+
+  sendPasswordReset(to: string, url: string): Promise<void> {
+    this.logger.log(`password reset for ${to}: ${url}`);
+    return Promise.resolve();
+  }
 }

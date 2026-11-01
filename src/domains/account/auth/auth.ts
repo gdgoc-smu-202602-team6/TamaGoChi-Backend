@@ -47,6 +47,8 @@ export function createAuth(
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
+      sendResetPassword: ({ user, url }) =>
+        mailer.sendPasswordReset(user.email, url),
     },
     emailVerification: {
       sendOnSignUp: true,
