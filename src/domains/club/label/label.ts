@@ -1,7 +1,4 @@
-import type { components } from '../../../foundation/contract/openapi.js';
 import { trimmedWithin } from '../../../foundation/text/text-length.js';
-
-export type PaletteColor = components['schemas']['PaletteColor'];
 
 /**
  * The short name of a part, a notice category or a subcategory: trimmed, 1 to 10 grapheme clusters, unique among its

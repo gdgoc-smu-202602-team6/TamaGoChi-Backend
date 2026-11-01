@@ -1,12 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import { Like } from './like.js';
-
-/** How many liked a room, and whether the viewer did. */
-export interface LikeTally {
-  readonly count: number;
-  readonly likedByViewer: boolean;
-}
+import type { LikeTally } from './like-tally.js';
 
 @Injectable()
 export class LikeRepository {

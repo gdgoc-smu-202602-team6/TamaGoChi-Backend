@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import { orOnUniqueViolation } from '../../../../foundation/database/database-errors.js';
 import { Day } from '../../day/day.js';
-import { DailyGoal, DailyGoalHistory } from './daily-goal.js';
+import { DailyGoal } from './daily-goal.js';
+import { DailyGoalHistory } from './daily-goal-history.js';
 
 @Injectable()
 export class DailyGoalRepository {

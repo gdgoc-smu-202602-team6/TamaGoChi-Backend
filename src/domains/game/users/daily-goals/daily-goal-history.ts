@@ -1,0 +1,30 @@
+import type { Day } from '../../day/day.js';
+import { DailyGoal } from './daily-goal.js';
+
+/** All versions of a user's goal. The goal of a day is the latest version that started on or before it. */
+export class DailyGoalHistory {
+  private readonly versions: readonly DailyGoal[];
+
+  constructor(versions: readonly DailyGoal[]) {
+    this.versions = [...versions].sort(
+      (a, b) => (a.startOn?.index ?? 0) - (b.startOn?.index ?? 0),
+    );
+  }
+
+  /** The version that starts on `day`, if one does. */
+  startingOn(day: Day): DailyGoal | null {
+    return this.versions.find((one) => one.startOn?.equals(day)) ?? null;
+  }
+
+  on(day: Day): DailyGoal {
+    let found = DailyGoal.default;
+    for (const version of this.versions) {
+      if (version.startOn && version.startOn.since(day) <= 0) found = version;
+    }
+    return found;
+  }
+
+  get all(): readonly DailyGoal[] {
+    return this.versions;
+  }
+}

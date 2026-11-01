@@ -23,11 +23,8 @@ import {
 } from '../../../foundation/auth/authenticated-user.js';
 import type { Permission } from '../../../domains/club/clubs/access/permission.js';
 import type { components } from '../../../foundation/contract/openapi.js';
-import {
-  type Page,
-  pageBody,
-  pageRequest,
-} from '../../../foundation/pagination/page.js';
+import { pageRequest } from '../../../foundation/pagination/page-request.js';
+import { type Page, pageBody } from '../../../foundation/pagination/page.js';
 import { BadRequest } from '../../../foundation/problem/problems/bad-request.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { Forbidden } from '../../../foundation/problem/problems/forbidden.js';

@@ -4,7 +4,8 @@ import { lockPlayer } from '../../lock/player-lock.js';
 import { Earnings } from '../progress/earnings.js';
 import { RoomRepository } from '../room/room.repository.js';
 import { StudySessionRepository } from '../study-sessions/study-session.repository.js';
-import type { OwnedItem, PurchaseVerdict } from '../../items/item.js';
+import type { PurchaseVerdict } from '../../items/item.js';
+import type { OwnedItem } from './owned-item.js';
 import { ItemRepository } from '../../items/item.repository.js';
 
 export type PurchaseOutcome =

@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import { newestFirstPage } from '../../../../foundation/pagination/newest-first-page.js';
-import type {
-  Page,
-  PageRequest,
-} from '../../../../foundation/pagination/page.js';
+import type { PageRequest } from '../../../../foundation/pagination/page-request.js';
+import type { Page } from '../../../../foundation/pagination/page.js';
 import type { Prisma } from '../../../../foundation/database/generated/client.js';
 import type { ClubAccess } from '../access/club-access.js';
 import type { Permission } from '../access/permission.js';

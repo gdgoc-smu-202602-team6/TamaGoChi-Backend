@@ -1,4 +1,4 @@
-import type { DailyGoalHistory } from '../daily-goals/daily-goal.js';
+import type { DailyGoalHistory } from '../daily-goals/daily-goal-history.js';
 import { Day } from '../../day/day.js';
 import type { StudySession } from '../study-sessions/study-session.js';
 import { DayRun } from './day-run.js';

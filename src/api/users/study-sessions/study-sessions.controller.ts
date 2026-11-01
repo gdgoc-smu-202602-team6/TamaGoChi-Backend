@@ -22,7 +22,8 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
-import { pageBody, pageRequest } from '../../../foundation/pagination/page.js';
+import { pageRequest } from '../../../foundation/pagination/page-request.js';
+import { pageBody } from '../../../foundation/pagination/page.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { NotFound } from '../../../foundation/problem/problems/not-found.js';
 import { PlayerViews } from '../player-views.js';

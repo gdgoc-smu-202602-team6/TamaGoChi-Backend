@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import { orOnUniqueViolation } from '../../../../foundation/database/database-errors.js';
-import { Label, type PaletteColor } from '../../label/label.js';
+import { Label } from '../../label/label.js';
+import type { PaletteColor } from '../../palette-color/palette-color.js';
 import { Part } from './part.js';
 
 const partColumns = { id: true, name: true, color: true } as const;

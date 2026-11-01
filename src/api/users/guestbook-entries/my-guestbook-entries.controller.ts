@@ -6,7 +6,8 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
-import { pageBody, pageRequest } from '../../../foundation/pagination/page.js';
+import { pageRequest } from '../../../foundation/pagination/page-request.js';
+import { pageBody } from '../../../foundation/pagination/page.js';
 import { toGuestbookEntryBody } from '../../clubs/members/guestbook-entries/guestbook-entry-body.js';
 
 type GuestbookEntryPageBody = components['schemas']['GuestbookEntryPage'];

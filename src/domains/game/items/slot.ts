@@ -1,8 +1,8 @@
 import type { components } from '../../../foundation/contract/openapi.js';
 import type { PlacementTarget } from '../users/room/placement-target.js';
+import type { ItemCategory } from './item-category.js';
 
 export type SlotName = components['schemas']['Slot'];
-export type ItemCategory = components['schemas']['ItemCategory'];
 
 /** The shop and inventory tab of each slot (D-01, S-01). */
 const categories: Readonly<Record<SlotName, ItemCategory>> = {

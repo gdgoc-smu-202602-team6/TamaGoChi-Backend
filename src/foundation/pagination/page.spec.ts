@@ -1,5 +1,6 @@
 import { BadRequest } from '../problem/problems/bad-request.js';
-import { pageRequest, toPage } from './page.js';
+import { pageRequest } from './page-request.js';
+import { toPage } from './page.js';
 
 const rows = [
   { id: 'c', createdAt: new Date('2026-10-29T03:00:00Z') },

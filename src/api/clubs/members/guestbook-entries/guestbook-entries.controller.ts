@@ -24,10 +24,8 @@ import {
   type AuthenticatedUser,
 } from '../../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../../foundation/contract/openapi.js';
-import {
-  pageBody,
-  pageRequest,
-} from '../../../../foundation/pagination/page.js';
+import { pageRequest } from '../../../../foundation/pagination/page-request.js';
+import { pageBody } from '../../../../foundation/pagination/page.js';
 import { parseField } from '../../../../foundation/problem/parse-field.js';
 import { BadRequest } from '../../../../foundation/problem/problems/bad-request.js';
 import { Forbidden } from '../../../../foundation/problem/problems/forbidden.js';

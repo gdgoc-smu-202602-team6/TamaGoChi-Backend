@@ -1,10 +1,6 @@
-import {
-  afterCursor,
-  type Cursor,
-  type Page,
-  type PageRequest,
-  toPage,
-} from './page.js';
+import { afterCursor, type Cursor } from './cursor.js';
+import type { PageRequest } from './page-request.js';
+import { type Page, toPage } from './page.js';
 
 /**
  * Reads one page of a list ordered by (createdAt desc, id desc). `fetch` runs the list's findMany with its own filters

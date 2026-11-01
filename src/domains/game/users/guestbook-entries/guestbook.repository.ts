@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import { newestFirstPage } from '../../../../foundation/pagination/newest-first-page.js';
-import type {
-  Page,
-  PageRequest,
-} from '../../../../foundation/pagination/page.js';
+import type { PageRequest } from '../../../../foundation/pagination/page-request.js';
+import type { Page } from '../../../../foundation/pagination/page.js';
 import { GuestbookEntry } from './guestbook-entry.js';
 import type { GuestbookText } from './guestbook-text.js';
 

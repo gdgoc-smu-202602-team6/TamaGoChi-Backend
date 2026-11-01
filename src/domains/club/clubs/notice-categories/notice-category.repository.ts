@@ -4,8 +4,10 @@ import {
   isStillReferenced,
   orOnUniqueViolation,
 } from '../../../../foundation/database/database-errors.js';
-import { Label, type PaletteColor } from '../../label/label.js';
-import { NoticeCategory, Subcategory } from './notice-category.js';
+import { Label } from '../../label/label.js';
+import type { PaletteColor } from '../../palette-color/palette-color.js';
+import { NoticeCategory } from './notice-category.js';
+import { Subcategory } from './subcategories/subcategory.js';
 
 const categoryColumns = {
   id: true,

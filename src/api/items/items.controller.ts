@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import type { Item } from '../../domains/game/items/item.js';
 import { ItemRepository } from '../../domains/game/items/item.repository.js';
-import type { ItemCategory } from '../../domains/game/items/slot.js';
+import type { ItemCategory } from '../../domains/game/items/item-category.js';
 import type { components } from '../../foundation/contract/openapi.js';
 
 type ItemBody = components['schemas']['Item'];

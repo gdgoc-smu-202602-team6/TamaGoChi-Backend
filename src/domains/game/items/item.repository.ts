@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import type { Prisma } from '../../../foundation/database/generated/client.js';
-import { type Grade, Item, type OwnedItem } from './item.js';
+import type { OwnedItem } from '../users/items/owned-item.js';
+import { type Grade, Item } from './item.js';
 import { Slot, type SlotName } from './slot.js';
 
 type Client = DatabaseClient | Prisma.TransactionClient;

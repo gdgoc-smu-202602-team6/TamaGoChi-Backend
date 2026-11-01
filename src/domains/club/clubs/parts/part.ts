@@ -1,4 +1,5 @@
-import type { Label, PaletteColor } from '../../label/label.js';
+import type { Label } from '../../label/label.js';
+import type { PaletteColor } from '../../palette-color/palette-color.js';
 
 /** A part of a club (AI, Dev, …). Members and pending applications point at one. */
 export class Part {

@@ -1,4 +1,4 @@
-import { DailyGoalHistory } from '../daily-goals/daily-goal.js';
+import { DailyGoalHistory } from '../daily-goals/daily-goal-history.js';
 import { Day } from '../../day/day.js';
 import { StudySession } from '../study-sessions/study-session.js';
 import { DaySettlement } from './day-settlement.js';
