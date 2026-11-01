@@ -10,10 +10,10 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { Label } from '../../../domains/club/label/label.js';
-import type { NoticeCategory } from '../../../domains/club/clubs/notice-categories/notice-category.js';
+import { NoticeCategory } from '../../../domains/club/clubs/notice-categories/notice-category.js';
 import type { Subcategory } from '../../../domains/club/clubs/notice-categories/subcategories/subcategory.js';
 import { NoticeCategoryRepository } from '../../../domains/club/clubs/notice-categories/notice-category.repository.js';
-import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
+import { RequireClubAccess } from '../club-access.guard.js';
 import type { components } from '../../../foundation/contract/openapi.js';
 import type { Id } from '../../../foundation/id/id.js';
 import { parseField } from '../../../foundation/problem/parse-field.js';
@@ -40,7 +40,7 @@ export class NoticeCategoriesController {
 
   /** createNoticeCategory */
   @Post()
-  @RequireClubAccess('noticeCategories.manage')
+  @RequireClubAccess(NoticeCategory.managedWith)
   async create(
     @Param('clubId') clubId: Id<'Club'>,
     @Body() body: CategoryCreateBody,
@@ -57,7 +57,7 @@ export class NoticeCategoriesController {
 
   /** deleteNoticeCategory */
   @Delete(':categoryId')
-  @RequireClubAccess('noticeCategories.manage')
+  @RequireClubAccess(NoticeCategory.managedWith)
   @HttpCode(204)
   async delete(
     @Param('clubId') clubId: Id<'Club'>,
@@ -70,7 +70,7 @@ export class NoticeCategoriesController {
 
   /** createSubcategory */
   @Post(':categoryId/subcategories')
-  @RequireClubAccess('noticeCategories.manage')
+  @RequireClubAccess(NoticeCategory.managedWith)
   async createSubcategory(
     @Param('clubId') clubId: Id<'Club'>,
     @Param('categoryId') categoryId: Id<'NoticeCategory'>,
@@ -95,7 +95,7 @@ export class NoticeCategoriesController {
 
   /** deleteSubcategory */
   @Delete(':categoryId/subcategories/:subcategoryId')
-  @RequireClubAccess('noticeCategories.manage')
+  @RequireClubAccess(NoticeCategory.managedWith)
   @HttpCode(204)
   async deleteSubcategory(
     @Param('clubId') clubId: Id<'Club'>,

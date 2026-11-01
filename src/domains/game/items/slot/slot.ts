@@ -1,5 +1,5 @@
 import type { components } from '../../../../foundation/contract/openapi.js';
-import type { PlacementTarget } from '../../users/room/placement-target.js';
+import type { PlacementTarget } from '../../floor/placement-target.js';
 import type { ItemCategory } from '../item-category.js';
 
 export type SlotName = components['schemas']['Slot'];

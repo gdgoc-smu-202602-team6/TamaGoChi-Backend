@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DailyGoalRepository } from './users/daily-goals/daily-goal.repository.js';
-import { GuestbookRepository } from './users/guestbook-entries/guestbook.repository.js';
+import { GuestbookEntryRepository } from './users/guestbook-entries/guestbook-entry.repository.js';
 import { ItemRepository } from './items/item.repository.js';
 import { LevelRepository } from './level/level.repository.js';
 import { OwnedItemRepository } from './users/items/owned-item.repository.js';
@@ -24,7 +24,7 @@ const providers = [
   PurchaseService,
   RoomRepository,
   LikeRepository,
-  GuestbookRepository,
+  GuestbookEntryRepository,
 ];
 
 /** game: per user (merged 0.1). */

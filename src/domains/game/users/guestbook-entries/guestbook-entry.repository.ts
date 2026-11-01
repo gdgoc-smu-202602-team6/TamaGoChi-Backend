@@ -26,7 +26,7 @@ type EntryRow = {
 };
 
 @Injectable()
-export class GuestbookRepository {
+export class GuestbookEntryRepository {
   constructor(private readonly database: DatabaseClient) {}
 
   /** The entries of a room; only those written in `clubId` when given. Newest first. */

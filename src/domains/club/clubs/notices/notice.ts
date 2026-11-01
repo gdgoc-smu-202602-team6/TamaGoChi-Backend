@@ -1,5 +1,6 @@
 import type { components } from '../../../../foundation/contract/openapi.js';
 import type { Id } from '../../../../foundation/id/id.js';
+import type { Permission } from '../access/permission.js';
 
 export type NotificationState = components['schemas']['NotificationState'];
 
@@ -18,6 +19,9 @@ const transitions: Readonly<
  * deleted account leaves it with no author.
  */
 export class Notice {
+  /** The permission that creates, changes and deletes notices. */
+  static readonly writtenWith: Permission = 'notices.write';
+
   constructor(
     readonly id: Id<'Notice'>,
     readonly clubId: Id<'Club'>,

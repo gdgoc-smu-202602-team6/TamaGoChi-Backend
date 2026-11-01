@@ -6,13 +6,13 @@ import {
   createParamDecorator,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { AuthenticatedRequest } from '../../../../foundation/auth/authenticated-user.js';
-import { asId } from '../../../../foundation/id/id.js';
-import { Forbidden } from '../../../../foundation/problem/problems/forbidden.js';
-import { NotFound } from '../../../../foundation/problem/problems/not-found.js';
-import { MemberRepository } from '../members/member.repository.js';
-import type { ClubAccess } from './club-access.js';
-import type { Permission } from './permission.js';
+import type { AuthenticatedRequest } from '../../foundation/auth/authenticated-user.js';
+import { asId } from '../../foundation/id/id.js';
+import { Forbidden } from '../../foundation/problem/problems/forbidden.js';
+import { NotFound } from '../../foundation/problem/problems/not-found.js';
+import { MemberRepository } from '../../domains/club/clubs/members/member.repository.js';
+import type { ClubAccess } from '../../domains/club/clubs/access/club-access.js';
+import type { Permission } from '../../domains/club/clubs/access/permission.js';
 
 const clubAccessKey = Symbol('ClubAccess');
 

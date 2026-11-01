@@ -1,10 +1,14 @@
 import type { Id } from '../../../../foundation/id/id.js';
+import type { Permission } from '../access/permission.js';
 import { Label } from '../../label/label.js';
 import type { PaletteColor } from '../../palette-color/palette-color.js';
 import type { Subcategory } from './subcategories/subcategory.js';
 
 /** A notice category. The preset one ("전체공지") exists from the club's creation and is never deleted. */
 export class NoticeCategory {
+  /** The permission that creates and deletes categories and their subcategories. */
+  static readonly managedWith: Permission = 'noticeCategories.manage';
+
   /** The preset category every club is created with. */
   static readonly presetName = Label.fromStored('전체공지');
   static readonly presetColor: PaletteColor = 'RED';

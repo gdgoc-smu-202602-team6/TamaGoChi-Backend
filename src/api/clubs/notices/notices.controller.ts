@@ -22,10 +22,7 @@ import {
   NoticeRepository,
 } from '../../../domains/club/clubs/notices/notice.repository.js';
 import type { ClubAccess } from '../../../domains/club/clubs/access/club-access.js';
-import {
-  CurrentClubAccess,
-  RequireClubAccess,
-} from '../../../domains/club/clubs/access/club-access.guard.js';
+import { CurrentClubAccess, RequireClubAccess } from '../club-access.guard.js';
 import {
   CurrentUser,
   type AuthenticatedUser,
@@ -89,7 +86,7 @@ export class NoticesController {
 
   /** createNotice: notifying is sent after the response, its result kept on the notice (N-13, N-15). */
   @Post()
-  @RequireClubAccess('notices.write')
+  @RequireClubAccess(Notice.writtenWith)
   async create(
     @CurrentUser() caller: AuthenticatedUser,
     @Param('clubId') clubId: Id<'Club'>,
@@ -131,7 +128,7 @@ export class NoticesController {
 
   /** updateNotice: never notifies again (N-16). */
   @Patch(':noticeId')
-  @RequireClubAccess('notices.write')
+  @RequireClubAccess(Notice.writtenWith)
   async update(
     @CurrentClubAccess() access: ClubAccess,
     @Param('clubId') clubId: Id<'Club'>,
@@ -168,7 +165,7 @@ export class NoticesController {
 
   /** deleteNotice */
   @Delete(':noticeId')
-  @RequireClubAccess('notices.write')
+  @RequireClubAccess(Notice.writtenWith)
   @HttpCode(204)
   async delete(
     @Param('clubId') clubId: Id<'Club'>,

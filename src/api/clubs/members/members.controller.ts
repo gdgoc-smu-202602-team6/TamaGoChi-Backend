@@ -15,12 +15,10 @@ import {
   type MemberChanges,
   type MemberRefusal,
 } from '../../../domains/club/clubs/members/member.js';
+import { ClubManagers } from '../../../domains/club/clubs/members/club-managers.js';
 import { MemberRepository } from '../../../domains/club/clubs/members/member.repository.js';
 import type { ClubAccess } from '../../../domains/club/clubs/access/club-access.js';
-import {
-  CurrentClubAccess,
-  RequireClubAccess,
-} from '../../../domains/club/clubs/access/club-access.guard.js';
+import { CurrentClubAccess, RequireClubAccess } from '../club-access.guard.js';
 import {
   CurrentUser,
   type AuthenticatedUser,
@@ -183,7 +181,7 @@ function forbidden(refusal: MemberRefusal): Forbidden {
   return new Forbidden(
     refusal === 'not-own'
       ? 'only the member changes their part and notifications'
-      : 'requires members.manage',
+      : `requires ${ClubManagers.permission}`,
   );
 }
 

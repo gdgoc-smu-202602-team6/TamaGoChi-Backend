@@ -20,7 +20,7 @@ import {
 import { decidedMessage } from '../../../domains/club/clubs/applications/application-messages.js';
 import { ApplicationRepository } from '../../../domains/club/clubs/applications/application.repository.js';
 import { RoleRepository } from '../../../domains/club/roles/role.repository.js';
-import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
+import { RequireClubAccess } from '../club-access.guard.js';
 import {
   CurrentUser,
   type AuthenticatedUser,

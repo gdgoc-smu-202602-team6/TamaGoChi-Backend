@@ -13,13 +13,13 @@ import type { Response } from 'express';
 import { MemberRepository } from '../../../../domains/club/clubs/members/member.repository.js';
 import { GuestbookEntry } from '../../../../domains/game/users/guestbook-entries/guestbook-entry.js';
 import { GuestbookText } from '../../../../domains/game/users/guestbook-entries/guestbook-text.js';
-import { GuestbookRepository } from '../../../../domains/game/users/guestbook-entries/guestbook.repository.js';
+import { GuestbookEntryRepository } from '../../../../domains/game/users/guestbook-entries/guestbook-entry.repository.js';
 import { RoomRepository } from '../../../../domains/game/users/room/room.repository.js';
 import type { ClubAccess } from '../../../../domains/club/clubs/access/club-access.js';
 import {
   CurrentClubAccess,
   RequireClubAccess,
-} from '../../../../domains/club/clubs/access/club-access.guard.js';
+} from '../../club-access.guard.js';
 import {
   CurrentUser,
   type AuthenticatedUser,
@@ -46,7 +46,7 @@ type GuestbookEntryCreateBody = components['schemas']['GuestbookEntryCreate'];
 export class GuestbookEntriesController {
   constructor(
     private readonly members: MemberRepository,
-    private readonly guestbook: GuestbookRepository,
+    private readonly guestbook: GuestbookEntryRepository,
     private readonly rooms: RoomRepository,
   ) {}
 

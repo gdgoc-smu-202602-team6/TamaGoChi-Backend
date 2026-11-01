@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { GuestbookRepository } from '../../../domains/game/users/guestbook-entries/guestbook.repository.js';
+import { GuestbookEntryRepository } from '../../../domains/game/users/guestbook-entries/guestbook-entry.repository.js';
 import { RoomRepository } from '../../../domains/game/users/room/room.repository.js';
 import {
   CurrentUser,
@@ -15,7 +15,7 @@ type GuestbookEntryPageBody = components['schemas']['GuestbookEntryPage'];
 @Controller('users/me/guestbookEntries')
 export class MyGuestbookEntriesController {
   constructor(
-    private readonly guestbook: GuestbookRepository,
+    private readonly guestbook: GuestbookEntryRepository,
     private readonly rooms: RoomRepository,
   ) {}
 

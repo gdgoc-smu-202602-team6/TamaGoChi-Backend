@@ -6,7 +6,7 @@ import type { Item } from '../../items/item.js';
 import type { SlotName } from '../../items/slot/slot.js';
 import { lockPlayer } from '../../lock/player-lock.js';
 import { Placement } from './placement.js';
-import type { PlacementTargetName } from './placement-target.js';
+import type { PlacementTargetName } from '../../floor/placement-target.js';
 import { Room } from './room.js';
 import type { QueryClient } from '../../../../foundation/database/query-client.js';
 

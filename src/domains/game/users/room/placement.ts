@@ -1,5 +1,5 @@
-import type { FloorGrid } from './floor-grid/floor-grid.js';
-import type { PlacementTargetName } from './placement-target.js';
+import type { FloorGrid } from '../../floor/floor-grid/floor-grid.js';
+import type { PlacementTargetName } from '../../floor/placement-target.js';
 
 const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max);
 

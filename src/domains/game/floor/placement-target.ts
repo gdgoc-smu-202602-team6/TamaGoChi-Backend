@@ -1,4 +1,4 @@
-import type { components } from '../../../../foundation/contract/openapi.js';
+import type { components } from '../../../foundation/contract/openapi.js';
 import type { FloorGrid } from './floor-grid/floor-grid.js';
 import { FreeGrid } from './floor-grid/free-grid.js';
 

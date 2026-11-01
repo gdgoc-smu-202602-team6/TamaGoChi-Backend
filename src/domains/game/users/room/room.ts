@@ -4,7 +4,7 @@ import type { Placement } from './placement.js';
 import {
   PlacementTarget,
   type PlacementTargetName,
-} from './placement-target.js';
+} from '../../floor/placement-target.js';
 import type { Id } from '../../../../foundation/id/id.js';
 
 /**

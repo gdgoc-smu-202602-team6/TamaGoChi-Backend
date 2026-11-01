@@ -1,4 +1,5 @@
 import { Controller, Delete, HttpCode, Param, Put } from '@nestjs/common';
+import { Like } from '../../../domains/game/users/likes/like.js';
 import { LikeRepository } from '../../../domains/game/users/likes/like.repository.js';
 import {
   CurrentUser,
@@ -22,10 +23,11 @@ export class LikesController {
     @Param('userId') userId: string,
   ): Promise<void> {
     const [owner] = await this.players.visible(caller, [userId]);
-    if ((await this.likes.like(owner.id, caller.id)) === 'own-room')
+    if (!Like.allowed(owner.id, caller.id))
       throw new BadRequest([
         { field: '/params/userId', message: 'not your own room' },
       ]);
+    await this.likes.like(owner.id, caller.id);
   }
 
   /** unlikeRoom */

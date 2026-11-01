@@ -1,8 +1,8 @@
-import type { FloorGrid } from '../../users/room/floor-grid/floor-grid.js';
+import type { FloorGrid } from '../../floor/floor-grid/floor-grid.js';
 import {
   PlacementTarget,
   type PlacementTargetName,
-} from '../../users/room/placement-target.js';
+} from '../../floor/placement-target.js';
 import type { ItemCategory } from '../item-category.js';
 import { Slot, type SlotName } from './slot.js';
 

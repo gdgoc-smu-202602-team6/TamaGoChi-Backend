@@ -3,7 +3,7 @@ import type { User } from '../../domains/account/users/user.js';
 import { UserRepository } from '../../domains/account/users/user.repository.js';
 import { ApplicationRepository } from '../../domains/club/clubs/applications/application.repository.js';
 import { MemberRepository } from '../../domains/club/clubs/members/member.repository.js';
-import { GuestbookRepository } from '../../domains/game/users/guestbook-entries/guestbook.repository.js';
+import { GuestbookEntryRepository } from '../../domains/game/users/guestbook-entries/guestbook-entry.repository.js';
 import { ItemRepository } from '../../domains/game/items/item.repository.js';
 import { LikeRepository } from '../../domains/game/users/likes/like.repository.js';
 import {
@@ -15,6 +15,7 @@ import type { Stats } from '../../domains/game/users/stats/stats.js';
 import { StatsService } from '../../domains/game/users/stats/stats.service.js';
 import type { AuthenticatedUser } from '../../foundation/auth/authenticated-user.js';
 import type { components } from '../../foundation/contract/openapi.js';
+import type { Id } from '../../foundation/id/id.js';
 import { NotFound } from '../../foundation/problem/problems/not-found.js';
 import { resolveMe } from '../me.js';
 
@@ -33,7 +34,7 @@ export class PlayerViews {
     private readonly items: ItemRepository,
     private readonly rooms: RoomRepository,
     private readonly likes: LikeRepository,
-    private readonly guestbook: GuestbookRepository,
+    private readonly guestbook: GuestbookEntryRepository,
     private readonly members: MemberRepository,
     private readonly applications: ApplicationRepository,
     private readonly statsService: StatsService,
@@ -66,15 +67,26 @@ export class PlayerViews {
     return user;
   }
 
-  /** The user's game as of `now`: the club gives the days they joined clubs, which settle with no penalty. */
+  /** The user's game as of `now`. */
   async play(user: User, now: Date): Promise<PlayNow> {
-    const joinedAt = await this.applications.approvedAt(user.id);
-    return this.progress.now(user.id, user.createdAt, joinedAt, now);
+    return this.progress.now(...(await this.history(user, now)));
   }
 
+  /** The user's stats as of `now`. */
   async stats(user: User, now: Date): Promise<Stats> {
+    return this.statsService.of(...(await this.history(user, now)));
+  }
+
+  /**
+   * What the game reads a user's days from: the account gives when they started, the club the days they joined clubs,
+   * which settle with no penalty.
+   */
+  private async history(
+    user: User,
+    now: Date,
+  ): Promise<[Id<'User'>, Date, readonly Date[], Date]> {
     const joinedAt = await this.applications.approvedAt(user.id);
-    return this.statsService.of(user.id, user.createdAt, joinedAt, now);
+    return [user.id, user.createdAt, joinedAt, now];
   }
 
   /** Rooms as `viewer` sees them; the owner also sees the count of new guestbook entries. */

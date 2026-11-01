@@ -10,17 +10,14 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import type { Club } from '../../domains/club/clubs/club.js';
+import { Club } from '../../domains/club/clubs/club.js';
 import { ClubName } from '../../domains/club/clubs/club-name.js';
 import { ClubRepository } from '../../domains/club/clubs/club.repository.js';
 import { InviteCode } from '../../domains/club/clubs/invite-code.js';
 import { Label } from '../../domains/club/label/label.js';
 import { RoleRepository } from '../../domains/club/roles/role.repository.js';
 import type { ClubAccess } from '../../domains/club/clubs/access/club-access.js';
-import {
-  CurrentClubAccess,
-  RequireClubAccess,
-} from '../../domains/club/clubs/access/club-access.guard.js';
+import { CurrentClubAccess, RequireClubAccess } from './club-access.guard.js';
 import {
   CurrentUser,
   type AuthenticatedUser,
@@ -122,12 +119,12 @@ export class ClubsController {
   ): Promise<ClubBody> {
     const club = found(await this.clubs.find(clubId));
     response.setHeader('ETag', club.etag);
-    return toBody(club, access.permissions.has('club.update'));
+    return toBody(club, access.permissions.has(Club.updatedWith));
   }
 
   /** updateClub */
   @Patch(':clubId')
-  @RequireClubAccess('club.update')
+  @RequireClubAccess(Club.updatedWith)
   async update(
     @Param('clubId') clubId: Id<'Club'>,
     @Body() body: ClubUpdateBody,
@@ -161,7 +158,7 @@ export class ClubsController {
 
   /** regenerateInviteCode */
   @Post(':clubId\\:regenerateInviteCode')
-  @RequireClubAccess('club.update')
+  @RequireClubAccess(Club.updatedWith)
   async regenerateInviteCode(
     @Param('clubId') clubId: Id<'Club'>,
     @Res({ passthrough: true }) response: Response,

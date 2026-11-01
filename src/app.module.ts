@@ -9,7 +9,7 @@ import { AccountModule } from './domains/account/account.module.js';
 import { authBasePath } from './domains/account/users/auth/auth.js';
 import { PushModule } from './domains/account/push/push.module.js';
 import { ClubModule } from './domains/club/club.module.js';
-import { ClubAccessGuard } from './domains/club/clubs/access/club-access.guard.js';
+import { ClubAccessGuard } from './api/clubs/club-access.guard.js';
 import { SessionGuard } from './foundation/auth/session.guard.js';
 import { ConfigModule } from './foundation/config/config.module.js';
 import { ContractModule } from './foundation/contract/contract.module.js';

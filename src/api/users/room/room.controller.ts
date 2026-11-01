@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { ItemRepository } from '../../../domains/game/items/item.repository.js';
 import { OwnedItemRepository } from '../../../domains/game/users/items/owned-item.repository.js';
 import { Placement } from '../../../domains/game/users/room/placement.js';
-import type { PlacementTargetName } from '../../../domains/game/users/room/placement-target.js';
+import type { PlacementTargetName } from '../../../domains/game/floor/placement-target.js';
 import type {
   Room,
   RoomRefusal,

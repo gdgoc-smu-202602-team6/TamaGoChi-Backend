@@ -1,19 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import { asId, type Id } from '../../../../foundation/id/id.js';
-import { Like } from './like.js';
 import type { LikeTally } from './like-tally.js';
 
 @Injectable()
 export class LikeRepository {
   constructor(private readonly database: DatabaseClient) {}
 
-  /** 'own-room': nobody likes their own room. */
-  async like(
-    ownerId: Id<'User'>,
-    likerId: Id<'User'>,
-  ): Promise<'own-room' | void> {
-    if (!Like.allowed(ownerId, likerId)) return 'own-room';
+  /** Whether one may like it is Like.allowed, the caller's to check. */
+  async like(ownerId: Id<'User'>, likerId: Id<'User'>): Promise<void> {
     await this.database.userLike.upsert({
       where: { userId_likerUserId: { userId: ownerId, likerUserId: likerId } },
       create: { userId: ownerId, likerUserId: likerId },
