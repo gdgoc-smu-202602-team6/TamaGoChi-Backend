@@ -1,73 +1,56 @@
-import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { DatabaseClient } from '../src/foundation/database/database-client.js';
 import { insertClub, insertMember } from './club-fixtures.js';
-import { type SignedInUser, signUpVerifiedUser } from './sign-in.js';
-import { type CapturingAuthMailer, createTestApp } from './test-app.js';
+import { as, type SignedInUser } from './sign-in.js';
+import { TestApp } from './test-app.js';
 
 describe('guestbookEntries', () => {
-  let app: INestApplication;
-  let mailer: CapturingAuthMailer;
-  let database: DatabaseClient;
-  const emails: string[] = [];
+  const testApp = TestApp.setUp();
   const clubIds: string[] = [];
-  const server = () => app.getHttpServer();
-  const as = (user: SignedInUser) => ({
-    Authorization: `Bearer ${user.token}`,
-  });
 
-  const signUp = async (): Promise<SignedInUser & { id: string }> => {
-    const user = await signUpVerifiedUser(app, mailer);
-    emails.push(user.email);
-    const row = await database.user.findUniqueOrThrow({
-      where: { email: user.email },
-    });
-    return { ...user, id: row.id };
-  };
-
-  let host: SignedInUser & { id: string };
-  let friend: SignedInUser & { id: string };
-  let stranger: SignedInUser & { id: string };
+  let host: SignedInUser;
+  let friend: SignedInUser;
+  let stranger: SignedInUser;
   let clubId: string;
   let hostMemberId: string;
 
   beforeAll(async () => {
-    ({ app, mailer } = await createTestApp());
-    database = app.get(DatabaseClient);
     [host, friend, stranger] = await Promise.all([
-      signUp(),
-      signUp(),
-      signUp(),
+      testApp.signUp(),
+      testApp.signUp(),
+      testApp.signUp(),
     ]);
-    const club = await insertClub(database);
+    const club = await insertClub(testApp.database);
     clubId = club.clubId;
     clubIds.push(clubId);
-    hostMemberId = await insertMember(database, club, host.email, 'member');
-    await insertMember(database, club, friend.email, 'member');
+    hostMemberId = await insertMember(
+      testApp.database,
+      club,
+      host.email,
+      'member',
+    );
+    await insertMember(testApp.database, club, friend.email, 'member');
   });
 
   afterAll(async () => {
-    await database.club.deleteMany({ where: { id: { in: clubIds } } });
-    await database.user.deleteMany({ where: { email: { in: emails } } });
-    await app.close();
+    await testApp.database.club.deleteMany({ where: { id: { in: clubIds } } });
   });
 
   it('방명록은 쓰면 201, 내 방에는 400, 주인에게는 새 글로 보인다', async () => {
     const path = `/clubs/${clubId}/members/${hostMemberId}/guestbookEntries`;
 
-    const written = await request(server())
+    const written = await request(testApp.server())
       .post(path)
       .set(as(friend))
       .send({ body: '  놀러 왔어요  ' });
-    const own = await request(server())
+    const own = await request(testApp.server())
       .post(`/clubs/${clubId}/members/me/guestbookEntries`)
       .set(as(friend))
       .send({ body: '내 방' });
-    const blank = await request(server())
+    const blank = await request(testApp.server())
       .post(path)
       .set(as(friend))
       .send({ body: '   ' });
-    const mine = await request(server())
+    const mine = await request(testApp.server())
       .get('/users/me/guestbookEntries')
       .set(as(host));
 
@@ -85,21 +68,22 @@ describe('guestbookEntries', () => {
 
   it('방명록은 쓴 사람이나 주인만 지우고, 남은 403이다', async () => {
     const path = `/clubs/${clubId}/members/${hostMemberId}/guestbookEntries`;
-    const written = await request(server())
+    const written = await request(testApp.server())
       .post(path)
       .set(as(friend))
       .send({ body: '안녕' });
     const club = {
       clubId,
-      partId: (await database.clubPart.findFirstOrThrow({ where: { clubId } }))
-        .id,
+      partId: (
+        await testApp.database.clubPart.findFirstOrThrow({ where: { clubId } })
+      ).id,
     };
-    await insertMember(database, club, stranger.email, 'member');
+    await insertMember(testApp.database, club, stranger.email, 'member');
 
-    const byStranger = await request(server())
+    const byStranger = await request(testApp.server())
       .delete(`${path}/${written.body.id}`)
       .set(as(stranger));
-    const byHost = await request(server())
+    const byHost = await request(testApp.server())
       .delete(`${path}/${written.body.id}`)
       .set(as(host));
 

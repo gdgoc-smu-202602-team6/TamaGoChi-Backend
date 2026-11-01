@@ -1,20 +1,11 @@
-import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { createTestApp } from './test-app.js';
+import { TestApp } from './test-app.js';
 
 describe('health and the contract', () => {
-  let app: INestApplication;
-
-  beforeAll(async () => {
-    ({ app } = await createTestApp());
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
+  const testApp = TestApp.setUp();
 
   it('GET /health이면 200과 ok를 준다', async () => {
-    const response = await request(app.getHttpServer()).get('/health');
+    const response = await request(testApp.server()).get('/health');
 
     expect({ status: response.status, body: response.body }).toEqual({
       status: 200,
@@ -23,7 +14,7 @@ describe('health and the contract', () => {
   });
 
   it('명세에 없는 경로이면 404 Problem Details를 준다', async () => {
-    const response = await request(app.getHttpServer()).get('/no-such-path');
+    const response = await request(testApp.server()).get('/no-such-path');
 
     expect(response.status).toBe(404);
     expect(response.headers['content-type']).toMatch(
@@ -37,7 +28,7 @@ describe('health and the contract', () => {
   });
 
   it('토큰 없이 인증이 필요한 경로를 부르면 401과 WWW-Authenticate를 준다', async () => {
-    const response = await request(app.getHttpServer()).get('/users/me');
+    const response = await request(testApp.server()).get('/users/me');
 
     expect(response.status).toBe(401);
     expect(response.headers['www-authenticate']).toBe('Bearer');
@@ -48,7 +39,7 @@ describe('health and the contract', () => {
   });
 
   it('쿼리가 명세의 형식에 어긋나면 400과 필드별 오류를 준다', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .get('/clubs/not-a-uuid/notices?pageSize=1000')
       .set('Authorization', 'Bearer test');
 

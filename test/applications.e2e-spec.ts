@@ -1,14 +1,10 @@
-import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { DatabaseClient } from '../src/foundation/database/database-client.js';
 import { insertMember } from './club-fixtures.js';
-import { type SignedInUser, signUpVerifiedUser } from './sign-in.js';
-import { type CapturingAuthMailer, createTestApp } from './test-app.js';
+import { as, type SignedInUser } from './sign-in.js';
+import { TestApp } from './test-app.js';
 
 describe('applications', () => {
-  let app: INestApplication;
-  let mailer: CapturingAuthMailer;
-  let database: DatabaseClient;
+  const testApp = TestApp.setUp();
   let operator: SignedInUser;
   let member: SignedInUser;
   let applicant: SignedInUser;
@@ -17,13 +13,9 @@ describe('applications', () => {
   let secondClubId: string;
   let partId: string;
   let applicationId: string;
-  const as = (user: SignedInUser) => ({
-    Authorization: `Bearer ${user.token}`,
-  });
-  const server = () => app.getHttpServer();
 
   const createClub = async (name: string) => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .post('/clubs')
       .set(as(operator))
       .send({
@@ -31,42 +23,37 @@ describe('applications', () => {
         parts: [{ name: 'Dev', color: 'BLUE' }],
         myPartName: 'Dev',
       });
-    const part = await database.clubPart.findFirstOrThrow({
+    const part = await testApp.database.clubPart.findFirstOrThrow({
       where: { clubId: response.body.id },
     });
     return { clubId: response.body.id as string, partId: part.id };
   };
 
   beforeAll(async () => {
-    ({ app, mailer } = await createTestApp());
-    database = app.get(DatabaseClient);
     [operator, member, applicant, other] = await Promise.all([
-      signUpVerifiedUser(app, mailer),
-      signUpVerifiedUser(app, mailer),
-      signUpVerifiedUser(app, mailer, '지원자'),
-      signUpVerifiedUser(app, mailer),
+      testApp.signUp(),
+      testApp.signUp(),
+      testApp.signUp('지원자'),
+      testApp.signUp(),
     ]);
     ({ clubId, partId } = await createClub('신청'));
     secondClubId = (await createClub('두번째')).clubId;
-    await insertMember(database, { clubId, partId }, member.email, 'member');
+    await insertMember(
+      testApp.database,
+      { clubId, partId },
+      member.email,
+      'member',
+    );
   });
 
   afterAll(async () => {
-    await database.club.deleteMany({
+    await testApp.database.club.deleteMany({
       where: { id: { in: [clubId, secondClubId] } },
     });
-    await database.user.deleteMany({
-      where: {
-        email: {
-          in: [operator.email, member.email, applicant.email, other.email],
-        },
-      },
-    });
-    await app.close();
   });
 
   it('신청하면 201과 PENDING, 닉네임·이메일을 준다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .post(`/clubs/${clubId}/applications`)
       .set(as(applicant))
       .send({ partId });
@@ -85,7 +72,7 @@ describe('applications', () => {
   });
 
   it('대기 중인 신청이 있으면 409 application-pending이다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .post(`/clubs/${clubId}/applications`)
       .set(as(applicant))
       .send({ partId });
@@ -97,7 +84,7 @@ describe('applications', () => {
   });
 
   it('다른 동아리의 파트로 신청하면 400이다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .post(`/clubs/${secondClubId}/applications`)
       .set(as(applicant))
       .send({ partId });
@@ -107,10 +94,10 @@ describe('applications', () => {
   });
 
   it('운영진은 대기 목록을 보고, 권한 없는 부원은 403이다', async () => {
-    const asOperator = await request(server())
+    const asOperator = await request(testApp.server())
       .get(`/clubs/${clubId}/applications?state=PENDING`)
       .set(as(operator));
-    const asMember = await request(server())
+    const asMember = await request(testApp.server())
       .get(`/clubs/${clubId}/applications?state=PENDING`)
       .set(as(member));
 
@@ -121,10 +108,10 @@ describe('applications', () => {
   });
 
   it('신청자는 자기 신청을 보고, 권한 없는 사람에게는 404다', async () => {
-    const own = await request(server())
+    const own = await request(testApp.server())
       .get(`/clubs/${clubId}/applications/${applicationId}`)
       .set(as(applicant));
-    const notVisible = await request(server())
+    const notVisible = await request(testApp.server())
       .get(`/clubs/${clubId}/applications/${applicationId}`)
       .set(as(member));
 
@@ -132,7 +119,7 @@ describe('applications', () => {
   });
 
   it('운영진은 남의 신청을 취소할 수 없다(403)', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .delete(`/clubs/${clubId}/applications/${applicationId}`)
       .set(as(operator));
 
@@ -140,11 +127,11 @@ describe('applications', () => {
   });
 
   it('승인하면 신청자가 부원이 되고, 다시 결정하면 409 not-pending이다', async () => {
-    const approved = await request(server())
+    const approved = await request(testApp.server())
       .patch(`/clubs/${clubId}/applications/${applicationId}`)
       .set(as(operator))
       .send({ state: 'APPROVED' });
-    const again = await request(server())
+    const again = await request(testApp.server())
       .patch(`/clubs/${clubId}/applications/${applicationId}`)
       .set(as(operator))
       .send({ state: 'REJECTED' });
@@ -153,7 +140,7 @@ describe('applications', () => {
       state: 'APPROVED',
       decidedAt: expect.any(String),
     });
-    const permissions = await request(server())
+    const permissions = await request(testApp.server())
       .get(`/clubs/${clubId}/members/me/permissions`)
       .set(as(applicant));
     expect(permissions.body.items).toEqual([]);
@@ -161,7 +148,7 @@ describe('applications', () => {
   });
 
   it('부원이 되면 다시 신청할 때 409 already-member다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .post(`/clubs/${clubId}/applications`)
       .set(as(applicant))
       .send({ partId });
@@ -170,15 +157,15 @@ describe('applications', () => {
   });
 
   it('대기 중이면 본인이 취소할 수 있고, 취소하면 다시 신청할 수 있다', async () => {
-    const created = await request(server())
+    const created = await request(testApp.server())
       .post(`/clubs/${clubId}/applications`)
       .set(as(other))
       .send({ partId });
 
-    const cancelled = await request(server())
+    const cancelled = await request(testApp.server())
       .delete(`/clubs/${clubId}/applications/${created.body.id}`)
       .set(as(other));
-    const again = await request(server())
+    const again = await request(testApp.server())
       .post(`/clubs/${clubId}/applications`)
       .set(as(other))
       .send({ partId });
@@ -187,14 +174,14 @@ describe('applications', () => {
   });
 
   it('파트를 지워도 결정된 신청은 파트 없이 남는다', async () => {
-    const user = await database.user.findUniqueOrThrow({
+    const user = await testApp.database.user.findUniqueOrThrow({
       where: { email: other.email },
     });
-    const part = await request(server())
+    const part = await request(testApp.server())
       .post(`/clubs/${clubId}/parts`)
       .set(as(operator))
       .send({ name: '지울파트', color: 'GRAY' });
-    const decided = await database.clubApplication.create({
+    const decided = await testApp.database.clubApplication.create({
       data: {
         clubId,
         userId: user.id,
@@ -204,11 +191,11 @@ describe('applications', () => {
       },
     });
 
-    await request(server())
+    await request(testApp.server())
       .delete(`/clubs/${clubId}/parts/${part.body.id}`)
       .set(as(operator))
       .expect(204);
-    const after = await database.clubApplication.findUnique({
+    const after = await testApp.database.clubApplication.findUnique({
       where: { id: decided.id },
     });
 
@@ -216,16 +203,16 @@ describe('applications', () => {
   });
 
   it('거절된 신청은 결정 뒤 7일 동안만 내 신청 내역에 나온다', async () => {
-    const user = await database.user.findUniqueOrThrow({
+    const user = await testApp.database.user.findUniqueOrThrow({
       where: { email: other.email },
     });
-    const secondPart = await database.clubPart.findFirstOrThrow({
+    const secondPart = await testApp.database.clubPart.findFirstOrThrow({
       where: { clubId: secondClubId },
     });
     const daysAgo = (days: number) =>
       new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const rejected = (days: number) =>
-      database.clubApplication.create({
+      testApp.database.clubApplication.create({
         data: {
           clubId: secondClubId,
           userId: user.id,
@@ -237,7 +224,7 @@ describe('applications', () => {
     const recent = await rejected(6);
     const old = await rejected(8);
 
-    const response = await request(server())
+    const response = await request(testApp.server())
       .get('/clubs/-/applications?userId=me')
       .set(as(other));
 
@@ -247,23 +234,23 @@ describe('applications', () => {
   });
 
   it('여러 동아리에 걸친 내 신청은 페이지 토큰으로 페이지네이션하고, 다른 목록의 토큰은 400이다', async () => {
-    const secondPart = await database.clubPart.findFirstOrThrow({
+    const secondPart = await testApp.database.clubPart.findFirstOrThrow({
       where: { clubId: secondClubId },
     });
-    await request(server())
+    await request(testApp.server())
       .post(`/clubs/${secondClubId}/applications`)
       .set(as(applicant))
       .send({ partId: secondPart.id });
 
-    const first = await request(server())
+    const first = await request(testApp.server())
       .get('/clubs/-/applications?userId=me&pageSize=1')
       .set(as(applicant));
-    const second = await request(server())
+    const second = await request(testApp.server())
       .get(
         `/clubs/-/applications?userId=me&pageSize=1&pageToken=${first.body.nextPageToken}`,
       )
       .set(as(applicant));
-    const wrongList = await request(server())
+    const wrongList = await request(testApp.server())
       .get(
         `/clubs/${clubId}/applications?pageToken=${first.body.nextPageToken}`,
       )

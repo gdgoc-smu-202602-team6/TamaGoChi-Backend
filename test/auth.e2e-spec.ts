@@ -1,42 +1,34 @@
-import type { INestApplication } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
-import { DatabaseClient } from '../src/foundation/database/database-client.js';
-import { type CapturingAuthMailer, createTestApp } from './test-app.js';
+import { TestApp } from './test-app.js';
 
 describe('sign-up, sign-in and the current user', () => {
-  let app: INestApplication;
-  let mailer: CapturingAuthMailer;
+  const testApp = TestApp.setUp();
   const email = `e2e-${randomUUID()}@example.com`;
   const password = 'correct horse battery 1';
 
-  beforeAll(async () => {
-    ({ app, mailer } = await createTestApp());
-  });
-
   afterAll(async () => {
-    await app.get(DatabaseClient).user.deleteMany({ where: { email } });
-    await app.close();
+    await testApp.database.user.deleteMany({ where: { email } });
   });
 
   const signIn = () =>
-    request(app.getHttpServer())
+    request(testApp.server())
       .post('/auth/sign-in/email')
       .send({ email, password });
 
   it('가입하면 인증 메일 링크가 생긴다', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .post('/auth/sign-up/email')
       .send({ email, password, name: '  서연 ' });
 
     expect(response.status).toBe(200);
-    expect(mailer.verificationUrls.get(email)).toMatch(
+    expect(testApp.mailer.verificationUrls.get(email)).toMatch(
       /\/auth\/verify-email\?token=/,
     );
   });
 
   it('닉네임이 공백뿐이면 가입을 400으로 거절한다', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .post('/auth/sign-up/email')
       .send({ email: `blank-${email}`, password, name: '   ' });
 
@@ -44,7 +36,7 @@ describe('sign-up, sign-in and the current user', () => {
   });
 
   it('비밀번호에 숫자가 없으면 가입을 400으로 거절한다', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .post('/auth/sign-up/email')
       .send({
         email: `weak-${email}`,
@@ -62,11 +54,11 @@ describe('sign-up, sign-in and the current user', () => {
   });
 
   it('인증한 뒤 로그인해 받은 토큰으로 /users/me를 읽는다', async () => {
-    const link = new URL(mailer.verificationUrls.get(email)!);
-    await request(app.getHttpServer()).get(`${link.pathname}${link.search}`);
+    const link = new URL(testApp.mailer.verificationUrls.get(email)!);
+    await request(testApp.server()).get(`${link.pathname}${link.search}`);
     const token = (await signIn()).headers['set-auth-token'];
 
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .get('/users/me')
       .set('Authorization', `Bearer ${token}`);
 
@@ -79,21 +71,21 @@ describe('sign-up, sign-in and the current user', () => {
   });
 
   it('비밀번호를 잊으면 재설정 링크로 바꾸고, 약한 새 비밀번호는 400이다', async () => {
-    await request(app.getHttpServer())
+    await request(testApp.server())
       .post('/auth/request-password-reset')
       .send({ email })
       .expect(200);
-    const link = new URL(mailer.passwordResetUrls.get(email)!);
+    const link = new URL(testApp.mailer.passwordResetUrls.get(email)!);
     const token = link.pathname.split('/').at(-1);
     const newPassword = 'another horse 2';
 
-    const weak = await request(app.getHttpServer())
+    const weak = await request(testApp.server())
       .post('/auth/reset-password')
       .send({ token, newPassword: 'anotherhorse' });
-    const reset = await request(app.getHttpServer())
+    const reset = await request(testApp.server())
       .post('/auth/reset-password')
       .send({ token, newPassword });
-    const signedIn = await request(app.getHttpServer())
+    const signedIn = await request(testApp.server())
       .post('/auth/sign-in/email')
       .send({ email, password: newPassword });
 
@@ -103,7 +95,7 @@ describe('sign-up, sign-in and the current user', () => {
   });
 
   it('틀린 토큰이면 401 Problem을 준다', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .get('/users/me')
       .set('Authorization', 'Bearer wrong');
 

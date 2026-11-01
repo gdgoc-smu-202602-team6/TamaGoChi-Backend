@@ -1,38 +1,28 @@
-import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { NoticeDispatcher } from '../src/domains/club/clubs/notices/notice-dispatcher.js';
-import { DatabaseClient } from '../src/foundation/database/database-client.js';
 import { insertMember } from './club-fixtures.js';
-import { type SignedInUser, signUpVerifiedUser } from './sign-in.js';
-import { type CapturingAuthMailer, createTestApp } from './test-app.js';
+import { as, type SignedInUser } from './sign-in.js';
+import { TestApp } from './test-app.js';
 
 describe('notices', () => {
-  let app: INestApplication;
-  let mailer: CapturingAuthMailer;
-  let database: DatabaseClient;
+  const testApp = TestApp.setUp();
   let operator: SignedInUser;
   let member: SignedInUser;
   let clubId: string;
   let presetId: string;
-  const server = () => app.getHttpServer();
-  const as = (user: SignedInUser) => ({
-    Authorization: `Bearer ${user.token}`,
-  });
   const path = () => `/clubs/${clubId}/notices`;
   const write = (title: string, extra: object = {}) =>
-    request(server())
+    request(testApp.server())
       .post(path())
       .set(as(operator))
       .send({ categoryId: presetId, title, body: '본문', ...extra });
 
   beforeAll(async () => {
-    ({ app, mailer } = await createTestApp());
-    database = app.get(DatabaseClient);
     [operator, member] = await Promise.all([
-      signUpVerifiedUser(app, mailer),
-      signUpVerifiedUser(app, mailer),
+      testApp.signUp(),
+      testApp.signUp(),
     ]);
-    const created = await request(server())
+    const created = await request(testApp.server())
       .post('/clubs')
       .set(as(operator))
       .send({
@@ -41,33 +31,29 @@ describe('notices', () => {
         myPartName: 'Dev',
       });
     clubId = created.body.id;
-    const part = await database.clubPart.findFirstOrThrow({
+    const part = await testApp.database.clubPart.findFirstOrThrow({
       where: { clubId },
     });
     await insertMember(
-      database,
+      testApp.database,
       { clubId, partId: part.id },
       member.email,
       'member',
     );
     presetId = (
-      await database.clubNoticeCategory.findFirstOrThrow({
+      await testApp.database.clubNoticeCategory.findFirstOrThrow({
         where: { clubId, preset: true },
       })
     ).id;
   });
 
   afterAll(async () => {
-    await database.club.deleteMany({ where: { id: clubId } });
-    await database.user.deleteMany({
-      where: { email: { in: [operator.email, member.email] } },
-    });
-    await app.close();
+    await testApp.database.club.deleteMany({ where: { id: clubId } });
   });
 
   it('운영진이 쓰면 201이고, 권한 없는 부원은 403이다', async () => {
     const written = await write('첫 공지');
-    const denied = await request(server())
+    const denied = await request(testApp.server())
       .post(path())
       .set(as(member))
       .send({ categoryId: presetId, title: '몰래', body: '본문' });
@@ -84,7 +70,7 @@ describe('notices', () => {
 
   it('제목이 공백뿐이거나 다른 동아리의 분류면 400이다', async () => {
     const blank = await write('   ');
-    const foreign = await request(server())
+    const foreign = await request(testApp.server())
       .post(path())
       .set(as(operator))
       .send({
@@ -101,10 +87,10 @@ describe('notices', () => {
     const newer = await write('새 일반');
     const pinned = await write('새 고정', { pinned: true });
 
-    const first = await request(server())
+    const first = await request(testApp.server())
       .get(`${path()}?pageSize=2`)
       .set(as(member));
-    const second = await request(server())
+    const second = await request(testApp.server())
       .get(`${path()}?pageSize=2&pageToken=${first.body.nextPageToken}`)
       .set(as(member));
 
@@ -120,18 +106,18 @@ describe('notices', () => {
 
   it('읽으면 read가 true가 되고 읽지 않은 수가 준다', async () => {
     const unread = () =>
-      request(server())
+      request(testApp.server())
         .get(`${path()}?read=false&totalSize=true&pageSize=0`)
         .set(as(member));
     const notice = await write('읽을 공지');
     const before = await unread();
 
-    await request(server())
+    await request(testApp.server())
       .put(`${path()}/${notice.body.id}/reads/me`)
       .set(as(member))
       .expect(204);
     const after = await unread();
-    const read = await request(server())
+    const read = await request(testApp.server())
       .get(`${path()}/${notice.body.id}`)
       .set(as(member));
 
@@ -147,7 +133,7 @@ describe('notices', () => {
     for (let tries = 0; tries < 20 && state === 'PENDING'; tries += 1) {
       await new Promise((resolve) => setTimeout(resolve, 50));
       state = (
-        await request(server())
+        await request(testApp.server())
           .get(`${path()}/${written.body.id}`)
           .set(as(member))
       ).body.notificationState;
@@ -158,10 +144,10 @@ describe('notices', () => {
   });
 
   it('재시작 등으로 PENDING에 남은 공지는 발송을 다시 돌리면 SENT가 된다', async () => {
-    const author = await database.user.findUniqueOrThrow({
+    const author = await testApp.database.user.findUniqueOrThrow({
       where: { email: operator.email },
     });
-    const left = await database.clubNotice.create({
+    const left = await testApp.database.clubNotice.create({
       data: {
         clubId,
         categoryId: presetId,
@@ -172,12 +158,14 @@ describe('notices', () => {
       },
     });
 
-    app.get(NoticeDispatcher).sendPending();
+    testApp.app.get(NoticeDispatcher).sendPending();
     let state = 'PENDING';
     for (let tries = 0; tries < 20 && state === 'PENDING'; tries += 1) {
       await new Promise((resolve) => setTimeout(resolve, 50));
       state = (
-        await database.clubNotice.findUniqueOrThrow({ where: { id: left.id } })
+        await testApp.database.clubNotice.findUniqueOrThrow({
+          where: { id: left.id },
+        })
       ).notificationState;
     }
 
@@ -187,15 +175,15 @@ describe('notices', () => {
   it('수정은 보낸 필드만 바꾸고, 삭제하면 404가 된다', async () => {
     const notice = await write('고칠 공지');
 
-    const updated = await request(server())
+    const updated = await request(testApp.server())
       .patch(`${path()}/${notice.body.id}`)
       .set(as(operator))
       .send({ pinned: true });
-    await request(server())
+    await request(testApp.server())
       .delete(`${path()}/${notice.body.id}`)
       .set(as(operator))
       .expect(204);
-    const gone = await request(server())
+    const gone = await request(testApp.server())
       .get(`${path()}/${notice.body.id}`)
       .set(as(member));
 

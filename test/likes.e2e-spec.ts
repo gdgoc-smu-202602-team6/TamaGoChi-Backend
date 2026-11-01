@@ -1,57 +1,39 @@
-import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { DatabaseClient } from '../src/foundation/database/database-client.js';
 import { insertClub, insertMember } from './club-fixtures.js';
-import { type SignedInUser, signUpVerifiedUser } from './sign-in.js';
-import { type CapturingAuthMailer, createTestApp } from './test-app.js';
+import { as, type SignedInUser } from './sign-in.js';
+import { TestApp } from './test-app.js';
 
 describe('likes', () => {
-  let app: INestApplication;
-  let mailer: CapturingAuthMailer;
-  let database: DatabaseClient;
-  const emails: string[] = [];
+  const testApp = TestApp.setUp();
   const clubIds: string[] = [];
-  const server = () => app.getHttpServer();
-  const as = (user: SignedInUser) => ({
-    Authorization: `Bearer ${user.token}`,
-  });
 
-  const signUp = async (): Promise<SignedInUser & { id: string }> => {
-    const user = await signUpVerifiedUser(app, mailer);
-    emails.push(user.email);
-    const row = await database.user.findUniqueOrThrow({
-      where: { email: user.email },
-    });
-    return { ...user, id: row.id };
-  };
-
-  let host: SignedInUser & { id: string };
-  let friend: SignedInUser & { id: string };
+  let host: SignedInUser;
+  let friend: SignedInUser;
 
   beforeAll(async () => {
-    ({ app, mailer } = await createTestApp());
-    database = app.get(DatabaseClient);
-    [host, friend] = await Promise.all([signUp(), signUp()]);
-    const club = await insertClub(database);
+    [host, friend] = await Promise.all([testApp.signUp(), testApp.signUp()]);
+    const club = await insertClub(testApp.database);
     clubIds.push(club.clubId);
-    await insertMember(database, club, host.email, 'member');
-    await insertMember(database, club, friend.email, 'member');
+    await insertMember(testApp.database, club, host.email, 'member');
+    await insertMember(testApp.database, club, friend.email, 'member');
   });
 
   afterAll(async () => {
-    await database.club.deleteMany({ where: { id: { in: clubIds } } });
-    await database.user.deleteMany({ where: { email: { in: emails } } });
-    await app.close();
+    await testApp.database.club.deleteMany({ where: { id: { in: clubIds } } });
   });
 
   it('좋아요는 한 번만 세고, 내 방에는 400이다', async () => {
-    await request(server()).put(`/users/${host.id}/likes/me`).set(as(friend));
-    await request(server()).put(`/users/${host.id}/likes/me`).set(as(friend));
-    const own = await request(server())
+    await request(testApp.server())
+      .put(`/users/${host.id}/likes/me`)
+      .set(as(friend));
+    await request(testApp.server())
+      .put(`/users/${host.id}/likes/me`)
+      .set(as(friend));
+    const own = await request(testApp.server())
       .put(`/users/${friend.id}/likes/me`)
       .set(as(friend));
 
-    const room = await request(server())
+    const room = await request(testApp.server())
       .get(`/users/${host.id}/room`)
       .set(as(friend));
 

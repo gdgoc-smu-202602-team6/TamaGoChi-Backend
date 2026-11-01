@@ -1,45 +1,32 @@
-import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { DatabaseClient } from '../src/foundation/database/database-client.js';
 import { insertClub, insertMember } from './club-fixtures.js';
-import { type SignedInUser, signUpVerifiedUser } from './sign-in.js';
-import { type CapturingAuthMailer, createTestApp } from './test-app.js';
+import { as, type SignedInUser } from './sign-in.js';
+import { TestApp } from './test-app.js';
 
 describe('club access and roles', () => {
-  let app: INestApplication;
-  let mailer: CapturingAuthMailer;
-  let database: DatabaseClient;
+  const testApp = TestApp.setUp();
   let club: { clubId: string; partId: string };
   let operator: SignedInUser;
   let member: SignedInUser;
   let outsider: SignedInUser;
-  const as = (user: SignedInUser) => ({
-    Authorization: `Bearer ${user.token}`,
-  });
 
   beforeAll(async () => {
-    ({ app, mailer } = await createTestApp());
-    database = app.get(DatabaseClient);
     [operator, member, outsider] = await Promise.all([
-      signUpVerifiedUser(app, mailer),
-      signUpVerifiedUser(app, mailer),
-      signUpVerifiedUser(app, mailer),
+      testApp.signUp(),
+      testApp.signUp(),
+      testApp.signUp(),
     ]);
-    club = await insertClub(database);
-    await insertMember(database, club, operator.email, 'operator');
-    await insertMember(database, club, member.email, 'member');
+    club = await insertClub(testApp.database);
+    await insertMember(testApp.database, club, operator.email, 'operator');
+    await insertMember(testApp.database, club, member.email, 'member');
   });
 
   afterAll(async () => {
-    await database.club.delete({ where: { id: club.clubId } });
-    await database.user.deleteMany({
-      where: { email: { in: [operator.email, member.email, outsider.email] } },
-    });
-    await app.close();
+    await testApp.database.club.delete({ where: { id: club.clubId } });
   });
 
   it('역할 목록에 운영진(모든 권한)과 부원(권한 없음)이 있다', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .get('/roles')
       .set(as(outsider));
 
@@ -56,7 +43,7 @@ describe('club access and roles', () => {
   });
 
   it('운영진의 내 권한은 키 6개다', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .get(`/clubs/${club.clubId}/members/me/permissions`)
       .set(as(operator));
 
@@ -65,7 +52,7 @@ describe('club access and roles', () => {
   });
 
   it('부원의 내 권한은 비어 있다', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .get(`/clubs/${club.clubId}/members/me/permissions`)
       .set(as(member));
 
@@ -76,7 +63,7 @@ describe('club access and roles', () => {
   });
 
   it('부원이 아니면 그 동아리는 404다', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(testApp.server())
       .get(`/clubs/${club.clubId}/members/me/permissions`)
       .set(as(outsider));
 

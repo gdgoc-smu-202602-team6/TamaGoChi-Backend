@@ -1,40 +1,16 @@
-import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { DatabaseClient } from '../src/foundation/database/database-client.js';
 import { insertClub } from './club-fixtures.js';
-import { type SignedInUser, signUpVerifiedUser } from './sign-in.js';
-import { type CapturingAuthMailer, createTestApp } from './test-app.js';
+import { as } from './sign-in.js';
+import { TestApp } from './test-app.js';
 
 describe('/users/me', () => {
-  let app: INestApplication;
-  let mailer: CapturingAuthMailer;
-  let database: DatabaseClient;
-  const emails: string[] = [];
-
-  const signUp = async (nickname?: string): Promise<SignedInUser> => {
-    const user = await signUpVerifiedUser(app, mailer, nickname);
-    emails.push(user.email);
-    return user;
-  };
-  const as = (user: SignedInUser) => ({
-    Authorization: `Bearer ${user.token}`,
-  });
-
-  beforeAll(async () => {
-    ({ app, mailer } = await createTestApp());
-    database = app.get(DatabaseClient);
-  });
-
-  afterAll(async () => {
-    await database.user.deleteMany({ where: { email: { in: emails } } });
-    await app.close();
-  });
+  const testApp = TestApp.setUp();
 
   describe('PATCH (updateMe)', () => {
     it('닉네임 앞뒤 공백을 제거해 저장하고 수정한 계정을 준다', async () => {
-      const user = await signUp('처음');
+      const user = await testApp.signUp('처음');
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testApp.server())
         .patch('/users/me')
         .set(as(user))
         .send({ nickname: ' 바뀜 ' });
@@ -44,16 +20,14 @@ describe('/users/me', () => {
         email: user.email,
         nickname: '바뀜',
       });
-      const me = await request(app.getHttpServer())
-        .get('/users/me')
-        .set(as(user));
+      const me = await request(testApp.server()).get('/users/me').set(as(user));
       expect(me.body.nickname).toBe('바뀜');
     });
 
     it('닉네임이 11자이면 400과 필드 오류를 준다', async () => {
-      const user = await signUp();
+      const user = await testApp.signUp();
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testApp.server())
         .patch('/users/me')
         .set(as(user))
         .send({ nickname: '가나다라마바사아자차카' });
@@ -65,9 +39,9 @@ describe('/users/me', () => {
     });
 
     it('바꿀 필드가 없으면 그대로 준다', async () => {
-      const user = await signUp('그대로');
+      const user = await testApp.signUp('그대로');
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testApp.server())
         .patch('/users/me')
         .set(as(user))
         .send({});
@@ -78,54 +52,54 @@ describe('/users/me', () => {
   });
 
   const tokenOf = (token: string) =>
-    database.userDeviceToken.findUnique({ where: { token } });
+    testApp.database.userDeviceToken.findUnique({ where: { token } });
 
   describe('deviceTokens (putDeviceToken, deleteDeviceToken)', () => {
     it('같은 토큰을 두 번 넣어도 행은 하나다', async () => {
-      const user = await signUp();
+      const user = await testApp.signUp();
       const token = `fcm:${user.email}`;
 
-      const first = await request(app.getHttpServer())
+      const first = await request(testApp.server())
         .put(`/users/me/deviceTokens/${token}`)
         .set(as(user));
-      const second = await request(app.getHttpServer())
+      const second = await request(testApp.server())
         .put(`/users/me/deviceTokens/${token}`)
         .set(as(user));
 
       expect([first.status, second.status]).toEqual([204, 204]);
-      expect(await database.userDeviceToken.count({ where: { token } })).toBe(
-        1,
-      );
+      expect(
+        await testApp.database.userDeviceToken.count({ where: { token } }),
+      ).toBe(1);
     });
 
     it('다른 계정이 같은 토큰을 넣으면 그 계정으로 옮긴다', async () => {
-      const before = await signUp();
-      const after = await signUp();
+      const before = await testApp.signUp();
+      const after = await testApp.signUp();
       const token = `fcm:${before.email}:moved`;
-      await request(app.getHttpServer())
+      await request(testApp.server())
         .put(`/users/me/deviceTokens/${token}`)
         .set(as(before));
 
-      await request(app.getHttpServer())
+      await request(testApp.server())
         .put(`/users/me/deviceTokens/${token}`)
         .set(as(after));
 
       const row = await tokenOf(token);
-      const afterUser = await database.user.findUnique({
+      const afterUser = await testApp.database.user.findUnique({
         where: { email: after.email },
       });
       expect(row?.userId).toBe(afterUser?.id);
     });
 
     it('남의 토큰은 삭제하지 않는다', async () => {
-      const owner = await signUp();
-      const other = await signUp();
+      const owner = await testApp.signUp();
+      const other = await testApp.signUp();
       const token = `fcm:${owner.email}:kept`;
-      await request(app.getHttpServer())
+      await request(testApp.server())
         .put(`/users/me/deviceTokens/${token}`)
         .set(as(owner));
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testApp.server())
         .delete(`/users/me/deviceTokens/${token}`)
         .set(as(other));
 
@@ -134,13 +108,13 @@ describe('/users/me', () => {
     });
 
     it('내 토큰을 삭제하면 행이 없어진다', async () => {
-      const user = await signUp();
+      const user = await testApp.signUp();
       const token = `fcm:${user.email}:gone`;
-      await request(app.getHttpServer())
+      await request(testApp.server())
         .put(`/users/me/deviceTokens/${token}`)
         .set(as(user));
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testApp.server())
         .delete(`/users/me/deviceTokens/${token}`)
         .set(as(user));
 
@@ -151,39 +125,46 @@ describe('/users/me', () => {
 
   describe('DELETE (deleteMe)', () => {
     it('탈퇴하면 계정과 기기 토큰이 삭제되고 그 토큰은 401이 된다', async () => {
-      const user = await signUp();
+      const user = await testApp.signUp();
       const token = `fcm:${user.email}:deleted`;
-      await request(app.getHttpServer())
+      await request(testApp.server())
         .put(`/users/me/deviceTokens/${token}`)
         .set(as(user));
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testApp.server())
         .delete('/users/me')
         .set(as(user));
 
       expect(response.status).toBe(204);
       expect(
-        await database.user.findUnique({ where: { email: user.email } }),
+        await testApp.database.user.findUnique({
+          where: { email: user.email },
+        }),
       ).toBeNull();
       expect(await tokenOf(token)).toBeNull();
-      const after = await request(app.getHttpServer())
+      const after = await request(testApp.server())
         .get('/users/me')
         .set(as(user));
       expect(after.status).toBe(401);
     });
 
     it('탈퇴해도 쓴 공지와 방명록은 남고 작성자가 null이 된다', async () => {
-      const [author, host] = await Promise.all([signUp(), signUp()]);
+      const [author, host] = await Promise.all([
+        testApp.signUp(),
+        testApp.signUp(),
+      ]);
       const [authorRow, hostRow] = await Promise.all(
         [author, host].map((user) =>
-          database.user.findUniqueOrThrow({ where: { email: user.email } }),
+          testApp.database.user.findUniqueOrThrow({
+            where: { email: user.email },
+          }),
         ),
       );
-      const { clubId } = await insertClub(database);
-      const category = await database.clubNoticeCategory.create({
+      const { clubId } = await insertClub(testApp.database);
+      const category = await testApp.database.clubNoticeCategory.create({
         data: { clubId, name: '전체공지', color: 'RED', preset: true },
       });
-      const notice = await database.clubNotice.create({
+      const notice = await testApp.database.clubNotice.create({
         data: {
           clubId,
           categoryId: category.id,
@@ -193,7 +174,7 @@ describe('/users/me', () => {
           notificationState: 'NONE',
         },
       });
-      const entry = await database.userGuestbookEntry.create({
+      const entry = await testApp.database.userGuestbookEntry.create({
         data: {
           userId: hostRow.id,
           clubId,
@@ -202,13 +183,15 @@ describe('/users/me', () => {
         },
       });
 
-      await request(app.getHttpServer()).delete('/users/me').set(as(author));
+      await request(testApp.server()).delete('/users/me').set(as(author));
 
       const [noticeAfter, entryAfter] = await Promise.all([
-        database.clubNotice.findUnique({ where: { id: notice.id } }),
-        database.userGuestbookEntry.findUnique({ where: { id: entry.id } }),
+        testApp.database.clubNotice.findUnique({ where: { id: notice.id } }),
+        testApp.database.userGuestbookEntry.findUnique({
+          where: { id: entry.id },
+        }),
       ]);
-      await database.club.delete({ where: { id: clubId } });
+      await testApp.database.club.delete({ where: { id: clubId } });
       expect(noticeAfter).toMatchObject({ title: '제목', authorUserId: null });
       expect(entryAfter).toMatchObject({
         body: '놀러 왔어요',

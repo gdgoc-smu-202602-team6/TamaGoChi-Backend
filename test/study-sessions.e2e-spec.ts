@@ -1,46 +1,18 @@
-import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { DatabaseClient } from '../src/foundation/database/database-client.js';
 import { minute } from './game-fixtures.js';
-import { type SignedInUser, signUpVerifiedUser } from './sign-in.js';
-import { type CapturingAuthMailer, createTestApp } from './test-app.js';
+import { as } from './sign-in.js';
+import { TestApp } from './test-app.js';
 
 describe('studySessions', () => {
-  let app: INestApplication;
-  let mailer: CapturingAuthMailer;
-  let database: DatabaseClient;
-  const emails: string[] = [];
-  const server = () => app.getHttpServer();
-  const as = (user: SignedInUser) => ({
-    Authorization: `Bearer ${user.token}`,
-  });
-
-  const signUp = async (): Promise<SignedInUser & { id: string }> => {
-    const user = await signUpVerifiedUser(app, mailer);
-    emails.push(user.email);
-    const row = await database.user.findUniqueOrThrow({
-      where: { email: user.email },
-    });
-    return { ...user, id: row.id };
-  };
-
-  beforeAll(async () => {
-    ({ app, mailer } = await createTestApp());
-    database = app.get(DatabaseClient);
-  });
-
-  afterAll(async () => {
-    await database.user.deleteMany({ where: { email: { in: emails } } });
-    await app.close();
-  });
+  const testApp = TestApp.setUp();
 
   it('시작하면 201, 진행 중에 또 시작하면 409 session-running이다', async () => {
-    const user = await signUp();
+    const user = await testApp.signUp();
 
-    const first = await request(server())
+    const first = await request(testApp.server())
       .post('/users/me/studySessions')
       .set(as(user));
-    const second = await request(server())
+    const second = await request(testApp.server())
       .post('/users/me/studySessions')
       .set(as(user));
 
@@ -50,22 +22,22 @@ describe('studySessions', () => {
   });
 
   it('끝내면 결과를 주고, 다시 읽어도 같고, 다시 끝내면 409 session-ended다', async () => {
-    const user = await signUp();
-    const session = await database.userStudySession.create({
+    const user = await testApp.signUp();
+    const session = await testApp.database.userStudySession.create({
       data: {
         userId: user.id,
         startedAt: new Date(Date.now() - 31 * minute),
       },
     });
 
-    const ended = await request(server())
+    const ended = await request(testApp.server())
       .patch(`/users/me/studySessions/${session.id}`)
       .set(as(user))
       .send({ state: 'ENDED' });
-    const again = await request(server())
+    const again = await request(testApp.server())
       .get(`/users/me/studySessions/${session.id}`)
       .set(as(user));
-    const twice = await request(server())
+    const twice = await request(testApp.server())
       .patch(`/users/me/studySessions/${session.id}`)
       .set(as(user))
       .send({ state: 'ENDED' });
@@ -82,8 +54,8 @@ describe('studySessions', () => {
   });
 
   it('기기 시각이 시작 뒤이고 도착보다 이르면 그 시각으로 끝낸다', async () => {
-    const user = await signUp();
-    const session = await database.userStudySession.create({
+    const user = await testApp.signUp();
+    const session = await testApp.database.userStudySession.create({
       data: {
         userId: user.id,
         startedAt: new Date(Date.now() - 50 * minute),
@@ -91,7 +63,7 @@ describe('studySessions', () => {
     });
     const clientEndedAt = new Date(Date.now() - 20 * minute).toISOString();
 
-    const response = await request(server())
+    const response = await request(testApp.server())
       .patch(`/users/me/studySessions/${session.id}`)
       .set(as(user))
       .send({ state: 'ENDED', clientEndedAt });
@@ -101,18 +73,18 @@ describe('studySessions', () => {
   });
 
   it('12시간을 넘겨 남은 세션은 12시간에 끝난 것으로 보고 새로 시작할 수 있다', async () => {
-    const user = await signUp();
-    const old = await database.userStudySession.create({
+    const user = await testApp.signUp();
+    const old = await testApp.database.userStudySession.create({
       data: {
         userId: user.id,
         startedAt: new Date(Date.now() - 13 * 60 * minute),
       },
     });
 
-    const started = await request(server())
+    const started = await request(testApp.server())
       .post('/users/me/studySessions')
       .set(as(user));
-    const closed = await database.userStudySession.findUniqueOrThrow({
+    const closed = await testApp.database.userStudySession.findUniqueOrThrow({
       where: { id: old.id },
     });
 

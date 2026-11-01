@@ -1,14 +1,10 @@
-import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { DatabaseClient } from '../src/foundation/database/database-client.js';
 import { insertMember } from './club-fixtures.js';
-import { type SignedInUser, signUpVerifiedUser } from './sign-in.js';
-import { type CapturingAuthMailer, createTestApp } from './test-app.js';
+import { as, type SignedInUser } from './sign-in.js';
+import { TestApp } from './test-app.js';
 
 describe('members', () => {
-  let app: INestApplication;
-  let mailer: CapturingAuthMailer;
-  let database: DatabaseClient;
+  const testApp = TestApp.setUp();
   let operator: SignedInUser;
   let alice: SignedInUser;
   let bob: SignedInUser;
@@ -20,21 +16,15 @@ describe('members', () => {
   let aliceMemberId: string;
   let bobMemberId: string;
   let operatorMemberId: string;
-  const as = (user: SignedInUser) => ({
-    Authorization: `Bearer ${user.token}`,
-  });
-  const server = () => app.getHttpServer();
   const path = (memberId: string) => `/clubs/${clubId}/members/${memberId}`;
 
   beforeAll(async () => {
-    ({ app, mailer } = await createTestApp());
-    database = app.get(DatabaseClient);
     [operator, alice, bob] = await Promise.all([
-      signUpVerifiedUser(app, mailer, '운영자'),
-      signUpVerifiedUser(app, mailer, '앨리스'),
-      signUpVerifiedUser(app, mailer, '밥'),
+      testApp.signUp('운영자'),
+      testApp.signUp('앨리스'),
+      testApp.signUp('밥'),
     ]);
-    const created = await request(server())
+    const created = await request(testApp.server())
       .post('/clubs')
       .set(as(operator))
       .send({
@@ -47,52 +37,50 @@ describe('members', () => {
       });
     clubId = created.body.id;
     devPartId = (
-      await database.clubPart.findFirstOrThrow({
+      await testApp.database.clubPart.findFirstOrThrow({
         where: { clubId, name: 'Dev' },
       })
     ).id;
     aiPartId = (
-      await database.clubPart.findFirstOrThrow({
+      await testApp.database.clubPart.findFirstOrThrow({
         where: { clubId, name: 'AI' },
       })
     ).id;
     operatorRoleId = (
-      await database.role.findFirstOrThrow({
+      await testApp.database.role.findFirstOrThrow({
         where: { assignedOnCreate: true },
       })
     ).id;
     memberRoleId = (
-      await database.role.findFirstOrThrow({ where: { assignedOnJoin: true } })
+      await testApp.database.role.findFirstOrThrow({
+        where: { assignedOnJoin: true },
+      })
     ).id;
     aliceMemberId = await insertMember(
-      database,
+      testApp.database,
       { clubId, partId: devPartId },
       alice.email,
       'member',
     );
     bobMemberId = await insertMember(
-      database,
+      testApp.database,
       { clubId, partId: devPartId },
       bob.email,
       'member',
     );
     operatorMemberId = (
-      await database.clubMember.findFirstOrThrow({
+      await testApp.database.clubMember.findFirstOrThrow({
         where: { clubId, user: { email: operator.email } },
       })
     ).id;
   });
 
   afterAll(async () => {
-    await database.club.deleteMany({ where: { id: clubId } });
-    await database.user.deleteMany({
-      where: { email: { in: [operator.email, alice.email, bob.email] } },
-    });
-    await app.close();
+    await testApp.database.club.deleteMany({ where: { id: clubId } });
   });
 
   it('부원 목록에 닉네임이 있고, 알림 설정은 본인 항목에만 있다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .get(`/clubs/${clubId}/members`)
       .set(as(alice));
 
@@ -113,15 +101,15 @@ describe('members', () => {
   });
 
   it('파트로 거른 목록과 me 단건을 준다', async () => {
-    await request(server())
+    await request(testApp.server())
       .patch(path('me'))
       .set(as(alice))
       .send({ partId: aiPartId });
 
-    const filtered = await request(server())
+    const filtered = await request(testApp.server())
       .get(`/clubs/${clubId}/members?partId=${aiPartId}`)
       .set(as(bob));
-    const me = await request(server()).get(path('me')).set(as(alice));
+    const me = await request(testApp.server()).get(path('me')).set(as(alice));
 
     expect(filtered.body.items.map((item: { id: string }) => item.id)).toEqual([
       aliceMemberId,
@@ -134,7 +122,7 @@ describe('members', () => {
   });
 
   it('남의 파트·알림 설정을 바꾸면 403이다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .patch(path(aliceMemberId))
       .set(as(operator))
       .send({ notificationsOn: false });
@@ -143,7 +131,7 @@ describe('members', () => {
   });
 
   it('members.manage 없이 역할을 바꾸면 403이다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .patch(path(bobMemberId))
       .set(as(alice))
       .send({ roleId: operatorRoleId });
@@ -152,7 +140,7 @@ describe('members', () => {
   });
 
   it('계약에 없는 필드로는 역할을 바꿀 수 없다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .patch(path('me'))
       .set(as(bob))
       .send({ role: { connect: { id: operatorRoleId } } });
@@ -162,7 +150,7 @@ describe('members', () => {
   });
 
   it('하나뿐인 운영진이 스스로 역할을 내려놓으면 409 last-manager다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .patch(path('me'))
       .set(as(operator))
       .send({ roleId: memberRoleId });
@@ -174,8 +162,10 @@ describe('members', () => {
   });
 
   it('하나뿐인 운영진은 탈퇴(동아리)도 계정 삭제도 409 last-manager다', async () => {
-    const leave = await request(server()).delete(path('me')).set(as(operator));
-    const deleteAccount = await request(server())
+    const leave = await request(testApp.server())
+      .delete(path('me'))
+      .set(as(operator));
+    const deleteAccount = await request(testApp.server())
       .delete('/users/me')
       .set(as(operator));
 
@@ -183,12 +173,12 @@ describe('members', () => {
   });
 
   it('운영진을 하나 더 지정하면 원래 운영진이 내려놓을 수 있다', async () => {
-    const promoted = await request(server())
+    const promoted = await request(testApp.server())
       .patch(path(aliceMemberId))
       .set(as(operator))
       .send({ roleId: operatorRoleId });
 
-    const steppedDown = await request(server())
+    const steppedDown = await request(testApp.server())
       .patch(path('me'))
       .set(as(operator))
       .send({ roleId: memberRoleId });
@@ -199,22 +189,22 @@ describe('members', () => {
   });
 
   it('권한 없는 부원은 남을 강퇴할 수 없고(403), 운영진은 강퇴할 수 있다', async () => {
-    const byMember = await request(server())
+    const byMember = await request(testApp.server())
       .delete(path(bobMemberId))
       .set(as(operator));
-    const byOperator = await request(server())
+    const byOperator = await request(testApp.server())
       .delete(path(bobMemberId))
       .set(as(alice));
 
     expect([byMember.status, byOperator.status]).toEqual([403, 204]);
-    const after = await request(server())
+    const after = await request(testApp.server())
       .get(`/clubs/${clubId}/members/me/permissions`)
       .set(as(bob));
     expect(after.status).toBe(404);
   });
 
   it('부원은 스스로 탈퇴할 수 있다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .delete(path(operatorMemberId))
       .set(as(operator));
 
@@ -222,7 +212,7 @@ describe('members', () => {
   });
 
   it('여러 동아리에 걸친 내 부원 자격을 준다', async () => {
-    const response = await request(server())
+    const response = await request(testApp.server())
       .get('/clubs/-/members?userId=me')
       .set(as(alice));
 

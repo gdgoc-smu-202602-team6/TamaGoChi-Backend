@@ -1,12 +1,18 @@
 import type { INestApplication } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
-import type { CapturingAuthMailer } from './test-app.js';
+import type { CapturingAuthMailer } from './capturing-auth-mailer.js';
 
 export interface SignedInUser {
+  readonly id: string;
   readonly email: string;
   readonly token: string;
 }
+
+/** The header that sends a request as the signed-in user. */
+export const as = (user: SignedInUser) => ({
+  Authorization: `Bearer ${user.token}`,
+});
 
 /** Signs up a new user, follows the verification link and signs in. */
 export async function signUpVerifiedUser(
@@ -29,5 +35,9 @@ export async function signUpVerifiedUser(
     .send({ email, password })
     .expect(200);
 
-  return { email, token: response.headers['set-auth-token'] };
+  return {
+    id: response.body.user.id,
+    email,
+    token: response.headers['set-auth-token'],
+  };
 }
