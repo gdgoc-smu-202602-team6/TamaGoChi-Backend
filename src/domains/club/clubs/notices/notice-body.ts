@@ -1,4 +1,4 @@
-import { trimmedWithin } from '../../../foundation/text/text-length.js';
+import { trimmedWithin } from '../../../../foundation/text/text-length.js';
 
 /** A notice's text: trimmed, 1 to 2,000 grapheme clusters (N-11). */
 export class NoticeBody {

@@ -72,6 +72,15 @@ export class MemberRepository {
     );
   }
 
+  /** The users of the club's members who turned notice notifications on (M-13). */
+  async notificationRecipients(clubId: string): Promise<readonly string[]> {
+    const rows = await this.database.clubMember.findMany({
+      where: { clubId, notificationsOn: true },
+      select: { userId: true },
+    });
+    return rows.map((row) => row.userId);
+  }
+
   /**
    * Null: no such member. 'no-part', 'no-role': the part is not the club's, the role does not exist.
    * 'last-manager': the change would leave the club without anyone holding members.manage.

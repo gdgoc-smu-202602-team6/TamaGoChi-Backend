@@ -68,7 +68,7 @@ openapi.yaml       API 계약
 prisma/            Prisma 스키마(도메인마다 파일 하나), 도메인별 SQL, 시드, 릴리스 SQL, 스키마 빌드·적용 스크립트
 deploy/            EC2 배포: compose, Caddy, 배포 스크립트
 src/foundation/    foundation 계층: 설정, DB 클라이언트, 오류 응답, 계약 검증, 세션 확인
-src/domains/       도메인: account, club, game, notice
+src/domains/       도메인: account, club, game
 src/api/           컨트롤러
 ```
 

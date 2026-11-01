@@ -13,14 +13,14 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { NoticeCategoryRepository } from '../../../domains/club/notice-category/notice-category.repository.js';
-import { Notice } from '../../../domains/notice/notice/notice.js';
-import { NoticeBody } from '../../../domains/notice/notice/notice-body.js';
-import { NoticeDispatcher } from '../../../domains/notice/notice/notice-dispatcher.js';
-import { NoticeTitle } from '../../../domains/notice/notice/notice-title.js';
+import { Notice } from '../../../domains/club/clubs/notices/notice.js';
+import { NoticeBody } from '../../../domains/club/clubs/notices/notice-body.js';
+import { NoticeDispatcher } from '../../../domains/club/clubs/notices/notice-dispatcher.js';
+import { NoticeTitle } from '../../../domains/club/clubs/notices/notice-title.js';
 import {
   type NoticeFilter,
   NoticeRepository,
-} from '../../../domains/notice/notice/notice.repository.js';
+} from '../../../domains/club/clubs/notices/notice.repository.js';
 import type { ClubAccess } from '../../../foundation/access/access-resolver.js';
 import {
   CurrentClubAccess,

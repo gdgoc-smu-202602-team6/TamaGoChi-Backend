@@ -21,3 +21,10 @@ ALTER TABLE "club_applications" ADD CONSTRAINT "club_applications_part_id_check"
   CHECK ("state" <> 'PENDING' OR "part_id" IS NOT NULL);
 CREATE UNIQUE INDEX "club_applications_club_id_user_id_pending_key" ON "club_applications"("club_id", "user_id")
   WHERE "state" = 'PENDING';
+
+ALTER TABLE "club_notices" ADD CONSTRAINT "club_notices_title_check" CHECK (btrim("title") <> '');
+ALTER TABLE "club_notices" ADD CONSTRAINT "club_notices_body_check" CHECK (btrim("body") <> '');
+
+-- The notices still waiting to be sent.
+CREATE INDEX "club_notices_notification_state_pending_idx" ON "club_notices"("notification_state")
+  WHERE "notification_state" = 'PENDING';

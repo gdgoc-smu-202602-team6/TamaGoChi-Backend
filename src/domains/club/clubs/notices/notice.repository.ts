@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseClient } from '../../../foundation/database/database-client.js';
+import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import {
   afterCursor,
   type Page,
   type PageRequest,
   toPage,
-} from '../../../foundation/pagination/page.js';
+} from '../../../../foundation/pagination/page.js';
 import { Notice, type NotificationState } from './notice.js';
 import type { NoticeBody } from './notice-body.js';
 import type { NoticeTitle } from './notice-title.js';

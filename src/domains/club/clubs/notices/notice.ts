@@ -1,4 +1,4 @@
-import type { components } from '../../../foundation/contract/openapi.js';
+import type { components } from '../../../../foundation/contract/openapi.js';
 
 export type NotificationState = components['schemas']['NotificationState'];
 

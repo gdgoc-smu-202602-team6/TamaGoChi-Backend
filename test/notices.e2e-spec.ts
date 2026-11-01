@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { NoticeDispatcher } from '../src/domains/notice/notice/notice-dispatcher.js';
+import { NoticeDispatcher } from '../src/domains/club/clubs/notices/notice-dispatcher.js';
 import { DatabaseClient } from '../src/foundation/database/database-client.js';
 import { insertMember } from './club-fixtures.js';
 import { type SignedInUser, signUpVerifiedUser } from './sign-in.js';

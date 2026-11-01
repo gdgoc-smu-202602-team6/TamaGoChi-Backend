@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { AccountModule } from '../../domains/account/account.module.js';
 import { ClubModule } from '../../domains/club/club.module.js';
 import { GameModule } from '../../domains/game/game.module.js';
-import { NoticeModule } from '../../domains/notice/notice.module.js';
 import { ApplicationsController } from './applications/applications.controller.js';
 import { ClubsController } from './clubs.controller.js';
 import { GuestbookEntriesController } from './members/guestbook-entries/guestbook-entries.controller.js';
@@ -12,7 +11,7 @@ import { NoticeCategoriesController } from './notice-categories/notice-categorie
 import { PartsController } from './parts/parts.controller.js';
 
 @Module({
-  imports: [ClubModule, AccountModule, GameModule, NoticeModule],
+  imports: [ClubModule, AccountModule, GameModule],
   controllers: [
     ApplicationsController,
     ClubsController,

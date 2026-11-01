@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { NoticeAudience } from '../../../foundation/membership/notice-audience.js';
-import { PushSender } from '../../../foundation/push/push-sender.js';
+import { PushSender } from '../../../../foundation/push/push-sender.js';
+import { MemberRepository } from '../../member/member.repository.js';
 import type { Notice, NotificationState } from './notice.js';
 import { NoticeRepository } from './notice.repository.js';
 
@@ -17,7 +17,7 @@ export class NoticeDispatcher implements OnApplicationBootstrap {
   private again = false;
 
   constructor(
-    private readonly audience: NoticeAudience,
+    private readonly members: MemberRepository,
     private readonly push: PushSender,
     private readonly notices: NoticeRepository,
   ) {}
@@ -53,7 +53,7 @@ export class NoticeDispatcher implements OnApplicationBootstrap {
   private async send(notice: Notice): Promise<NotificationState> {
     try {
       const outcome = await this.push.send({
-        userIds: await this.audience.recipients(notice.clubId),
+        userIds: await this.members.notificationRecipients(notice.clubId),
         title: notice.title,
         body: notice.body,
         link: `club/${notice.clubId}/notices/${notice.id}`,
