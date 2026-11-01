@@ -5,7 +5,7 @@ info:
   description: |
     다마GoC치 백엔드 API 계약. 요구사항은 기능 명세(merged), 괄호 안은 그 기능 ID와 절 번호.
 
-    - 인증: better-auth. 로그인·가입·로그아웃·비밀번호 재설정·Google/Kakao는 better-auth 경로(`/auth/*`)를
+    - 인증: better-auth. 이메일·비밀번호 로그인·가입·로그아웃·비밀번호 재설정은 better-auth 경로(`/auth/*`)를
       그대로 쓰고 이 문서에 다시 적지 않는다. 모바일은 better-auth bearer 토큰을 `Authorization: Bearer`로 보낸다.
     - 오류 본문은 RFC 9457 Problem Details(`application/problem+json`).
     - 시각은 RFC 3339 UTC, 날짜(`YYYY-MM-DD`)는 한국 시간 오전 4시에 바뀌는 하루(7.4).
