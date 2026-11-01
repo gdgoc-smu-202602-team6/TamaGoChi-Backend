@@ -49,6 +49,7 @@ pnpm start:dev
 ```bash
 pnpm typecheck
 pnpm lint
+pnpm format:check
 pnpm depcruise
 pnpm spec:lint
 pnpm test
