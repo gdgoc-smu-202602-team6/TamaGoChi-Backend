@@ -1,12 +1,14 @@
 import { assertEnvironment } from '../../../../foundation/config/assert-environment.js';
 
-/** What better-auth signs with and the address it builds links (email verification) from. */
+/** What better-auth signs with, the address it builds links (email verification) from, and the browser origins it trusts. */
 export class AuthConfig {
   private constructor(
     /** better-auth's signing secret. */
     readonly secret: string,
     /** The server's public base URL. */
     readonly publicUrl: string,
+    /** Browser origins or origin patterns (`http://localhost:*`) trusted besides PUBLIC_URL's own. */
+    readonly trustedOrigins: readonly string[],
   ) {}
 
   static fromEnv(env: NodeJS.ProcessEnv): AuthConfig {
@@ -22,7 +24,17 @@ export class AuthConfig {
       problems.push('PUBLIC_URL must be an http(s) URL');
     }
 
+    const trustedOrigins = (env.TRUSTED_ORIGINS ?? '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin !== '');
+    if (trustedOrigins.some((origin) => !origin.includes('://'))) {
+      problems.push(
+        'TRUSTED_ORIGINS must be comma-separated origins with a scheme',
+      );
+    }
+
     assertEnvironment(problems);
-    return new AuthConfig(secret, publicUrl);
+    return new AuthConfig(secret, publicUrl, trustedOrigins);
   }
 }

@@ -37,6 +37,7 @@ export function createAuth(
     baseURL: config.publicUrl,
     basePath: authBasePath,
     secret: config.secret,
+    trustedOrigins: [...config.trustedOrigins],
     database: prismaAdapter(database, { provider: 'postgresql' }),
     emailAndPassword: {
       enabled: true,

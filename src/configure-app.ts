@@ -16,10 +16,21 @@ export const applicationOptions: NestApplicationOptions = { bodyParser: false };
 export function configureApp(
   app: NestExpressApplication,
 ): NestExpressApplication {
+  const auth = app.get<Auth>(AUTH);
+  // Browsers may call from the origins better-auth trusts, and only those; it answers preflights before any route.
+  app.enableCors({
+    origin: (origin, allow) => {
+      if (origin === undefined) return allow(null, false);
+      auth.$context.then(
+        (context) => allow(null, context.isTrustedOrigin(origin)),
+        allow,
+      );
+    },
+  });
   app
     .getHttpAdapter()
     .getInstance()
-    .all(`${authBasePath}/{*path}`, toNodeHandler(app.get<Auth>(AUTH)));
+    .all(`${authBasePath}/{*path}`, toNodeHandler(auth));
   app.useBodyParser('json');
 
   app.useGlobalFilters(new ProblemFilter(!app.get(AppConfig).production));
