@@ -19,8 +19,6 @@ services:
     environment:
       DOMAIN: ${DOMAIN:?set DOMAIN in deploy/.env}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in deploy/.env}
-      GTS_EAB_KEY_ID: ${GTS_EAB_KEY_ID:?set GTS_EAB_KEY_ID in deploy/.env}
-      GTS_EAB_MAC_KEY: ${GTS_EAB_MAC_KEY:?set GTS_EAB_MAC_KEY in deploy/.env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
