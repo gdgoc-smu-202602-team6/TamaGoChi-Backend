@@ -6,7 +6,10 @@ import { MemberRepository } from '../../domains/club/clubs/members/member.reposi
 import { GuestbookRepository } from '../../domains/game/users/guestbook-entries/guestbook.repository.js';
 import { ItemRepository } from '../../domains/game/items/item.repository.js';
 import { LikeRepository } from '../../domains/game/users/likes/like.repository.js';
-import { ProgressService } from '../../domains/game/users/progress/progress.service.js';
+import {
+  type PlayNow,
+  ProgressService,
+} from '../../domains/game/users/progress/progress.service.js';
 import { RoomRepository } from '../../domains/game/users/room/room.repository.js';
 import type { Stats } from '../../domains/game/users/stats/stats.js';
 import { StatsService } from '../../domains/game/users/stats/stats.service.js';
@@ -63,6 +66,12 @@ export class PlayerViews {
     return user;
   }
 
+  /** The user's game as of `now`: the club gives the days they joined clubs, which settle with no penalty. */
+  async play(user: User, now: Date): Promise<PlayNow> {
+    const joinedAt = await this.applications.approvedAt(user.id);
+    return this.progress.now(user.id, user.createdAt, joinedAt, now);
+  }
+
   async stats(user: User, now: Date): Promise<Stats> {
     const joinedAt = await this.applications.approvedAt(user.id);
     return this.statsService.of(user.id, user.createdAt, joinedAt, now);
@@ -83,11 +92,7 @@ export class PlayerViews {
       owners.map(async (owner) => {
         const [room, play] = await Promise.all([
           this.rooms.find(owner.id, catalog),
-          this.applications
-            .approvedAt(owner.id)
-            .then((joinedAt) =>
-              this.progress.now(owner.id, owner.createdAt, joinedAt, now),
-            ),
+          this.play(owner, now),
         ]);
         const condition = play.progress.condition;
         const tally = tallies.get(owner.id) ?? {

@@ -9,8 +9,6 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { ApplicationRepository } from '../../../domains/club/clubs/applications/application.repository.js';
-import { ProgressService } from '../../../domains/game/users/progress/progress.service.js';
 import { SessionResult } from '../../../domains/game/users/progress/session-result.js';
 import type {
   SessionState,
@@ -37,9 +35,7 @@ type SessionEndBody = components['schemas']['StudySessionEnd'];
 export class StudySessionsController {
   constructor(
     private readonly sessions: StudySessionRepository,
-    private readonly progress: ProgressService,
     private readonly players: PlayerViews,
-    private readonly applications: ApplicationRepository,
   ) {}
 
   /** startStudySession: the server's time is the start (F-02). */
@@ -110,14 +106,8 @@ export class StudySessionsController {
     now: Date,
   ): Promise<SessionBody> {
     if (session.state(now) === 'RUNNING') return toBody(session, now);
-    const [me, joinedAt] = await Promise.all([
-      this.players.me(caller),
-      this.applications.approvedAt(caller.id),
-    ]);
-    const { records } = await this.progress.now(
-      me.id,
-      me.createdAt,
-      joinedAt,
+    const { records } = await this.players.play(
+      await this.players.me(caller),
       now,
     );
     return toBody(session, now, SessionResult.of(records, session, now));
