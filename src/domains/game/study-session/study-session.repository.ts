@@ -10,7 +10,6 @@ import {
   toPage,
 } from '../../../foundation/pagination/page.js';
 import { lockPlayer } from '../lock/player-lock.js';
-import { rules } from '../rules/rules.js';
 import { type SessionState, StudySession } from './study-session.js';
 
 const sessionColumns = {
@@ -94,7 +93,7 @@ export class StudySessionRepository {
     page: PageRequest,
     query: string,
   ): Promise<Page<StudySession>> {
-    const markPassed = new Date(now.getTime() - rules.maxSessionSeconds * 1000);
+    const markPassed = StudySession.markPassedBy(now);
     const byState =
       state === 'RUNNING'
         ? { endedAt: null, startedAt: { gt: markPassed } }

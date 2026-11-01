@@ -65,7 +65,14 @@ export class PlayerViews {
       this.progress.now(user.id, user.createdAt, now),
       this.items.spent(user.id),
     ]);
-    return Stats.of(user.id, play.records, play.progress, spent, now);
+    return Stats.of(
+      user.id,
+      play.records,
+      play.progress,
+      play.earned,
+      spent,
+      now,
+    );
   }
 
   async statsBody(user: User, now: Date): Promise<StatsBody> {

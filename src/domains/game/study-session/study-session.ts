@@ -21,8 +21,16 @@ export class StudySession {
     return new Date(this.startedAt.getTime() + rules.maxSessionSeconds * 1000);
   }
 
+  /** Sessions started at or before this moment have reached their 12-hour mark by `now`. */
+  static markPassedBy(now: Date): Date {
+    return new Date(now.getTime() - rules.maxSessionSeconds * 1000);
+  }
+
+  /** RUNNING while not ended and started after `markPassedBy(now)`; the stored lists filter by the same rule. */
   state(now: Date): SessionState {
-    return this.endedAt || now >= this.maxEndAt ? 'ENDED' : 'RUNNING';
+    return !this.endedAt && this.startedAt > StudySession.markPassedBy(now)
+      ? 'RUNNING'
+      : 'ENDED';
   }
 
   /** min(endedAt ?? now, startedAt + 12 hours). */
@@ -50,6 +58,8 @@ export class StudySession {
    * arrival (it only ever lowers the reward), capped at the 12-hour mark.
    */
   endTimeFor(arrival: Date, clientEndedAt?: Date): Date {
+    // Past its mark the session is over already, so the device's time cannot move it.
+    if (this.state(arrival) === 'ENDED') return this.maxEndAt;
     const end =
       clientEndedAt && clientEndedAt > this.startedAt && clientEndedAt < arrival
         ? clientEndedAt

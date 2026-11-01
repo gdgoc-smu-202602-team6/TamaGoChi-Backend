@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
+import { Like } from './like.js';
 
 /** How many liked a room, and whether the viewer did. */
 export interface LikeTally {
@@ -7,12 +8,13 @@ export interface LikeTally {
   readonly likedByViewer: boolean;
 }
 
-/** Likes are per user, whichever club the room was seen through (9.2). Nobody likes their own room. */
 @Injectable()
 export class LikeRepository {
   constructor(private readonly database: DatabaseClient) {}
 
-  async like(ownerId: string, likerId: string): Promise<void> {
+  /** 'own-room': nobody likes their own room. */
+  async like(ownerId: string, likerId: string): Promise<'own-room' | void> {
+    if (!Like.allowed(ownerId, likerId)) return 'own-room';
     await this.database.userLike.upsert({
       where: { userId_likerUserId: { userId: ownerId, likerUserId: likerId } },
       create: { userId: ownerId, likerUserId: likerId },

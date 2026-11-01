@@ -22,11 +22,10 @@ export class LikesController {
     @Param('userId') userId: string,
   ): Promise<void> {
     const [owner] = await this.players.visible(caller, [userId]);
-    if (owner.id === caller.id)
+    if ((await this.likes.like(owner.id, caller.id)) === 'own-room')
       throw new BadRequest([
         { field: '/params/userId', message: 'not your own room' },
       ]);
-    await this.likes.like(owner.id, caller.id);
   }
 
   /** unlikeRoom */

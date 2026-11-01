@@ -48,7 +48,7 @@ export class DayRun {
       if (this.bugs > 0) step = Math.min(step, msPerBug - this.bugProgressMs);
       this.studiedMs += step;
       left -= step;
-      if (this.bugs > 0) this.fight(step);
+      if (this.bugs > 0) this.clear(step);
       if (!this.attended && this.studiedMs >= attendanceMs) this.attend();
     }
     if (this.studiedMs >= this.goalMinutes * 60 * 1000) this.goalMet = true;
@@ -93,7 +93,8 @@ export class DayRun {
     );
   }
 
-  private fight(ms: number): void {
+  /** Study against the bugs; every hour of it clears one (B-21). */
+  private clear(ms: number): void {
     this.bugProgressMs += ms;
     if (this.bugProgressMs < msPerBug) return;
     this.bugs -= 1;

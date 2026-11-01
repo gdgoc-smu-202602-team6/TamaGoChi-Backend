@@ -15,6 +15,11 @@ export class GuestbookEntry {
     readonly createdAt: Date,
   ) {}
 
+  /** Nobody writes in their own room (9.2). */
+  static mayBeWritten(ownerId: string, authorId: string): boolean {
+    return ownerId !== authorId;
+  }
+
   mayBeDeletedBy(userId: string): boolean {
     return userId === this.authorUserId || userId === this.userId;
   }

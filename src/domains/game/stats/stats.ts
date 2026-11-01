@@ -26,10 +26,12 @@ export class Stats {
     readonly dayNumber: number,
   ) {}
 
+  /** `progress` is what is shown, `earned` what counts for XP (ProgressService). */
   static of(
     userId: string,
     records: ProgressRecords,
     progress: Progress,
+    earned: Progress,
     spent: number,
     now: Date,
   ): Stats {
@@ -56,7 +58,7 @@ export class Stats {
     });
     return new Stats(
       userId,
-      Earnings.xp(paid, progress.attendedDays, progress.goalDays),
+      Earnings.xp(paid, earned.attendedDays, earned.goalDays),
       Earnings.volts(paid, spent),
       progress.today.studiedSeconds,
       progress.today.attended,

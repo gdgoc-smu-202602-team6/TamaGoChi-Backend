@@ -60,12 +60,14 @@ export class GuestbookRepository {
     return row ? toEntry(row) : null;
   }
 
+  /** 'own-room': nobody writes in their own room. */
   async write(
     userId: string,
     clubId: string,
     authorUserId: string,
     text: GuestbookText,
-  ): Promise<GuestbookEntry> {
+  ): Promise<GuestbookEntry | 'own-room'> {
+    if (!GuestbookEntry.mayBeWritten(userId, authorUserId)) return 'own-room';
     return toEntry(
       await this.database.userGuestbookEntry.create({
         data: { userId, clubId, authorUserId, body: text.value },

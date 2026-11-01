@@ -87,12 +87,12 @@ export class GuestbookEntriesController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<GuestbookEntryBody> {
     const ownerId = await this.ownerOf(clubId, memberId, access);
-    if (ownerId === caller.id)
+    const text = parseField('/body/body', () => GuestbookText.parse(body.body));
+    const entry = await this.guestbook.write(ownerId, clubId, caller.id, text);
+    if (entry === 'own-room')
       throw new BadRequest([
         { field: '/params/memberId', message: 'not your own room' },
       ]);
-    const text = parseField('/body/body', () => GuestbookText.parse(body.body));
-    const entry = await this.guestbook.write(ownerId, clubId, caller.id, text);
     response
       .status(201)
       .location(

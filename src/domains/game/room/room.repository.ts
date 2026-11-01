@@ -3,6 +3,7 @@ import { DatabaseClient } from '../../../foundation/database/database-client.js'
 import type { Prisma } from '../../../foundation/database/generated/client.js';
 import type { Item } from '../item/item.js';
 import type { PlacementTarget, SlotName } from '../item/slot.js';
+import { lockPlayer } from '../lock/player-lock.js';
 import { Placement } from './placement.js';
 import { Room } from './room.js';
 
@@ -55,36 +56,49 @@ export class RoomRepository {
     return row?.guestbookCheckedAt ?? null;
   }
 
-  /** Stores the whole room: what is equipped, the placements and the guestbook mark. */
-  async save(room: Room, client?: Prisma.TransactionClient): Promise<void> {
-    const write = async (tx: Prisma.TransactionClient) => {
-      await tx.userRoom.upsert({
-        where: { userId: room.userId },
-        create: {
-          userId: room.userId,
-          guestbookCheckedAt: room.guestbookCheckedAt,
-        },
-        update: { guestbookCheckedAt: room.guestbookCheckedAt },
-      });
-      await tx.userRoomItem.deleteMany({ where: { userId: room.userId } });
-      await tx.userRoomItem.createMany({
-        data: [...room.equipped].map(([slot, item]) => ({
-          userId: room.userId,
-          slot,
-          itemId: item.id,
-        })),
-      });
-      await tx.userRoomPlacement.deleteMany({ where: { userId: room.userId } });
-      await tx.userRoomPlacement.createMany({
-        data: room.placements.map((placement) => ({
-          userId: room.userId,
-          target: placement.target,
-          x: placement.x,
-          y: placement.y,
-        })),
-      });
-    };
-    if (client) await write(client);
-    else await this.database.$transaction(write);
+  /**
+   * Changes the room under the player lock (S-08), so a purchase equipping meanwhile is neither lost nor clashed with.
+   * `apply` gives the new room or why it is refused; a refusal stores nothing.
+   */
+  async change<R>(
+    userId: string,
+    catalog: readonly Item[],
+    apply: (room: Room) => Room | R,
+  ): Promise<Room | R> {
+    return this.database.$transaction(async (tx) => {
+      await lockPlayer(tx, userId);
+      const changed = apply(await this.find(userId, catalog, tx));
+      if (changed instanceof Room) await this.save(changed, tx);
+      return changed;
+    });
+  }
+
+  /** Stores the whole room: what is equipped, the placements and the guestbook mark. Inside the player lock. */
+  async save(room: Room, tx: Prisma.TransactionClient): Promise<void> {
+    await tx.userRoom.upsert({
+      where: { userId: room.userId },
+      create: {
+        userId: room.userId,
+        guestbookCheckedAt: room.guestbookCheckedAt,
+      },
+      update: { guestbookCheckedAt: room.guestbookCheckedAt },
+    });
+    await tx.userRoomItem.deleteMany({ where: { userId: room.userId } });
+    await tx.userRoomItem.createMany({
+      data: [...room.equipped].map(([slot, item]) => ({
+        userId: room.userId,
+        slot,
+        itemId: item.id,
+      })),
+    });
+    await tx.userRoomPlacement.deleteMany({ where: { userId: room.userId } });
+    await tx.userRoomPlacement.createMany({
+      data: room.placements.map((placement) => ({
+        userId: room.userId,
+        target: placement.target,
+        x: placement.x,
+        y: placement.y,
+      })),
+    });
   }
 }

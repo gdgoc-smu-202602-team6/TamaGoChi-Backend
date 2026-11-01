@@ -59,32 +59,36 @@ export class RoomController {
     if (userId !== 'me' && userId !== caller.id)
       throw new Forbidden('only the owner changes a room');
     const catalog = await this.items.catalog();
-    let room: Room | RoomRefusal = await this.rooms.find(caller.id, catalog);
-    if (body.equipped) {
-      const owned = await this.items.owned(caller.id, catalog);
-      room = room.withEquipped(
-        body.equipped,
-        new Map(catalog.map((item) => [item.id, item])),
-        new Set(owned.map((one) => one.item.id)),
-      );
+    const owned = body.equipped
+      ? new Set(
+          (await this.items.owned(caller.id, catalog)).map(
+            (one) => one.item.id,
+          ),
+        )
+      : new Set<string>();
+    const byId = new Map(catalog.map((item) => [item.id, item]));
+    const now = new Date();
+    const changed = await this.rooms.change(caller.id, catalog, (current) => {
+      let room: Room | RoomRefusal = current;
+      if (body.equipped) room = room.withEquipped(body.equipped, byId, owned);
+      if (body.placements && !isRefusal(room))
+        room = room.withPlacements(
+          body.placements.map(
+            (one) => new Placement(one.target as PlacementTarget, one.x, one.y),
+          ),
+        );
+      if (body.guestbookCheckedAt && !isRefusal(room)) {
+        const sent = new Date(body.guestbookCheckedAt);
+        room = room.withGuestbookCheckedAt(sent < now ? sent : now);
+      }
+      return room;
+    });
+    if (isRefusal(changed)) {
+      if (changed.kind === 'not-owned') throw new Conflict('not-owned');
+      throw new BadRequest([
+        { field: changed.field, message: changed.message },
+      ]);
     }
-    if (body.placements && !isRefusal(room)) {
-      room = room.withPlacements(
-        body.placements.map(
-          (one) => new Placement(one.target as PlacementTarget, one.x, one.y),
-        ),
-      );
-    }
-    if (isRefusal(room)) {
-      if (room.kind === 'not-owned') throw new Conflict('not-owned');
-      throw new BadRequest([{ field: room.field, message: room.message }]);
-    }
-    if (body.guestbookCheckedAt) {
-      const sent = new Date(body.guestbookCheckedAt);
-      const now = new Date();
-      room = room.withGuestbookCheckedAt(sent < now ? sent : now);
-    }
-    await this.rooms.save(room);
     const me = await this.players.me(caller);
     const [result] = await this.players.roomBodies([me], caller, new Date());
     return result;
