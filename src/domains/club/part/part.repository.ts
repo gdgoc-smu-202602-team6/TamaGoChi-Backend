@@ -19,14 +19,6 @@ export class PartRepository {
     return club ? club.parts.map(toPart) : null;
   }
 
-  async find(clubId: string, partId: string): Promise<Part | null> {
-    const row = await this.database.clubPart.findFirst({
-      where: { id: partId, clubId },
-      select: partColumns,
-    });
-    return row ? toPart(row) : null;
-  }
-
   /** 'duplicate': the club already has a part with this name. */
   async create(
     clubId: string,

@@ -16,8 +16,4 @@ export class Nickname {
   static fromStored(value: string): Nickname {
     return new Nickname(value);
   }
-
-  equals(other: Nickname): boolean {
-    return this.value === other.value;
-  }
 }

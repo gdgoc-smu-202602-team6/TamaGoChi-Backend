@@ -49,11 +49,4 @@ export class Slot {
   get target(): PlacementTarget | null {
     return placeable.has(this.name) ? (this.name as PlacementTarget) : null;
   }
-
-  /** The slots of a tab. */
-  static inCategory(category: ItemCategory): SlotName[] {
-    return (Object.keys(categories) as SlotName[]).filter(
-      (name) => categories[name] === category,
-    );
-  }
 }

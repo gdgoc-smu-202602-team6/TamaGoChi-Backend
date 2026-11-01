@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import type { User } from '../../domains/account/user/user.js';
 import { UserRepository } from '../../domains/account/user/user.repository.js';
 import { GuestbookRepository } from '../../domains/game/guestbook/guestbook.repository.js';
-import type { Item } from '../../domains/game/item/item.js';
 import { ItemRepository } from '../../domains/game/item/item.repository.js';
 import { LevelCurve } from '../../domains/game/level/level-curve.js';
 import { LikeRepository } from '../../domains/game/like/like.repository.js';
@@ -122,13 +121,9 @@ export class PlayerViews {
       }),
     );
   }
-
-  catalog(): Promise<Item[]> {
-    return this.items.catalog();
-  }
 }
 
-export function toStatsBody(stats: Stats): StatsBody {
+function toStatsBody(stats: Stats): StatsBody {
   return {
     userId: stats.userId,
     xp: stats.xp,

@@ -14,7 +14,7 @@ import { NotFound } from '../problem/problems/not-found.js';
 import { Unauthorized } from '../problem/problems/unauthorized.js';
 
 /** The API contract. Requests are checked against it before any route runs. */
-export const contractPath = join(process.cwd(), 'openapi.yaml');
+const contractPath = join(process.cwd(), 'openapi.yaml');
 
 /** The injection token for the paths the contract does not describe. */
 export const CONTRACT_IGNORED_PATHS = Symbol('ContractIgnoredPaths');

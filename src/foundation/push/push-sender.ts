@@ -8,9 +8,8 @@ export interface PushMessage {
   readonly link: string;
 }
 
-/** How a message went: devices it reached and devices it did not. */
+/** How a message went: the devices it did not reach. */
 export interface PushOutcome {
-  readonly delivered: number;
   readonly failed: number;
 }
 

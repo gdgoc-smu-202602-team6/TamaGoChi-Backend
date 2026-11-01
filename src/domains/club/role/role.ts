@@ -6,13 +6,5 @@ export class Role {
     readonly id: string,
     readonly name: string,
     readonly permissions: ReadonlySet<Permission>,
-    /** Given to whoever creates a club. */
-    readonly assignedOnCreate: boolean,
-    /** Given to an approved applicant. */
-    readonly assignedOnJoin: boolean,
   ) {}
-
-  has(permission: Permission): boolean {
-    return this.permissions.has(permission);
-  }
 }

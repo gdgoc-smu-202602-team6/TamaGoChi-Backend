@@ -30,7 +30,7 @@ export class ProgressService {
   ) {}
 
   /** `accountCreatedAt` starts the play: that day is the first day. */
-  async records(
+  private async records(
     userId: string,
     accountCreatedAt: Date,
   ): Promise<ProgressRecords> {

@@ -9,16 +9,12 @@ import { Role } from './role.js';
 export const roleColumns = {
   id: true,
   name: true,
-  assignedOnCreate: true,
-  assignedOnJoin: true,
   permissions: { select: { permission: true } },
 } as const;
 
 type RoleRow = {
   id: string;
   name: string;
-  assignedOnCreate: boolean;
-  assignedOnJoin: boolean;
   permissions: { permission: string }[];
 };
 
@@ -32,14 +28,6 @@ export class RoleRepository {
       orderBy: { name: 'asc' },
     });
     return rows.map(toRole);
-  }
-
-  async find(id: string): Promise<Role | null> {
-    const row = await this.database.role.findUnique({
-      where: { id },
-      select: roleColumns,
-    });
-    return row ? toRole(row) : null;
   }
 
   /** The role given to whoever creates a club. Seed data guarantees exactly one. */
@@ -67,11 +55,5 @@ export function toRole(row: RoleRow): Role {
   const permissions = new Set<Permission>(
     row.permissions.map((p) => p.permission).filter(isPermission),
   );
-  return new Role(
-    row.id,
-    row.name,
-    permissions,
-    row.assignedOnCreate,
-    row.assignedOnJoin,
-  );
+  return new Role(row.id, row.name, permissions);
 }

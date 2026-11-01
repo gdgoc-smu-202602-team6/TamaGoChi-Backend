@@ -14,6 +14,6 @@ export class LoggingPushSender extends PushSender {
     this.logger.log(
       `push to ${message.userIds.length} user(s): ${message.title} → ${message.link}`,
     );
-    return Promise.resolve({ delivered: message.userIds.length, failed: 0 });
+    return Promise.resolve({ failed: 0 });
   }
 }

@@ -6,4 +6,6 @@ coverage
 .git
 *.tsbuildinfo
 src/foundation/database/generated
-src/foundation/contract/openapi.d.ts
+src/foundation/contract/openapi.ts
+src/foundation/contract/openapi.json
+prisma/schema.sql
