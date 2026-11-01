@@ -3,7 +3,12 @@ import { DatabaseClient } from '../../../foundation/database/database-client.js'
 import { Nickname } from './nickname.js';
 import { User } from './user.js';
 
-const userColumns = { id: true, email: true, name: true } as const;
+const userColumns = {
+  id: true,
+  email: true,
+  name: true,
+  createdAt: true,
+} as const;
 
 @Injectable()
 export class UserRepository {
@@ -45,6 +50,16 @@ export class UserRepository {
   }
 }
 
-function toUser(row: { id: string; email: string; name: string }): User {
-  return new User(row.id, row.email, Nickname.fromStored(row.name));
+function toUser(row: {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: Date;
+}): User {
+  return new User(
+    row.id,
+    row.email,
+    Nickname.fromStored(row.name),
+    row.createdAt,
+  );
 }

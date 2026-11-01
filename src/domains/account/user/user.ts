@@ -6,5 +6,7 @@ export class User {
     readonly id: string,
     readonly email: string,
     readonly nickname: Nickname,
+    /** The day of this moment is day 1 of use (H-21). */
+    readonly createdAt: Date,
   ) {}
 }

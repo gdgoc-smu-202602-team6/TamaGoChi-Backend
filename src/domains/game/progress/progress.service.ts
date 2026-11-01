@@ -1,0 +1,58 @@
+import { Injectable } from '@nestjs/common';
+import { JoinDays } from '../../../foundation/membership/join-days.js';
+import { DailyGoalRepository } from '../daily-goal/daily-goal.repository.js';
+import { Day } from '../day/day.js';
+import { StudySessionRepository } from '../study-session/study-session.repository.js';
+import { DaySettlementRepository } from './day-settlement.repository.js';
+import { Progress, type ProgressRecords } from './progress.js';
+
+/** A user's play now, and the records it came from. */
+export interface PlayNow {
+  readonly records: ProgressRecords;
+  readonly progress: Progress;
+}
+
+/**
+ * Settles on read (api.md 1절): the play is computed from the records whenever it is read, and the days that closed
+ * since the last read are confirmed then. Nothing runs at a set time, and a day nobody looked at is still settled.
+ */
+@Injectable()
+export class ProgressService {
+  constructor(
+    private readonly sessions: StudySessionRepository,
+    private readonly goals: DailyGoalRepository,
+    private readonly settlements: DaySettlementRepository,
+    private readonly joinDays: JoinDays,
+  ) {}
+
+  /** `accountCreatedAt` starts the play: that day is the first day. */
+  async records(
+    userId: string,
+    accountCreatedAt: Date,
+  ): Promise<ProgressRecords> {
+    const [sessions, goals, settlements, joined] = await Promise.all([
+      this.sessions.all(userId),
+      this.goals.history(userId),
+      this.settlements.all(userId),
+      this.joinDays.joinedAt(userId),
+    ]);
+    return {
+      firstDay: Day.of(accountCreatedAt),
+      sessions,
+      goals,
+      joinDays: new Set(joined.map((moment) => Day.of(moment).index)),
+      settlements,
+    };
+  }
+
+  async now(
+    userId: string,
+    accountCreatedAt: Date,
+    now: Date,
+  ): Promise<PlayNow> {
+    const records = await this.records(userId, accountCreatedAt);
+    const progress = Progress.at(records, now);
+    await this.settlements.confirm(userId, progress.closed);
+    return { records, progress };
+  }
+}

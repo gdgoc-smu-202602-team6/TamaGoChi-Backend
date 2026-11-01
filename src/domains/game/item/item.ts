@@ -1,0 +1,59 @@
+import type { components } from '../../../foundation/contract/openapi.js';
+import type { Slot } from './slot.js';
+
+export type Grade = components['schemas']['Grade'];
+
+/** Why an item cannot be bought now (S-06, S-07), or that it can. */
+export type PurchaseVerdict =
+  | { readonly ok: true }
+  | {
+      readonly ok: false;
+      readonly reason: 'level-locked';
+      readonly requiredLevel: number;
+    }
+  | {
+      readonly ok: false;
+      readonly reason: 'insufficient-volts';
+      readonly shortBy: number;
+    };
+
+/** One item of the catalog (merged 8.2). Catalog data, the same for everyone; developers change it, not code. */
+export class Item {
+  constructor(
+    readonly id: string,
+    readonly code: string,
+    readonly slot: Slot,
+    readonly name: string,
+    readonly grade: Grade,
+    readonly price: number,
+    readonly minLevel: number,
+    readonly defaultOwned: boolean,
+    /** The floor is roomSize × roomSize; only a house has one. */
+    readonly roomSize: number | null,
+  ) {}
+
+  /** The level comes first, then the volts (8.3). */
+  purchaseVerdict(level: number, volts: number): PurchaseVerdict {
+    if (level < this.minLevel)
+      return {
+        ok: false,
+        reason: 'level-locked',
+        requiredLevel: this.minLevel,
+      };
+    if (volts < this.price)
+      return {
+        ok: false,
+        reason: 'insufficient-volts',
+        shortBy: this.price - volts,
+      };
+    return { ok: true };
+  }
+}
+
+/** An item the user has: bought (with the price paid then) or owned from the start. */
+export interface OwnedItem {
+  readonly item: Item;
+  readonly pricePaid: number;
+  /** Absent for an item owned from the start. */
+  readonly purchasedAt?: Date;
+}

@@ -1,0 +1,137 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { MemberRepository } from '../../../../domains/club/member/member.repository.js';
+import { GuestbookText } from '../../../../domains/game/guestbook/guestbook-text.js';
+import { GuestbookRepository } from '../../../../domains/game/guestbook/guestbook.repository.js';
+import { RoomRepository } from '../../../../domains/game/room/room.repository.js';
+import type { ClubAccess } from '../../../../foundation/access/access-resolver.js';
+import {
+  CurrentClubAccess,
+  RequireClubAccess,
+} from '../../../../foundation/access/club-access.guard.js';
+import {
+  CurrentUser,
+  type AuthenticatedUser,
+} from '../../../../foundation/auth/authenticated-user.js';
+import type { components } from '../../../../foundation/contract/openapi.js';
+import { pageRequest } from '../../../../foundation/pagination/page.js';
+import { parseField } from '../../../../foundation/problem/parse-field.js';
+import { BadRequest } from '../../../../foundation/problem/problems/bad-request.js';
+import { Forbidden } from '../../../../foundation/problem/problems/forbidden.js';
+import { NotFound } from '../../../../foundation/problem/problems/not-found.js';
+import {
+  type GuestbookEntryBody,
+  toGuestbookEntryBody,
+} from '../../../users/guestbook-entries/guestbook-entry-body.js';
+
+type GuestbookEntryPageBody = components['schemas']['GuestbookEntryPage'];
+type GuestbookEntryCreateBody = components['schemas']['GuestbookEntryCreate'];
+
+/** A member's guestbook as seen in one club: only what was written in this club (9.2). */
+@Controller('clubs/:clubId/members/:memberId/guestbookEntries')
+export class GuestbookEntriesController {
+  constructor(
+    private readonly members: MemberRepository,
+    private readonly guestbook: GuestbookRepository,
+    private readonly rooms: RoomRepository,
+  ) {}
+
+  /** listGuestbookEntries */
+  @Get()
+  @RequireClubAccess()
+  async list(
+    @CurrentUser() caller: AuthenticatedUser,
+    @CurrentClubAccess() access: ClubAccess,
+    @Param('clubId') clubId: string,
+    @Param('memberId') memberId: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('pageToken') pageToken?: string,
+  ): Promise<GuestbookEntryPageBody> {
+    const ownerId = await this.ownerOf(clubId, memberId, access);
+    const query = `guestbook:${ownerId}:${clubId}`;
+    const page = await this.guestbook.list(
+      ownerId,
+      clubId,
+      pageRequest(query, pageSize, pageToken),
+      query,
+    );
+    const checkedAt =
+      ownerId === caller.id
+        ? await this.rooms.guestbookCheckedAt(ownerId)
+        : undefined;
+    return {
+      items: page.items.map((entry) => toGuestbookEntryBody(entry, checkedAt)),
+      ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
+    };
+  }
+
+  /** createGuestbookEntry: by the caller, in this club; not in one's own room (9.2). */
+  @Post()
+  @RequireClubAccess()
+  async create(
+    @CurrentUser() caller: AuthenticatedUser,
+    @CurrentClubAccess() access: ClubAccess,
+    @Param('clubId') clubId: string,
+    @Param('memberId') memberId: string,
+    @Body() body: GuestbookEntryCreateBody,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<GuestbookEntryBody> {
+    const ownerId = await this.ownerOf(clubId, memberId, access);
+    if (ownerId === caller.id)
+      throw new BadRequest([
+        { field: '/params/memberId', message: 'not your own room' },
+      ]);
+    const text = parseField('/body/body', () => GuestbookText.parse(body.body));
+    const entry = await this.guestbook.write(ownerId, clubId, caller.id, text);
+    response
+      .status(201)
+      .location(
+        `/clubs/${clubId}/members/${memberId}/guestbookEntries/${entry.id}`,
+      );
+    return toGuestbookEntryBody(entry);
+  }
+
+  /** deleteGuestbookEntry: its author or the room's owner. */
+  @Delete(':entryId')
+  @RequireClubAccess()
+  @HttpCode(204)
+  async delete(
+    @CurrentUser() caller: AuthenticatedUser,
+    @CurrentClubAccess() access: ClubAccess,
+    @Param('clubId') clubId: string,
+    @Param('memberId') memberId: string,
+    @Param('entryId') entryId: string,
+  ): Promise<void> {
+    const ownerId = await this.ownerOf(clubId, memberId, access);
+    const entry = await this.guestbook.find(entryId);
+    if (!entry || entry.userId !== ownerId || entry.clubId !== clubId)
+      throw new NotFound('entry not found');
+    if (!entry.mayBeDeletedBy(caller.id))
+      throw new Forbidden('only its author or the room owner deletes it');
+    await this.guestbook.delete(entryId);
+  }
+
+  /** The user whose room it is; `me` is the caller's membership. */
+  private async ownerOf(
+    clubId: string,
+    memberId: string,
+    access: ClubAccess,
+  ): Promise<string> {
+    const member = await this.members.find(
+      clubId,
+      memberId === 'me' ? access.memberId : memberId,
+    );
+    if (!member) throw new NotFound('member not found');
+    return member.userId;
+  }
+}
