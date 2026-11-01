@@ -1,4 +1,4 @@
-import { InviteCode } from '../src/domains/club/club/invite-code.js';
+import { InviteCode } from '../src/domains/club/clubs/invite-code.js';
 import type { DatabaseClient } from '../src/foundation/database/database-client.js';
 
 /** A club with one part, for tests that need a club before createClub is called. */

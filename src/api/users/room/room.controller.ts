@@ -1,9 +1,12 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
-import type { PlacementTarget } from '../../../domains/game/item/slot.js';
-import { ItemRepository } from '../../../domains/game/item/item.repository.js';
-import { Placement } from '../../../domains/game/room/placement.js';
-import type { Room, RoomRefusal } from '../../../domains/game/room/room.js';
-import { RoomRepository } from '../../../domains/game/room/room.repository.js';
+import { ItemRepository } from '../../../domains/game/items/item.repository.js';
+import { Placement } from '../../../domains/game/users/room/placement.js';
+import type { PlacementTarget } from '../../../domains/game/users/room/placement-target.js';
+import type {
+  Room,
+  RoomRefusal,
+} from '../../../domains/game/users/room/room.js';
+import { RoomRepository } from '../../../domains/game/users/room/room.repository.js';
 import {
   CurrentUser,
   type AuthenticatedUser,

@@ -1,5 +1,5 @@
 import { Controller, Delete, HttpCode, Param, Put } from '@nestjs/common';
-import { LikeRepository } from '../../../domains/game/like/like.repository.js';
+import { LikeRepository } from '../../../domains/game/users/likes/like.repository.js';
 import {
   CurrentUser,
   type AuthenticatedUser,

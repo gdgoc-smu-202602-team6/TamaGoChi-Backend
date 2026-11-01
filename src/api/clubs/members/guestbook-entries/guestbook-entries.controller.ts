@@ -10,10 +10,10 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { MemberRepository } from '../../../../domains/club/member/member.repository.js';
-import { GuestbookText } from '../../../../domains/game/guestbook/guestbook-text.js';
-import { GuestbookRepository } from '../../../../domains/game/guestbook/guestbook.repository.js';
-import { RoomRepository } from '../../../../domains/game/room/room.repository.js';
+import { MemberRepository } from '../../../../domains/club/clubs/members/member.repository.js';
+import { GuestbookText } from '../../../../domains/game/users/guestbook-entries/guestbook-text.js';
+import { GuestbookRepository } from '../../../../domains/game/users/guestbook-entries/guestbook.repository.js';
+import { RoomRepository } from '../../../../domains/game/users/room/room.repository.js';
 import type { ClubAccess } from '../../../../domains/club/clubs/access/club-access.js';
 import {
   CurrentClubAccess,
@@ -35,7 +35,7 @@ import { NotFound } from '../../../../foundation/problem/problems/not-found.js';
 import {
   type GuestbookEntryBody,
   toGuestbookEntryBody,
-} from '../../../users/guestbook-entries/guestbook-entry-body.js';
+} from './guestbook-entry-body.js';
 import { resolveMe } from '../../../me.js';
 
 type GuestbookEntryPageBody = components['schemas']['GuestbookEntryPage'];

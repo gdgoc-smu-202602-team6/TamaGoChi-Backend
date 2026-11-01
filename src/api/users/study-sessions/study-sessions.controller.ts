@@ -9,14 +9,14 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { ApplicationRepository } from '../../../domains/club/application/application.repository.js';
-import { ProgressService } from '../../../domains/game/progress/progress.service.js';
-import { SessionResult } from '../../../domains/game/progress/session-result.js';
+import { ApplicationRepository } from '../../../domains/club/clubs/applications/application.repository.js';
+import { ProgressService } from '../../../domains/game/users/progress/progress.service.js';
+import { SessionResult } from '../../../domains/game/users/progress/session-result.js';
 import type {
   SessionState,
   StudySession,
-} from '../../../domains/game/study-session/study-session.js';
-import { StudySessionRepository } from '../../../domains/game/study-session/study-session.repository.js';
+} from '../../../domains/game/users/study-sessions/study-session.js';
+import { StudySessionRepository } from '../../../domains/game/users/study-sessions/study-session.repository.js';
 import {
   CurrentUser,
   type AuthenticatedUser,

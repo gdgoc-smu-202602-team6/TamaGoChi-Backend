@@ -9,7 +9,7 @@ import { Reflector } from '@nestjs/core';
 import type { AuthenticatedRequest } from '../../../../foundation/auth/authenticated-user.js';
 import { Forbidden } from '../../../../foundation/problem/problems/forbidden.js';
 import { NotFound } from '../../../../foundation/problem/problems/not-found.js';
-import { MemberRepository } from '../../member/member.repository.js';
+import { MemberRepository } from '../members/member.repository.js';
 import type { ClubAccess } from './club-access.js';
 import type { Permission } from './permission.js';
 

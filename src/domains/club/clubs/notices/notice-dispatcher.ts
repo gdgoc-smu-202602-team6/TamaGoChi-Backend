@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PushSender } from '../../../../foundation/push/push-sender.js';
-import { MemberRepository } from '../../member/member.repository.js';
+import { MemberRepository } from '../members/member.repository.js';
 import type { Notice, NotificationState } from './notice.js';
 import { NoticeRepository } from './notice.repository.js';
 

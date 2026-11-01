@@ -1,7 +1,11 @@
 import type { NestApplicationOptions } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { toNodeHandler } from 'better-auth/node';
-import { AUTH, authBasePath, type Auth } from './domains/account/auth/auth.js';
+import {
+  AUTH,
+  authBasePath,
+  type Auth,
+} from './domains/account/users/auth/auth.js';
 import { AppConfig } from './foundation/config/app-config.js';
 import { ProblemFilter } from './foundation/problem/problem.filter.js';
 

@@ -8,11 +8,11 @@ import {
   Patch,
   Put,
 } from '@nestjs/common';
-import { DeviceTokenRepository } from '../../domains/account/device-token/device-token.repository.js';
-import { Nickname } from '../../domains/account/user/nickname.js';
-import type { User } from '../../domains/account/user/user.js';
-import { UserRepository } from '../../domains/account/user/user.repository.js';
-import { MemberRepository } from '../../domains/club/member/member.repository.js';
+import { DeviceTokenRepository } from '../../domains/account/users/device-tokens/device-token.repository.js';
+import { Nickname } from '../../domains/account/users/nickname.js';
+import type { User } from '../../domains/account/users/user.js';
+import { UserRepository } from '../../domains/account/users/user.repository.js';
+import { MemberRepository } from '../../domains/club/clubs/members/member.repository.js';
 import {
   CurrentUser,
   type AuthenticatedUser,

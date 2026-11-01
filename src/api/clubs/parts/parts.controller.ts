@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { Label } from '../../../domains/club/label/label.js';
-import type { Part } from '../../../domains/club/part/part.js';
-import { PartRepository } from '../../../domains/club/part/part.repository.js';
+import type { Part } from '../../../domains/club/clubs/parts/part.js';
+import { PartRepository } from '../../../domains/club/clubs/parts/part.repository.js';
 import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
 import type { components } from '../../../foundation/contract/openapi.js';
 import { parseField } from '../../../foundation/problem/parse-field.js';

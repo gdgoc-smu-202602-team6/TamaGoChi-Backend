@@ -11,16 +11,16 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import type { User } from '../../../domains/account/user/user.js';
-import { UserRepository } from '../../../domains/account/user/user.repository.js';
+import type { User } from '../../../domains/account/users/user.js';
+import { UserRepository } from '../../../domains/account/users/user.repository.js';
 import type {
   Application,
   ApplicationState,
-} from '../../../domains/club/application/application.js';
-import { decidedMessage } from '../../../domains/club/application/application-messages.js';
-import { ApplicationRepository } from '../../../domains/club/application/application.repository.js';
-import { MemberRepository } from '../../../domains/club/member/member.repository.js';
-import { RoleRepository } from '../../../domains/club/role/role.repository.js';
+} from '../../../domains/club/clubs/applications/application.js';
+import { decidedMessage } from '../../../domains/club/clubs/applications/application-messages.js';
+import { ApplicationRepository } from '../../../domains/club/clubs/applications/application.repository.js';
+import { MemberRepository } from '../../../domains/club/clubs/members/member.repository.js';
+import { RoleRepository } from '../../../domains/club/roles/role.repository.js';
 import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
 import {
   CurrentUser,

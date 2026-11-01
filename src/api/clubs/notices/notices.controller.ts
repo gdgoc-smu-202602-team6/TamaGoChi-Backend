@@ -12,7 +12,7 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { NoticeCategoryRepository } from '../../../domains/club/notice-category/notice-category.repository.js';
+import { NoticeCategoryRepository } from '../../../domains/club/clubs/notice-categories/notice-category.repository.js';
 import { Notice } from '../../../domains/club/clubs/notices/notice.js';
 import { NoticeBody } from '../../../domains/club/clubs/notices/notice-body.js';
 import { NoticeDispatcher } from '../../../domains/club/clubs/notices/notice-dispatcher.js';

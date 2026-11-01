@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
-import { DailyGoalRepository } from './daily-goal/daily-goal.repository.js';
-import { GuestbookRepository } from './guestbook/guestbook.repository.js';
-import { ItemRepository } from './item/item.repository.js';
+import { DailyGoalRepository } from './users/daily-goals/daily-goal.repository.js';
+import { GuestbookRepository } from './users/guestbook-entries/guestbook.repository.js';
+import { ItemRepository } from './items/item.repository.js';
 import { LevelRepository } from './level/level.repository.js';
-import { PurchaseService } from './item/purchase.service.js';
-import { LikeRepository } from './like/like.repository.js';
-import { DaySettlementRepository } from './progress/day-settlement.repository.js';
-import { ProgressService } from './progress/progress.service.js';
-import { RoomRepository } from './room/room.repository.js';
-import { StatsService } from './stats/stats.service.js';
-import { StudySessionRepository } from './study-session/study-session.repository.js';
+import { PurchaseService } from './users/items/purchase.service.js';
+import { LikeRepository } from './users/likes/like.repository.js';
+import { DaySettlementRepository } from './users/progress/day-settlement.repository.js';
+import { ProgressService } from './users/progress/progress.service.js';
+import { RoomRepository } from './users/room/room.repository.js';
+import { StatsService } from './users/stats/stats.service.js';
+import { StudySessionRepository } from './users/study-sessions/study-session.repository.js';
 
 const providers = [
   DailyGoalRepository,

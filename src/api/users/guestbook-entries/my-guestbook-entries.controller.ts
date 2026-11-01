@@ -1,13 +1,13 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { GuestbookRepository } from '../../../domains/game/guestbook/guestbook.repository.js';
-import { RoomRepository } from '../../../domains/game/room/room.repository.js';
+import { GuestbookRepository } from '../../../domains/game/users/guestbook-entries/guestbook.repository.js';
+import { RoomRepository } from '../../../domains/game/users/room/room.repository.js';
 import {
   CurrentUser,
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
 import { pageBody, pageRequest } from '../../../foundation/pagination/page.js';
-import { toGuestbookEntryBody } from './guestbook-entry-body.js';
+import { toGuestbookEntryBody } from '../../clubs/members/guestbook-entries/guestbook-entry-body.js';
 
 type GuestbookEntryPageBody = components['schemas']['GuestbookEntryPage'];
 

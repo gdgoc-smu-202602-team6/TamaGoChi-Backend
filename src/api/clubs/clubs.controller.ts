@@ -10,12 +10,12 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import type { Club } from '../../domains/club/club/club.js';
-import { ClubName } from '../../domains/club/club/club-name.js';
-import { ClubRepository } from '../../domains/club/club/club.repository.js';
-import { InviteCode } from '../../domains/club/club/invite-code.js';
+import type { Club } from '../../domains/club/clubs/club.js';
+import { ClubName } from '../../domains/club/clubs/club-name.js';
+import { ClubRepository } from '../../domains/club/clubs/club.repository.js';
+import { InviteCode } from '../../domains/club/clubs/invite-code.js';
 import { Label } from '../../domains/club/label/label.js';
-import { RoleRepository } from '../../domains/club/role/role.repository.js';
+import { RoleRepository } from '../../domains/club/roles/role.repository.js';
 import type { ClubAccess } from '../../domains/club/clubs/access/club-access.js';
 import {
   CurrentClubAccess,

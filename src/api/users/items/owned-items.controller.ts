@@ -1,8 +1,8 @@
 import { Controller, Get, Param, Put, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import type { OwnedItem } from '../../../domains/game/item/item.js';
-import { ItemRepository } from '../../../domains/game/item/item.repository.js';
-import { PurchaseService } from '../../../domains/game/item/purchase.service.js';
+import type { OwnedItem } from '../../../domains/game/items/item.js';
+import { ItemRepository } from '../../../domains/game/items/item.repository.js';
+import { PurchaseService } from '../../../domains/game/users/items/purchase.service.js';
 import {
   CurrentUser,
   type AuthenticatedUser,

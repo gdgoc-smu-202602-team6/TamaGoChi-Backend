@@ -13,8 +13,8 @@ import { Label } from '../../../domains/club/label/label.js';
 import type {
   NoticeCategory,
   Subcategory,
-} from '../../../domains/club/notice-category/notice-category.js';
-import { NoticeCategoryRepository } from '../../../domains/club/notice-category/notice-category.repository.js';
+} from '../../../domains/club/clubs/notice-categories/notice-category.js';
+import { NoticeCategoryRepository } from '../../../domains/club/clubs/notice-categories/notice-category.repository.js';
 import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
 import type { components } from '../../../foundation/contract/openapi.js';
 import { parseField } from '../../../foundation/problem/parse-field.js';

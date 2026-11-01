@@ -4,14 +4,14 @@ import { DatabaseClient } from '../../foundation/database/database-client.js';
 import { SessionVerifier } from '../../foundation/auth/session-verifier.js';
 import { MailConfig } from '../../foundation/mail/mail-config.js';
 import { MailModule } from '../../foundation/mail/mail.module.js';
-import { AUTH, createAuth } from './auth/auth.js';
-import { AuthConfig } from './auth/auth-config.js';
-import { AuthMailer } from './auth/mailer/auth-mailer.js';
-import { BetterAuthSessionVerifier } from './auth/better-auth-session-verifier.js';
-import { LoggingAuthMailer } from './auth/mailer/logging-auth-mailer.js';
-import { SesAuthMailer } from './auth/mailer/ses-auth-mailer.js';
-import { DeviceTokenRepository } from './device-token/device-token.repository.js';
-import { UserRepository } from './user/user.repository.js';
+import { AUTH, createAuth } from './users/auth/auth.js';
+import { AuthConfig } from './users/auth/auth-config.js';
+import { AuthMailer } from './users/auth/mailer/auth-mailer.js';
+import { BetterAuthSessionVerifier } from './users/auth/better-auth-session-verifier.js';
+import { LoggingAuthMailer } from './users/auth/mailer/logging-auth-mailer.js';
+import { SesAuthMailer } from './users/auth/mailer/ses-auth-mailer.js';
+import { DeviceTokenRepository } from './users/device-tokens/device-token.repository.js';
+import { UserRepository } from './users/user.repository.js';
 
 @Module({
   imports: [MailModule],

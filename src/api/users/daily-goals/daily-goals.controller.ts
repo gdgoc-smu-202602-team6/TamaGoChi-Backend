@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import { DailyGoal } from '../../../domains/game/daily-goal/daily-goal.js';
-import { DailyGoalRepository } from '../../../domains/game/daily-goal/daily-goal.repository.js';
+import { DailyGoal } from '../../../domains/game/users/daily-goals/daily-goal.js';
+import { DailyGoalRepository } from '../../../domains/game/users/daily-goals/daily-goal.repository.js';
 import { Day } from '../../../domains/game/day/day.js';
 import {
   CurrentUser,

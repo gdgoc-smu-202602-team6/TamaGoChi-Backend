@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { RoleRepository } from '../../domains/club/role/role.repository.js';
+import { RoleRepository } from '../../domains/club/roles/role.repository.js';
 import type { components } from '../../foundation/contract/openapi.js';
 
 type RoleBody = components['schemas']['Role'];

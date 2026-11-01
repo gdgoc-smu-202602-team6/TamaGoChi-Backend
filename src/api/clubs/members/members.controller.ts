@@ -8,10 +8,10 @@ import {
   Patch,
   Query,
 } from '@nestjs/common';
-import type { User } from '../../../domains/account/user/user.js';
-import { UserRepository } from '../../../domains/account/user/user.repository.js';
-import type { Member } from '../../../domains/club/member/member.js';
-import { MemberRepository } from '../../../domains/club/member/member.repository.js';
+import type { User } from '../../../domains/account/users/user.js';
+import { UserRepository } from '../../../domains/account/users/user.repository.js';
+import type { Member } from '../../../domains/club/clubs/members/member.js';
+import { MemberRepository } from '../../../domains/club/clubs/members/member.repository.js';
 import type { ClubAccess } from '../../../domains/club/clubs/access/club-access.js';
 import {
   CurrentClubAccess,
