@@ -24,6 +24,8 @@ export class Stats {
     readonly absenceStreak: number,
     /** The day the account was created is day 1 (H-21). */
     readonly dayNumber: number,
+    /** The highest level reached before; the level never goes below it (6.4). */
+    readonly reachedLevel: number,
   ) {}
 
   /** `progress` is what is shown, `earned` what counts for XP (ProgressService). */
@@ -33,6 +35,7 @@ export class Stats {
     progress: Progress,
     earned: Progress,
     spent: number,
+    reachedLevel: number,
     now: Date,
   ): Stats {
     const paid = Earnings.paidMinutes(records.sessions, now);
@@ -66,11 +69,12 @@ export class Stats {
       progress.condition.attendanceStreak,
       progress.condition.absenceStreak,
       today.since(records.firstDay) + 1,
+      reachedLevel,
     );
   }
 
   get level(): number {
-    return LevelCurve.levelOf(this.xp);
+    return Math.max(LevelCurve.levelOf(this.xp), this.reachedLevel);
   }
 
   get weekSeconds(): number {

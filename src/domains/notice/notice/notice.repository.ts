@@ -191,28 +191,34 @@ export class NoticeRepository {
     return true;
   }
 
-  /** The notices waiting to be sent, oldest first. */
-  async pending(): Promise<Notice[]> {
-    const rows = await this.database.clubNotice.findMany({
-      where: { notificationState: 'PENDING' },
-      select: noticeColumns,
-      orderBy: { createdAt: 'asc' },
-    });
-    return rows.map((row) => toNotice({ ...row, reads: [] }));
-  }
-
-  /** Moves the notification state, only along an allowed transition. */
-  async moveNotification(
-    id: string,
-    from: NotificationState,
-    to: NotificationState,
-  ): Promise<void> {
-    if (!Notice.canMove(from, to))
-      throw new Error(`notification cannot go from ${from} to ${to}`);
-    await this.database.clubNotice.updateMany({
-      where: { id, notificationState: from },
-      data: { notificationState: to },
-    });
+  /**
+   * Takes the oldest pending notice no one else holds (`FOR UPDATE SKIP LOCKED`), lets `send` deliver it, and records
+   * the state it returns, all in one transaction, so two servers never send the same notice. False: none was pending.
+   */
+  async sendNextPending(
+    send: (notice: Notice) => Promise<NotificationState>,
+  ): Promise<boolean> {
+    return this.database.$transaction(
+      async (tx) => {
+        const [next] = await tx.$queryRaw<{ id: string }[]>`
+          SELECT id FROM club_notices WHERE notification_state = 'PENDING'
+          ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED`;
+        if (!next) return false;
+        const row = await tx.clubNotice.findUniqueOrThrow({
+          where: { id: next.id },
+          select: noticeColumns,
+        });
+        const to = await send(toNotice({ ...row, reads: [] }));
+        if (!Notice.canMove('PENDING', to))
+          throw new Error(`notification cannot go from PENDING to ${to}`);
+        await tx.clubNotice.update({
+          where: { id: row.id },
+          data: { notificationState: to },
+        });
+        return true;
+      },
+      { timeout: 60_000 },
+    );
   }
 
   private matching(clubId: string, memberId: string, filter: NoticeFilter) {

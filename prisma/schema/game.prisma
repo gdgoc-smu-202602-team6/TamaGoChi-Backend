@@ -27,6 +27,17 @@ model UserStudySession {
   @@map("user_study_sessions")
 }
 
+/// The highest level a user has reached. Levels come from XP, so a changed level table could lower one; this keeps
+/// the level from going down (merged 6.4).
+model UserLevel {
+  userId    String   @id @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level     Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("user_levels")
+}
+
 /// The confirmed result of a past day. Today is computed, never stored.
 model UserDaySettlement {
   userId             String   @map("user_id")

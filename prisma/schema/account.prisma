@@ -21,6 +21,7 @@ model User {
   dailyGoals       UserDailyGoal[]
   studySessions    UserStudySession[]
   daySettlements   UserDaySettlement[]
+  level            UserLevel?
   items            UserItem[]
   room             UserRoom?
   likesReceived    UserLike[]           @relation("LikedRoom")

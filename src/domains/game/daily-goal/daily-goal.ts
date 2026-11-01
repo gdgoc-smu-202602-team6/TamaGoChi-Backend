@@ -26,6 +26,11 @@ export class DailyGoalHistory {
     );
   }
 
+  /** The version that starts on `day`, if one does. */
+  startingOn(day: Day): DailyGoal | null {
+    return this.versions.find((one) => one.startOn?.equals(day)) ?? null;
+  }
+
   on(day: Day): DailyGoal {
     let found = DailyGoal.default;
     for (const version of this.versions) {

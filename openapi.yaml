@@ -483,10 +483,25 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/DailyGoalCreate' } } }
       responses:
-        '201': { description: 넣은 목표, content: { application/json: { schema: { $ref: '#/components/schemas/DailyGoal' } } } }
+        '201':
+          description: 넣은 목표
+          headers: { Location: { schema: { type: string } } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/DailyGoal' } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '409': { $ref: '#/components/responses/Conflict' }
+
+  /users/me/dailyGoals/{startOn}:
+    parameters:
+      - { name: startOn, in: path, required: true, schema: { $ref: '#/components/schemas/Date' } }
+    get:
+      tags: [game]
+      operationId: getDailyGoal
+      description: '`startOn`에 시작하는 버전 하나. 그날 시작하는 버전이 없으면 404 (그날 적용되는 목표는 `?on=`으로)'
+      responses:
+        '200': { description: 목표, content: { application/json: { schema: { $ref: '#/components/schemas/DailyGoal' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /users/me/studySessions:
     post:
@@ -1036,7 +1051,7 @@ components:
         userId: { type: string }
         nickname: { type: string }
         email: { type: string, format: email }
-        partId: { $ref: '#/components/schemas/Id' }
+        partId: { type: [string, 'null'], format: uuid, description: 'null이면 결정 뒤 지워진 파트. 대기 중인 신청은 늘 있음' }
         state: { $ref: '#/components/schemas/ApplicationState' }
         decidedAt: { $ref: '#/components/schemas/DateTime' }
         createdAt: { $ref: '#/components/schemas/DateTime' }

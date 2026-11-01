@@ -28,7 +28,7 @@ type ApplicationRow = {
   id: string;
   clubId: string;
   userId: string;
-  partId: string;
+  partId: string | null;
   state: string;
   decidedAt: Date | null;
   createdAt: Date;
@@ -148,6 +148,8 @@ export class ApplicationRepository {
         if (!row) return null;
         if (count === 0) return 'not-pending';
         if (decision === 'APPROVED') {
+          // A pending application always has its part (club_applications_part_id_check).
+          if (!row.partId) throw new Error('a pending application had no part');
           await tx.clubMember.create({
             data: {
               clubId,

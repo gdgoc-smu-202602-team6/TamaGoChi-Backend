@@ -8,7 +8,8 @@ import { LevelCurve } from '../../domains/game/level/level-curve.js';
 import { LikeRepository } from '../../domains/game/like/like.repository.js';
 import { ProgressService } from '../../domains/game/progress/progress.service.js';
 import { RoomRepository } from '../../domains/game/room/room.repository.js';
-import { Stats } from '../../domains/game/stats/stats.js';
+import type { Stats } from '../../domains/game/stats/stats.js';
+import { StatsService } from '../../domains/game/stats/stats.service.js';
 import type { AuthenticatedUser } from '../../foundation/auth/authenticated-user.js';
 import type { components } from '../../foundation/contract/openapi.js';
 import { SharedClubs } from '../../foundation/membership/shared-clubs.js';
@@ -31,6 +32,7 @@ export class PlayerViews {
     private readonly likes: LikeRepository,
     private readonly guestbook: GuestbookRepository,
     private readonly sharedClubs: SharedClubs,
+    private readonly statsService: StatsService,
   ) {}
 
   /** The users of `userIds` (`me` is the caller), in that order; 404 if any is unknown or not visible. */
@@ -60,19 +62,8 @@ export class PlayerViews {
     return user;
   }
 
-  async stats(user: User, now: Date): Promise<Stats> {
-    const [play, spent] = await Promise.all([
-      this.progress.now(user.id, user.createdAt, now),
-      this.items.spent(user.id),
-    ]);
-    return Stats.of(
-      user.id,
-      play.records,
-      play.progress,
-      play.earned,
-      spent,
-      now,
-    );
+  stats(user: User, now: Date): Promise<Stats> {
+    return this.statsService.of(user.id, user.createdAt, now);
   }
 
   async statsBody(user: User, now: Date): Promise<StatsBody> {

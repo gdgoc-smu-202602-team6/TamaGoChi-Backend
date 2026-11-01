@@ -47,8 +47,8 @@ export class PartRepository {
   }
 
   /**
-   * Deletes the part unless a member or a pending application uses it. Decided applications that named it are
-   * deleted with it. Null: no such part. 'in-use': still used.
+   * Deletes the part unless a member or a pending application uses it. Decided applications that named it stay,
+   * with no part, so their approval days remain (B-16). Null: no such part. 'in-use': still used.
    */
   async delete(
     clubId: string,
@@ -69,7 +69,6 @@ export class PartRepository {
       if (!part) return null;
       if (part._count.members > 0 || part._count.applications > 0)
         return 'in-use';
-      await tx.clubApplication.deleteMany({ where: { partId } });
       await tx.clubPart.delete({ where: { id: partId } });
       return true;
     });

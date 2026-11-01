@@ -119,8 +119,9 @@ model ClubApplication {
   club      Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
   userId    String    @map("user_id")
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  partId    String    @map("part_id") @db.Uuid
-  part      ClubPart  @relation(fields: [partId], references: [id], onDelete: Restrict)
+  /// Null once the part was deleted; only a decided application can lose its part.
+  partId    String?   @map("part_id") @db.Uuid
+  part      ClubPart? @relation(fields: [partId], references: [id], onDelete: SetNull)
   /// contract: ApplicationState
   state     String    @default("PENDING")
   decidedAt DateTime? @map("decided_at") @db.Timestamptz

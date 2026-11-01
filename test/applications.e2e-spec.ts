@@ -186,6 +186,35 @@ describe('applications', () => {
     expect([cancelled.status, again.status]).toEqual([204, 201]);
   });
 
+  it('파트를 지워도 결정된 신청은 파트 없이 남는다', async () => {
+    const user = await database.user.findUniqueOrThrow({
+      where: { email: other.email },
+    });
+    const part = await request(server())
+      .post(`/clubs/${clubId}/parts`)
+      .set(as(operator))
+      .send({ name: '지울파트', color: 'GRAY' });
+    const decided = await database.clubApplication.create({
+      data: {
+        clubId,
+        userId: user.id,
+        partId: part.body.id,
+        state: 'REJECTED',
+        decidedAt: new Date(),
+      },
+    });
+
+    await request(server())
+      .delete(`/clubs/${clubId}/parts/${part.body.id}`)
+      .set(as(operator))
+      .expect(204);
+    const after = await database.clubApplication.findUnique({
+      where: { id: decided.id },
+    });
+
+    expect(after).toMatchObject({ state: 'REJECTED', partId: null });
+  });
+
   it('거절된 신청은 결정 뒤 7일 동안만 내 신청 내역에 나온다', async () => {
     const user = await database.user.findUniqueOrThrow({
       where: { email: other.email },

@@ -17,7 +17,8 @@ export class Application {
     readonly id: string,
     readonly clubId: string,
     readonly userId: string,
-    readonly partId: string,
+    /** Null once the part was deleted after the decision; a pending application always has one. */
+    readonly partId: string | null,
     readonly state: ApplicationState,
     readonly decidedAt: Date | null,
     readonly createdAt: Date,

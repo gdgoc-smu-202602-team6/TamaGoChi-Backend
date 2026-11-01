@@ -73,6 +73,13 @@ describe('game', () => {
       expect([ok.status, todayStart.status, duplicate.status]).toEqual([
         201, 400, 409,
       ]);
+      const created = await request(server())
+        .get(ok.headers.location)
+        .set(as(user));
+      expect(created.body).toEqual({
+        startOn: today.plus(1).toString(),
+        minutes: 120,
+      });
       expect(JSON.parse(duplicate.text).type).toBe(
         '/problems/duplicate-start-on',
       );
@@ -406,6 +413,31 @@ describe('game', () => {
       expect(JSON.parse(notOwned.text).type).toBe('/problems/not-owned');
       expect(ok.status).toBe(200);
       expect(ok.body.placements).toEqual([{ target: 'DESK', x: 1.5, y: 0 }]);
+    });
+
+    it('구매와 방 저장이 동시에 와도 둘 다 성공하고 산 아이템이 장착된다', async () => {
+      const user = await signUp();
+      const [plant, house] = await Promise.all([
+        itemByCode('green_plant'),
+        itemByCode('shabby_gosiwon'),
+      ]);
+
+      const [bought, saved] = await Promise.all([
+        request(server()).put(`/users/me/items/${plant.id}`).set(as(user)),
+        request(server())
+          .patch('/users/me/room')
+          .set(as(user))
+          .send({ guestbookCheckedAt: new Date().toISOString() }),
+      ]);
+      const room = await request(server()).get('/users/me/room').set(as(user));
+
+      expect([bought.status, saved.status]).toEqual([201, 200]);
+      expect(room.body.equipped).toEqual(
+        expect.arrayContaining([
+          { slot: 'PLANT', itemId: plant.id },
+          { slot: 'ROOM', itemId: house.id },
+        ]),
+      );
     });
 
     it('남의 방은 고칠 수 없다(403)', async () => {

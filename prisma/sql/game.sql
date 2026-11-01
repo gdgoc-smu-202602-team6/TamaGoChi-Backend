@@ -6,6 +6,8 @@ ALTER TABLE "user_study_sessions" ADD CONSTRAINT "user_study_sessions_ended_at_c
 CREATE UNIQUE INDEX "user_study_sessions_user_id_running_key" ON "user_study_sessions"("user_id")
   WHERE "ended_at" IS NULL;
 
+ALTER TABLE "user_levels" ADD CONSTRAINT "user_levels_level_check" CHECK ("level" >= 1);
+
 ALTER TABLE "user_day_settlements" ADD CONSTRAINT "user_day_settlements_studied_seconds_check"
   CHECK ("studied_seconds" BETWEEN 0 AND 86400);
 ALTER TABLE "user_day_settlements" ADD CONSTRAINT "user_day_settlements_hearts_check" CHECK ("hearts" BETWEEN 0 AND 4);
