@@ -1,7 +1,7 @@
 import { InviteCode } from './invite-code.js';
 
 describe('InviteCode', () => {
-  it('만든 코드는 대문자·숫자 8자다', () => {
+  it('생성한 코드는 대문자·숫자 8자다', () => {
     expect(InviteCode.generate().value).toMatch(/^[A-Z0-9]{8}$/);
   });
 

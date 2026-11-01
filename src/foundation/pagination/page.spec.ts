@@ -8,7 +8,7 @@ const rows = [
 ];
 
 describe('pageRequest and toPage', () => {
-  it('크기보다 하나 더 읽혔으면 다음 쪽 토큰을 주고, 그 토큰은 마지막 항목 뒤에서 시작한다', () => {
+  it('페이지 크기보다 하나 더 읽혔으면 다음 페이지 토큰을 주고, 그 토큰은 마지막 항목 뒤에서 시작한다', () => {
     const first = toPage('q', pageRequest('q', 2), rows, (row) => row.id);
 
     const next = pageRequest('q', 2, first.nextPageToken);
@@ -17,7 +17,7 @@ describe('pageRequest and toPage', () => {
     expect(next.after).toEqual({ id: 'b', createdAt: rows[1].createdAt });
   });
 
-  it('남은 행이 크기 이하이면 토큰이 없다', () => {
+  it('남은 행이 페이지 크기 이하이면 토큰이 없다', () => {
     expect(
       toPage('q', pageRequest('q', 3), rows, (row) => row.id).nextPageToken,
     ).toBeUndefined();

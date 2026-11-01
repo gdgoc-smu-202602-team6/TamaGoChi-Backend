@@ -1,7 +1,7 @@
 import { textLength, trimmedWithin } from './text-length.js';
 
 describe('textLength', () => {
-  it('합성 이모지는 한 글자로 센다', () => {
+  it('이모지 ZWJ 시퀀스는 grapheme cluster 하나로 센다', () => {
     expect(textLength('가👩‍💻')).toBe(2);
   });
 
@@ -11,7 +11,7 @@ describe('textLength', () => {
 });
 
 describe('trimmedWithin', () => {
-  it('앞뒤 공백을 지운 값을 돌려준다', () => {
+  it('앞뒤 공백을 제거한 값을 돌려준다', () => {
     expect(trimmedWithin(' 가나 ', 1, 2, 'name')).toBe('가나');
   });
 

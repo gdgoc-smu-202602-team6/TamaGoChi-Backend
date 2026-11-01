@@ -1,6 +1,6 @@
 import type { Permission } from '../../../foundation/access/permission.js';
 
-/** Seed data. Code never branches on a role's name; it reads the assignment marks and the permissions. */
+/** Seed data. Code never branches on a role's name; it reads the assignment flags and the permissions. */
 export class Role {
   constructor(
     readonly id: string,

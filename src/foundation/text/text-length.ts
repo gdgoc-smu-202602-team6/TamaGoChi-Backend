@@ -7,7 +7,7 @@ export function textLength(text: string): number {
   return count;
 }
 
-/** Trims the text and checks its visible length; throws RangeError naming `label` otherwise. */
+/** Trims the text and checks its length in grapheme clusters; throws RangeError naming `label` otherwise. */
 export function trimmedWithin(
   text: string,
   min: number,

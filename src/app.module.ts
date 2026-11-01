@@ -14,7 +14,7 @@ import { DatabaseModule } from './foundation/database/database.module.js';
 import { HealthModule } from './foundation/health/health.module.js';
 
 /**
- * The composition point: wires the areas' implementations into the foundation's interfaces. Guards run in the
+ * The composition root: wires the domains' implementations into the foundation's interfaces. Guards run in the
  * order listed: who the caller is (SessionGuard), then what they may do in the club (ClubAccessGuard).
  */
 @Module({

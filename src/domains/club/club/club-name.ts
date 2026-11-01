@@ -1,6 +1,6 @@
 import { trimmedWithin } from '../../../foundation/text/text-length.js';
 
-/** A club's name: trimmed, 1 to 20 characters as a person counts them. */
+/** A club's name: trimmed, 1 to 20 grapheme clusters. */
 export class ClubName {
   private constructor(readonly value: string) {}
 

@@ -38,7 +38,7 @@ describe('/clubs', () => {
     await app.close();
   });
 
-  it('만들면 201과 Location을 주고, 만든 사람은 운영진 부원이고, 전체공지 분류가 생긴다', async () => {
+  it('생성하면 201과 Location을 주고, 생성한 사람은 운영진 부원이고, 전체공지 분류가 생긴다', async () => {
     const response = await request(server())
       .post('/clubs')
       .set(as(creator))
@@ -142,7 +142,7 @@ describe('/clubs', () => {
     expect(asCreator.headers.etag).toMatch(/^"\d+"$/);
   });
 
-  it('club.update 권한이 없는 부원이 고치면 403이다', async () => {
+  it('club.update 권한이 없는 부원이 수정하면 403이다', async () => {
     const response = await request(server())
       .patch(`/clubs/${clubId}`)
       .set(as(member))
@@ -151,7 +151,7 @@ describe('/clubs', () => {
     expect(response.status).toBe(403);
   });
 
-  it('If-Match가 지금 ETag와 다르면 412, 같으면 고치고 새 ETag를 준다', async () => {
+  it('If-Match가 현재 ETag와 다르면 412, 같으면 수정하고 새 ETag를 준다', async () => {
     const { headers } = await request(server())
       .get(`/clubs/${clubId}`)
       .set(as(creator));

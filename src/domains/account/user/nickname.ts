@@ -1,6 +1,6 @@
 import { trimmedWithin } from '../../../foundation/text/text-length.js';
 
-/** A display name: trimmed, 1 to 10 characters as a person counts them (an emoji is one). Not unique. */
+/** A display name: trimmed, 1 to 10 grapheme clusters (an emoji is one). Not unique. */
 export class Nickname {
   static readonly maxLength = 10;
 
