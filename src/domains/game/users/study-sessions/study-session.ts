@@ -1,4 +1,5 @@
 import type { components } from '../../../../foundation/contract/openapi.js';
+import type { Id } from '../../../../foundation/id/id.js';
 import type { Day } from '../../day/day.js';
 import { rules } from '../../rules/rules.js';
 
@@ -10,8 +11,8 @@ export type SessionState = components['schemas']['SessionState'];
  */
 export class StudySession {
   constructor(
-    readonly id: string,
-    readonly userId: string,
+    readonly id: Id<'StudySession'>,
+    readonly userId: Id<'User'>,
     readonly startedAt: Date,
     readonly endedAt: Date | null,
   ) {}

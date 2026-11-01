@@ -14,8 +14,8 @@ import {
 import type { Response } from 'express';
 import { NoticeCategoryRepository } from '../../../domains/club/clubs/notice-categories/notice-category.repository.js';
 import { Notice } from '../../../domains/club/clubs/notices/notice.js';
-import { NoticeBody } from '../../../domains/club/clubs/notices/notice-body.js';
 import { NoticeDispatcher } from '../../../domains/club/clubs/notices/notice-dispatcher.js';
+import { NoticeText } from '../../../domains/club/clubs/notices/notice-text.js';
 import { NoticeTitle } from '../../../domains/club/clubs/notices/notice-title.js';
 import {
   type NoticeFilter,
@@ -31,13 +31,14 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
+import { asId, type Id } from '../../../foundation/id/id.js';
 import { pageRequest } from '../../../foundation/pagination/page-request.js';
 import { pageBody } from '../../../foundation/pagination/page.js';
 import { parseField } from '../../../foundation/problem/parse-field.js';
 import { BadRequest } from '../../../foundation/problem/problems/bad-request.js';
 import { NotFound } from '../../../foundation/problem/problems/not-found.js';
 
-type NoticeBodyJson = components['schemas']['Notice'];
+type NoticeBody = components['schemas']['Notice'];
 type NoticePageBody = components['schemas']['NoticePage'];
 type NoticeCreateBody = components['schemas']['NoticeCreate'];
 type NoticeUpdateBody = components['schemas']['NoticeUpdate'];
@@ -55,9 +56,9 @@ export class NoticesController {
   @RequireClubAccess()
   async list(
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
-    @Query('categoryId') categoryId: string | undefined,
-    @Query('subcategoryId') subcategoryId: string | undefined,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Query('categoryId') categoryId: Id<'NoticeCategory'> | undefined,
+    @Query('subcategoryId') subcategoryId: Id<'Subcategory'> | undefined,
     @Query('read') read: string | boolean | undefined,
     @Query('totalSize') totalSize: string | boolean | undefined,
     @Query('pageSize') pageSize: number,
@@ -92,19 +93,21 @@ export class NoticesController {
   @RequireClubAccess('notices.write')
   async create(
     @CurrentUser() caller: AuthenticatedUser,
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Body() body: NoticeCreateBody,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<NoticeBodyJson> {
-    await this.checkCategory(clubId, body.categoryId, body.subcategoryId);
+  ): Promise<NoticeBody> {
+    const categoryId = asId<'NoticeCategory'>(body.categoryId);
+    const subcategoryId = asId<'Subcategory'>(body.subcategoryId);
+    await this.checkCategory(clubId, categoryId, subcategoryId);
     const notice = await this.notices.create(
       clubId,
       caller.id,
       {
-        categoryId: body.categoryId,
-        subcategoryId: body.subcategoryId ?? null,
+        categoryId,
+        subcategoryId: subcategoryId ?? null,
         title: parseField('/body/title', () => NoticeTitle.parse(body.title)),
-        body: parseField('/body/body', () => NoticeBody.parse(body.body)),
+        body: parseField('/body/body', () => NoticeText.parse(body.body)),
         pinned: body.pinned ?? false,
       },
       Notice.initialState(body.notify ?? false),
@@ -119,9 +122,9 @@ export class NoticesController {
   @RequireClubAccess()
   async get(
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
-    @Param('noticeId') noticeId: string,
-  ): Promise<NoticeBodyJson> {
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('noticeId') noticeId: Id<'Notice'>,
+  ): Promise<NoticeBody> {
     const notice = await this.notices.find(clubId, noticeId, access.memberId);
     if (!notice) throw new NotFound('notice not found');
     return toBody(notice);
@@ -132,15 +135,15 @@ export class NoticesController {
   @RequireClubAccess('notices.write')
   async update(
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
-    @Param('noticeId') noticeId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('noticeId') noticeId: Id<'Notice'>,
     @Body() body: NoticeUpdateBody,
-  ): Promise<NoticeBodyJson> {
+  ): Promise<NoticeBody> {
     const current = await this.notices.find(clubId, noticeId, access.memberId);
     if (!current) throw new NotFound('notice not found');
     const { categoryId, subcategoryId } = current.reclassified(
-      body.categoryId,
-      body.subcategoryId,
+      asId<'NoticeCategory'>(body.categoryId),
+      asId<'Subcategory'>(body.subcategoryId),
     );
     await this.checkCategory(clubId, categoryId, subcategoryId ?? undefined);
     const { title, body: text, pinned } = body;
@@ -155,7 +158,7 @@ export class NoticesController {
           ? { title: parseField('/body/title', () => NoticeTitle.parse(title)) }
           : {}),
         ...(text !== undefined
-          ? { body: parseField('/body/body', () => NoticeBody.parse(text)) }
+          ? { body: parseField('/body/body', () => NoticeText.parse(text)) }
           : {}),
         ...(pinned !== undefined ? { pinned } : {}),
       },
@@ -169,8 +172,8 @@ export class NoticesController {
   @RequireClubAccess('notices.write')
   @HttpCode(204)
   async delete(
-    @Param('clubId') clubId: string,
-    @Param('noticeId') noticeId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('noticeId') noticeId: Id<'Notice'>,
   ): Promise<void> {
     if (!(await this.notices.delete(clubId, noticeId)))
       throw new NotFound('notice not found');
@@ -182,8 +185,8 @@ export class NoticesController {
   @HttpCode(204)
   async markRead(
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
-    @Param('noticeId') noticeId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('noticeId') noticeId: Id<'Notice'>,
   ): Promise<void> {
     if (!(await this.notices.markRead(clubId, noticeId, access.memberId)))
       throw new NotFound('notice not found');
@@ -191,9 +194,9 @@ export class NoticesController {
 
   /** The category must be the club's, and the subcategory that category's (N-09, N-10). */
   private async checkCategory(
-    clubId: string,
-    categoryId: string,
-    subcategoryId: string | undefined,
+    clubId: Id<'Club'>,
+    categoryId: Id<'NoticeCategory'>,
+    subcategoryId: Id<'Subcategory'> | undefined,
   ): Promise<void> {
     const category = (await this.categories.list(clubId)).find(
       (one) => one.id === categoryId,
@@ -212,7 +215,7 @@ export class NoticesController {
   }
 }
 
-function toBody(notice: Notice): NoticeBodyJson {
+function toBody(notice: Notice): NoticeBody {
   return {
     id: notice.id,
     categoryId: notice.categoryId,

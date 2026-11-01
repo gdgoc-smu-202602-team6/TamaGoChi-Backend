@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import { orOnUniqueViolation } from '../../../../foundation/database/database-errors.js';
+import type { Id } from '../../../../foundation/id/id.js';
 import { Day } from '../../day/day.js';
 import { DailyGoal } from './daily-goal.js';
 import { DailyGoalHistory } from './daily-goal-history.js';
@@ -9,7 +10,7 @@ import { DailyGoalHistory } from './daily-goal-history.js';
 export class DailyGoalRepository {
   constructor(private readonly database: DatabaseClient) {}
 
-  async history(userId: string): Promise<DailyGoalHistory> {
+  async history(userId: Id<'User'>): Promise<DailyGoalHistory> {
     const rows = await this.database.userDailyGoal.findMany({
       where: { userId },
       select: { startOn: true, minutes: true },
@@ -21,7 +22,7 @@ export class DailyGoalRepository {
 
   /** 'duplicate': a version already starts on that day. */
   async create(
-    userId: string,
+    userId: Id<'User'>,
     startOn: Day,
     minutes: number,
   ): Promise<DailyGoal | 'duplicate'> {

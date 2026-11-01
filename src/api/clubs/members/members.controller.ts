@@ -12,6 +12,7 @@ import type { User } from '../../../domains/account/users/user.js';
 import { UserRepository } from '../../../domains/account/users/user.repository.js';
 import {
   Member,
+  type MemberChanges,
   type MemberRefusal,
 } from '../../../domains/club/clubs/members/member.js';
 import { MemberRepository } from '../../../domains/club/clubs/members/member.repository.js';
@@ -26,6 +27,7 @@ import {
 } from '../../../foundation/auth/authenticated-user.js';
 import type { Permission } from '../../../domains/club/clubs/access/permission.js';
 import type { components } from '../../../foundation/contract/openapi.js';
+import { asId, type Id } from '../../../foundation/id/id.js';
 import { pageRequest } from '../../../foundation/pagination/page-request.js';
 import { type Page, pageBody } from '../../../foundation/pagination/page.js';
 import { BadRequest } from '../../../foundation/problem/problems/bad-request.js';
@@ -68,8 +70,8 @@ export class MembersController {
   @RequireClubAccess()
   async list(
     @CurrentUser() caller: AuthenticatedUser,
-    @Param('clubId') clubId: string,
-    @Query('partId') partId: string | undefined,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Query('partId') partId: Id<'Part'> | undefined,
     @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<MemberPageBody> {
@@ -98,7 +100,7 @@ export class MembersController {
   async get(
     @CurrentUser() caller: AuthenticatedUser,
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Param('memberId') memberId: string,
   ): Promise<MemberBody> {
     const member = await this.members.find(
@@ -115,14 +117,19 @@ export class MembersController {
   async update(
     @CurrentUser() caller: AuthenticatedUser,
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Param('memberId') memberId: string,
     @Body() body: MemberUpdateBody,
   ): Promise<MemberBody> {
     const targetId = resolveMe(memberId, access.memberId);
-    const refusal = Member.changeRefusal(access, targetId, body);
+    const changes: MemberChanges = {
+      partId: asId<'Part'>(body.partId),
+      roleId: asId<'Role'>(body.roleId),
+      notificationsOn: body.notificationsOn,
+    };
+    const refusal = Member.changeRefusal(access, targetId, changes);
     if (refusal) throw forbidden(refusal);
-    const result = await this.members.update(clubId, targetId, body);
+    const result = await this.members.update(clubId, targetId, changes);
     if (result === null) throw new NotFound('member not found');
     if (result === 'no-part')
       throw new BadRequest([
@@ -142,7 +149,7 @@ export class MembersController {
   @HttpCode(204)
   async remove(
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Param('memberId') memberId: string,
   ): Promise<void> {
     const targetId = resolveMe(memberId, access.memberId);

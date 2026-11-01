@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
+import { asId, type Id } from '../../../../foundation/id/id.js';
 import { Like } from './like.js';
 import type { LikeTally } from './like-tally.js';
 
@@ -8,7 +9,10 @@ export class LikeRepository {
   constructor(private readonly database: DatabaseClient) {}
 
   /** 'own-room': nobody likes their own room. */
-  async like(ownerId: string, likerId: string): Promise<'own-room' | void> {
+  async like(
+    ownerId: Id<'User'>,
+    likerId: Id<'User'>,
+  ): Promise<'own-room' | void> {
     if (!Like.allowed(ownerId, likerId)) return 'own-room';
     await this.database.userLike.upsert({
       where: { userId_likerUserId: { userId: ownerId, likerUserId: likerId } },
@@ -17,7 +21,7 @@ export class LikeRepository {
     });
   }
 
-  async unlike(ownerId: string, likerId: string): Promise<void> {
+  async unlike(ownerId: Id<'User'>, likerId: Id<'User'>): Promise<void> {
     await this.database.userLike.deleteMany({
       where: { userId: ownerId, likerUserId: likerId },
     });
@@ -25,9 +29,9 @@ export class LikeRepository {
 
   /** The tally of each owner's room as `viewerId` sees it. */
   async tallies(
-    ownerIds: readonly string[],
-    viewerId: string,
-  ): Promise<Map<string, LikeTally>> {
+    ownerIds: readonly Id<'User'>[],
+    viewerId: Id<'User'>,
+  ): Promise<Map<Id<'User'>, LikeTally>> {
     const [counts, mine] = await Promise.all([
       this.database.userLike.groupBy({
         by: ['userId'],
@@ -39,8 +43,10 @@ export class LikeRepository {
         select: { userId: true },
       }),
     ]);
-    const countOf = new Map(counts.map((row) => [row.userId, row._count._all]));
-    const liked = new Set(mine.map((row) => row.userId));
+    const countOf = new Map(
+      counts.map((row) => [asId<'User'>(row.userId), row._count._all]),
+    );
+    const liked = new Set(mine.map((row) => asId<'User'>(row.userId)));
     return new Map(
       ownerIds.map((id) => [
         id,

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import { orOnUniqueViolation } from '../../../../foundation/database/database-errors.js';
+import { asId, type Id } from '../../../../foundation/id/id.js';
 import { newestFirstPage } from '../../../../foundation/pagination/newest-first-page.js';
 import type { PageRequest } from '../../../../foundation/pagination/page-request.js';
 import type { Page } from '../../../../foundation/pagination/page.js';
@@ -39,9 +40,9 @@ export class ApplicationRepository {
    * already, or has a pending application.
    */
   async create(
-    clubId: string,
-    userId: string,
-    partId: string,
+    clubId: Id<'Club'>,
+    userId: Id<'User'>,
+    partId: Id<'Part'>,
   ): Promise<Application | 'no-part' | 'already-member' | 'pending' | null> {
     const club = await this.database.club.findUnique({
       where: { id: clubId },
@@ -65,9 +66,9 @@ export class ApplicationRepository {
 
   /** The application as `viewerId` may see it: their own, or any of the club when they decide applications. */
   async findVisibleTo(
-    clubId: string,
-    id: string,
-    viewerId: string,
+    clubId: Id<'Club'>,
+    id: Id<'Application'>,
+    viewerId: Id<'User'>,
   ): Promise<Application | null> {
     const row = await this.database.clubApplication.findFirst({
       where: {
@@ -97,7 +98,7 @@ export class ApplicationRepository {
   }
 
   async listForClub(
-    clubId: string,
+    clubId: Id<'Club'>,
     state: ApplicationState | undefined,
     page: PageRequest,
     query: string,
@@ -116,7 +117,7 @@ export class ApplicationRepository {
    * absence penalty). An application outlives the membership it made, so leaving or being removed from a club keeps
    * the day; creating a club approves nothing, so that day is not one.
    */
-  async joinedAt(userId: string): Promise<readonly Date[]> {
+  async approvedAt(userId: Id<'User'>): Promise<readonly Date[]> {
     const rows = await this.database.clubApplication.findMany({
       where: { userId, state: 'APPROVED' },
       select: { decidedAt: true },
@@ -126,7 +127,7 @@ export class ApplicationRepository {
 
   /** The applicant's own list: rejected ones only while still shown (Application.rejectedShownSince). */
   async listForUser(
-    userId: string,
+    userId: Id<'User'>,
     page: PageRequest,
     query: string,
   ): Promise<Page<Application>> {
@@ -158,10 +159,10 @@ export class ApplicationRepository {
    * move is the update's condition, so two deciders at once cannot both move it.
    */
   async decide(
-    clubId: string,
-    id: string,
+    clubId: Id<'Club'>,
+    id: Id<'Application'>,
     decision: Decision,
-    joinRoleId: string,
+    joinRoleId: Id<'Role'>,
   ): Promise<Application | 'not-pending' | 'already-member' | null> {
     return orOnUniqueViolation(
       () =>
@@ -204,8 +205,8 @@ export class ApplicationRepository {
    * decision at the same moment cannot be lost.
    */
   async cancel(
-    clubId: string,
-    id: string,
+    clubId: Id<'Club'>,
+    id: Id<'Application'>,
   ): Promise<true | 'not-pending' | null> {
     const { count } = await this.database.clubApplication.deleteMany({
       where: { id, clubId, state: { in: [...Application.openStates] } },
@@ -221,10 +222,10 @@ export class ApplicationRepository {
 
 function toApplication(row: ApplicationRow): Application {
   return new Application(
-    row.id,
-    row.clubId,
-    row.userId,
-    row.partId,
+    asId<'Application'>(row.id),
+    asId<'Club'>(row.clubId),
+    asId<'User'>(row.userId),
+    asId<'Part'>(row.partId),
     row.state as ApplicationState,
     row.decidedAt,
     row.createdAt,

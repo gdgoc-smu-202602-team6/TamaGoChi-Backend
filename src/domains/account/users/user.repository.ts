@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
+import { asId, type Id } from '../../../foundation/id/id.js';
 import { Nickname } from './nickname.js';
 import { User } from './user.js';
 
@@ -14,7 +15,7 @@ const userColumns = {
 export class UserRepository {
   constructor(private readonly database: DatabaseClient) {}
 
-  async find(id: string): Promise<User | null> {
+  async find(id: Id<'User'>): Promise<User | null> {
     const row = await this.database.user.findUnique({
       where: { id },
       select: userColumns,
@@ -23,16 +24,16 @@ export class UserRepository {
   }
 
   /** The users that exist among `ids`, keyed by id. */
-  async findMany(ids: readonly string[]): Promise<Map<string, User>> {
+  async findMany(ids: readonly Id<'User'>[]): Promise<Map<Id<'User'>, User>> {
     const rows = await this.database.user.findMany({
       where: { id: { in: [...ids] } },
       select: userColumns,
     });
-    return new Map(rows.map((row) => [row.id, toUser(row)]));
+    return new Map(rows.map((row) => [asId<'User'>(row.id), toUser(row)]));
   }
 
   /** Null when the user does not exist. */
-  async rename(id: string, nickname: Nickname): Promise<User | null> {
+  async rename(id: Id<'User'>, nickname: Nickname): Promise<User | null> {
     const { count } = await this.database.user.updateMany({
       where: { id },
       data: { name: nickname.value, updatedAt: new Date() },
@@ -44,7 +45,7 @@ export class UserRepository {
    * Deletes the account. Foreign keys cascade to its sessions, linked accounts, device tokens, applications,
    * memberships and game data; notices and guestbook entries it wrote stay, with no author.
    */
-  async delete(id: string): Promise<boolean> {
+  async delete(id: Id<'User'>): Promise<boolean> {
     const { count } = await this.database.user.deleteMany({ where: { id } });
     return count > 0;
   }
@@ -57,7 +58,7 @@ function toUser(row: {
   createdAt: Date;
 }): User {
   return new User(
-    row.id,
+    asId<'User'>(row.id),
     row.email,
     Nickname.fromStored(row.name),
     row.createdAt,

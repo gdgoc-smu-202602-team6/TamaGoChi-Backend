@@ -1,4 +1,5 @@
 import type { components } from '../../../../foundation/contract/openapi.js';
+import type { Id } from '../../../../foundation/id/id.js';
 import type { Permission } from '../access/permission.js';
 
 export type ApplicationState = components['schemas']['ApplicationState'];
@@ -44,17 +45,17 @@ export class Application {
   }
 
   constructor(
-    readonly id: string,
-    readonly clubId: string,
-    readonly userId: string,
+    readonly id: Id<'Application'>,
+    readonly clubId: Id<'Club'>,
+    readonly userId: Id<'User'>,
     /** Null once the part was deleted after the decision; a pending application always has one. */
-    readonly partId: string | null,
+    readonly partId: Id<'Part'> | null,
     readonly state: ApplicationState,
     readonly decidedAt: Date | null,
     readonly createdAt: Date,
   ) {}
 
-  mayBeCancelledBy(userId: string): boolean {
+  mayBeCancelledBy(userId: Id<'User'>): boolean {
     return userId === this.userId;
   }
 }

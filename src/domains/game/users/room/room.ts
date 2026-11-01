@@ -5,6 +5,7 @@ import {
   PlacementTarget,
   type PlacementTargetName,
 } from './placement-target.js';
+import type { Id } from '../../../../foundation/id/id.js';
 
 /**
  * Why a change of the room is refused: a change that breaks a rule (400), or an item the user does not have (409).
@@ -17,11 +18,11 @@ export type RoomRefusal =
       readonly index?: number;
       readonly message: string;
     }
-  | { readonly kind: 'not-owned'; readonly itemId: string };
+  | { readonly kind: 'not-owned'; readonly itemId: Id<'Item'> };
 
 export interface EquipRequest {
   readonly slot: SlotName;
-  readonly itemId: string;
+  readonly itemId: Id<'Item'>;
 }
 
 /**
@@ -30,14 +31,14 @@ export interface EquipRequest {
  */
 export class Room {
   constructor(
-    readonly userId: string,
+    readonly userId: Id<'User'>,
     readonly equipped: ReadonlyMap<SlotName, Item>,
     readonly placements: readonly Placement[],
     readonly guestbookCheckedAt: Date | null,
   ) {}
 
   /** The room before its owner changed anything. */
-  static default(userId: string, catalog: readonly Item[]): Room {
+  static default(userId: Id<'User'>, catalog: readonly Item[]): Room {
     const equipped = new Map<SlotName, Item>();
     for (const item of catalog)
       if (item.defaultOwned && !equipped.has(item.slot.name))
@@ -47,7 +48,7 @@ export class Room {
 
   /** A stored room. A slot that cannot be emptied keeps the default room's item when none is stored for it. */
   static stored(
-    userId: string,
+    userId: Id<'User'>,
     equipped: ReadonlyMap<SlotName, Item>,
     placements: readonly Placement[],
     guestbookCheckedAt: Date | null,
@@ -67,8 +68,8 @@ export class Room {
   /** Replaces everything equipped (updateRoom). */
   withEquipped(
     requests: readonly EquipRequest[],
-    catalog: ReadonlyMap<string, Item>,
-    owned: ReadonlySet<string>,
+    catalog: ReadonlyMap<Id<'Item'>, Item>,
+    owned: ReadonlySet<Id<'Item'>>,
   ): Room | RoomRefusal {
     const equipped = new Map<SlotName, Item>();
     for (const [index, request] of requests.entries()) {

@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
+import { asId, type Id } from '../../../../foundation/id/id.js';
 import { afterCursor } from '../../../../foundation/pagination/cursor.js';
 import type { PageRequest } from '../../../../foundation/pagination/page-request.js';
 import { type Page, toPage } from '../../../../foundation/pagination/page.js';
 import { Notice, type NotificationState } from './notice.js';
-import type { NoticeBody } from './notice-body.js';
+import type { NoticeText } from './notice-text.js';
 import type { NoticeTitle } from './notice-title.js';
 
 const noticeColumns = {
@@ -34,25 +35,25 @@ type NoticeRow = {
 };
 
 export interface NoticeFilter {
-  readonly categoryId?: string;
-  readonly subcategoryId?: string;
+  readonly categoryId?: Id<'NoticeCategory'>;
+  readonly subcategoryId?: Id<'Subcategory'>;
   /** Only the ones the member read (true) or did not (false). */
   readonly read?: boolean;
 }
 
 export interface NoticeDraft {
-  readonly categoryId: string;
-  readonly subcategoryId: string | null;
+  readonly categoryId: Id<'NoticeCategory'>;
+  readonly subcategoryId: Id<'Subcategory'> | null;
   readonly title: NoticeTitle;
-  readonly body: NoticeBody;
+  readonly body: NoticeText;
   readonly pinned: boolean;
 }
 
 export interface NoticeChanges {
-  readonly categoryId?: string;
-  readonly subcategoryId?: string | null;
+  readonly categoryId?: Id<'NoticeCategory'>;
+  readonly subcategoryId?: Id<'Subcategory'> | null;
   readonly title?: NoticeTitle;
-  readonly body?: NoticeBody;
+  readonly body?: NoticeText;
   readonly pinned?: boolean;
 }
 
@@ -69,8 +70,8 @@ export class NoticeRepository {
   constructor(private readonly database: DatabaseClient) {}
 
   async list(
-    clubId: string,
-    memberId: string,
+    clubId: Id<'Club'>,
+    memberId: Id<'Member'>,
     filter: NoticeFilter,
     page: PageRequest,
     query: string,
@@ -95,8 +96,8 @@ export class NoticeRepository {
   }
 
   async count(
-    clubId: string,
-    memberId: string,
+    clubId: Id<'Club'>,
+    memberId: Id<'Member'>,
     filter: NoticeFilter,
   ): Promise<number> {
     return this.database.clubNotice.count({
@@ -105,9 +106,9 @@ export class NoticeRepository {
   }
 
   async find(
-    clubId: string,
-    id: string,
-    memberId: string,
+    clubId: Id<'Club'>,
+    id: Id<'Notice'>,
+    memberId: Id<'Member'>,
   ): Promise<Notice | null> {
     const row = await this.database.clubNotice.findFirst({
       where: { id, clubId },
@@ -117,8 +118,8 @@ export class NoticeRepository {
   }
 
   async create(
-    clubId: string,
-    authorUserId: string,
+    clubId: Id<'Club'>,
+    authorUserId: Id<'User'>,
     draft: NoticeDraft,
     notificationState: NotificationState,
   ): Promise<Notice> {
@@ -140,9 +141,9 @@ export class NoticeRepository {
 
   /** Null: no such notice in the club. Editing never notifies again (N-16). */
   async update(
-    clubId: string,
-    id: string,
-    memberId: string,
+    clubId: Id<'Club'>,
+    id: Id<'Notice'>,
+    memberId: Id<'Member'>,
     changes: NoticeChanges,
   ): Promise<Notice | null> {
     const { count } = await this.database.clubNotice.updateMany({
@@ -162,7 +163,7 @@ export class NoticeRepository {
     return count === 0 ? null : this.find(clubId, id, memberId);
   }
 
-  async delete(clubId: string, id: string): Promise<boolean> {
+  async delete(clubId: Id<'Club'>, id: Id<'Notice'>): Promise<boolean> {
     const { count } = await this.database.clubNotice.deleteMany({
       where: { id, clubId },
     });
@@ -171,9 +172,9 @@ export class NoticeRepository {
 
   /** Marks it read by the member (N-07). False: no such notice in the club. */
   async markRead(
-    clubId: string,
-    id: string,
-    memberId: string,
+    clubId: Id<'Club'>,
+    id: Id<'Notice'>,
+    memberId: Id<'Member'>,
   ): Promise<boolean> {
     const notice = await this.database.clubNotice.findFirst({
       where: { id, clubId },
@@ -218,7 +219,11 @@ export class NoticeRepository {
     );
   }
 
-  private matching(clubId: string, memberId: string, filter: NoticeFilter) {
+  private matching(
+    clubId: Id<'Club'>,
+    memberId: Id<'Member'>,
+    filter: NoticeFilter,
+  ) {
     return {
       clubId,
       ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
@@ -229,17 +234,17 @@ export class NoticeRepository {
   }
 }
 
-function readBy(memberId: string) {
+function readBy(memberId: Id<'Member'>) {
   return { where: { memberId }, select: { memberId: true } } as const;
 }
 
 function toNotice(row: NoticeRow & { reads: readonly unknown[] }): Notice {
   return new Notice(
-    row.id,
-    row.clubId,
-    row.categoryId,
-    row.subcategoryId,
-    row.authorUserId,
+    asId<'Notice'>(row.id),
+    asId<'Club'>(row.clubId),
+    asId<'NoticeCategory'>(row.categoryId),
+    asId<'Subcategory'>(row.subcategoryId),
+    asId<'User'>(row.authorUserId),
     row.title,
     row.body,
     row.pinned,

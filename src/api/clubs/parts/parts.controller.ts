@@ -14,6 +14,7 @@ import type { Part } from '../../../domains/club/clubs/parts/part.js';
 import { PartRepository } from '../../../domains/club/clubs/parts/part.repository.js';
 import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
 import type { components } from '../../../foundation/contract/openapi.js';
+import type { Id } from '../../../foundation/id/id.js';
 import { parseField } from '../../../foundation/problem/parse-field.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { NotFound } from '../../../foundation/problem/problems/not-found.js';
@@ -27,7 +28,9 @@ export class PartsController {
 
   /** listParts. Signed-in users who are not members yet read it to apply. */
   @Get()
-  async list(@Param('clubId') clubId: string): Promise<{ items: PartBody[] }> {
+  async list(
+    @Param('clubId') clubId: Id<'Club'>,
+  ): Promise<{ items: PartBody[] }> {
     const parts = await this.parts.list(clubId);
     if (!parts) throw new NotFound('club not found');
     return { items: parts.map(toBody) };
@@ -37,7 +40,7 @@ export class PartsController {
   @Post()
   @RequireClubAccess('parts.manage')
   async create(
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Body() body: PartCreateBody,
     @Res({ passthrough: true }) response: Response,
   ): Promise<PartBody> {
@@ -53,8 +56,8 @@ export class PartsController {
   @RequireClubAccess('parts.manage')
   @HttpCode(204)
   async delete(
-    @Param('clubId') clubId: string,
-    @Param('partId') partId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('partId') partId: Id<'Part'>,
   ): Promise<void> {
     const result = await this.parts.delete(clubId, partId);
     if (result === null) throw new NotFound('part not found');

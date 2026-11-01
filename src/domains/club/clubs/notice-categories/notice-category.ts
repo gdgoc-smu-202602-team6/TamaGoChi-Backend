@@ -1,3 +1,4 @@
+import type { Id } from '../../../../foundation/id/id.js';
 import { Label } from '../../label/label.js';
 import type { PaletteColor } from '../../palette-color/palette-color.js';
 import type { Subcategory } from './subcategories/subcategory.js';
@@ -9,7 +10,7 @@ export class NoticeCategory {
   static readonly presetColor: PaletteColor = 'RED';
 
   constructor(
-    readonly id: string,
+    readonly id: Id<'NoticeCategory'>,
     readonly name: Label,
     readonly color: PaletteColor,
     readonly preset: boolean,
@@ -22,7 +23,7 @@ export class NoticeCategory {
   }
 
   /** Whether the subcategory is this category's (N-10). */
-  has(subcategoryId: string): boolean {
+  has(subcategoryId: Id<'Subcategory'>): boolean {
     return this.subcategories.some((one) => one.id === subcategoryId);
   }
 }

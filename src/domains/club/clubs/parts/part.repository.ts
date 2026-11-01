@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import { orOnUniqueViolation } from '../../../../foundation/database/database-errors.js';
+import { asId, type Id } from '../../../../foundation/id/id.js';
 import { Label } from '../../label/label.js';
 import type { PaletteColor } from '../../palette-color/palette-color.js';
 import { Application } from '../applications/application.js';
@@ -13,7 +14,7 @@ export class PartRepository {
   constructor(private readonly database: DatabaseClient) {}
 
   /** Null when the club does not exist. */
-  async list(clubId: string): Promise<Part[] | null> {
+  async list(clubId: Id<'Club'>): Promise<Part[] | null> {
     const club = await this.database.club.findUnique({
       where: { id: clubId },
       select: { parts: { select: partColumns, orderBy: { name: 'asc' } } },
@@ -23,7 +24,7 @@ export class PartRepository {
 
   /** 'duplicate': the club already has a part with this name. */
   async create(
-    clubId: string,
+    clubId: Id<'Club'>,
     name: Label,
     color: PaletteColor,
   ): Promise<Part | 'duplicate'> {
@@ -42,8 +43,8 @@ export class PartRepository {
    * with no part, so their approval days remain (B-16). Null: no such part. 'in-use': still used.
    */
   async delete(
-    clubId: string,
-    partId: string,
+    clubId: Id<'Club'>,
+    partId: Id<'Part'>,
   ): Promise<true | 'in-use' | null> {
     return this.database.$transaction(async (tx) => {
       const part = await tx.clubPart.findFirst({
@@ -70,7 +71,7 @@ export class PartRepository {
 
 function toPart(row: { id: string; name: string; color: string }): Part {
   return new Part(
-    row.id,
+    asId<'Part'>(row.id),
     Label.fromStored(row.name),
     row.color as PaletteColor,
   );

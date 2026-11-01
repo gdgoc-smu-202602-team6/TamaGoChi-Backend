@@ -4,6 +4,7 @@ import { Day } from '../../day/day.js';
 import { StudySessionRepository } from '../study-sessions/study-session.repository.js';
 import { DaySettlementRepository } from './day-settlement.repository.js';
 import { Progress, type ProgressRecords } from './progress.js';
+import type { Id } from '../../../../foundation/id/id.js';
 
 /** A user's play now, and the records it came from. */
 export interface PlayNow {
@@ -32,7 +33,7 @@ export class ProgressService {
    * (B-16: those days have no absence penalty).
    */
   private async records(
-    userId: string,
+    userId: Id<'User'>,
     accountCreatedAt: Date,
     joinedAt: readonly Date[],
   ): Promise<ProgressRecords> {
@@ -51,7 +52,7 @@ export class ProgressService {
   }
 
   async now(
-    userId: string,
+    userId: Id<'User'>,
     accountCreatedAt: Date,
     joinedAt: readonly Date[],
     now: Date,

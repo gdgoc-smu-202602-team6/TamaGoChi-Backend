@@ -12,6 +12,7 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
+import { asId, type Id } from '../../../foundation/id/id.js';
 import { BadRequest } from '../../../foundation/problem/problems/bad-request.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { Forbidden } from '../../../foundation/problem/problems/forbidden.js';
@@ -69,12 +70,20 @@ export class RoomController {
             (one) => one.item.id,
           ),
         )
-      : new Set<string>();
+      : new Set<Id<'Item'>>();
     const byId = new Map(catalog.map((item) => [item.id, item]));
     const now = new Date();
     const changed = await this.rooms.change(caller.id, catalog, (current) => {
       let room: Room | RoomRefusal = current;
-      if (body.equipped) room = room.withEquipped(body.equipped, byId, owned);
+      if (body.equipped)
+        room = room.withEquipped(
+          body.equipped.map(({ slot, itemId }) => ({
+            slot,
+            itemId: asId<'Item'>(itemId),
+          })),
+          byId,
+          owned,
+        );
       if (body.placements && !isRefusal(room))
         room = room.withPlacements(
           body.placements.map(

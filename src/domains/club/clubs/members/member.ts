@@ -1,3 +1,4 @@
+import type { Id } from '../../../../foundation/id/id.js';
 import type { ClubAccess } from '../access/club-access.js';
 import { ClubManagers } from './club-managers.js';
 
@@ -7,11 +8,11 @@ import { ClubManagers } from './club-managers.js';
  */
 export class Member {
   constructor(
-    readonly id: string,
-    readonly clubId: string,
-    readonly userId: string,
-    readonly partId: string,
-    readonly roleId: string,
+    readonly id: Id<'Member'>,
+    readonly clubId: Id<'Club'>,
+    readonly userId: Id<'User'>,
+    readonly partId: Id<'Part'>,
+    readonly roleId: Id<'Role'>,
     readonly notificationsOn: boolean,
     /** The day the member joined is day 1. */
     readonly joinedAt: Date,
@@ -23,7 +24,7 @@ export class Member {
    */
   static changeRefusal(
     access: ClubAccess,
-    memberId: string,
+    memberId: Id<'Member'>,
     changes: MemberChanges,
   ): MemberRefusal | null {
     const own = memberId === access.memberId;
@@ -43,7 +44,7 @@ export class Member {
   /** Why the caller may not remove the member `memberId`; null when they may. Leaving is one's own; removing someone else needs members.manage. */
   static removalRefusal(
     access: ClubAccess,
-    memberId: string,
+    memberId: Id<'Member'>,
   ): MemberRefusal | null {
     return memberId !== access.memberId &&
       !access.permissions.has(ClubManagers.permission)
@@ -54,8 +55,8 @@ export class Member {
 
 /** What a member update may change. Who may change which field: Member.changeRefusal. */
 export interface MemberChanges {
-  readonly partId?: string;
-  readonly roleId?: string;
+  readonly partId?: Id<'Part'>;
+  readonly roleId?: Id<'Role'>;
   readonly notificationsOn?: boolean;
 }
 

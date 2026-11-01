@@ -22,6 +22,7 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
+import type { Id } from '../../../foundation/id/id.js';
 import { pageRequest } from '../../../foundation/pagination/page-request.js';
 import { pageBody } from '../../../foundation/pagination/page.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
@@ -78,7 +79,7 @@ export class StudySessionsController {
   @Get(':sessionId')
   async get(
     @CurrentUser() caller: AuthenticatedUser,
-    @Param('sessionId') sessionId: string,
+    @Param('sessionId') sessionId: Id<'StudySession'>,
   ): Promise<SessionBody> {
     const session = await this.sessions.find(caller.id, sessionId);
     if (!session) throw new NotFound('session not found');
@@ -89,7 +90,7 @@ export class StudySessionsController {
   @Patch(':sessionId')
   async end(
     @CurrentUser() caller: AuthenticatedUser,
-    @Param('sessionId') sessionId: string,
+    @Param('sessionId') sessionId: Id<'StudySession'>,
     @Body() body: SessionEndBody,
   ): Promise<SessionBody> {
     const arrival = new Date();
@@ -112,7 +113,7 @@ export class StudySessionsController {
     if (session.state(now) === 'RUNNING') return toBody(session, now);
     const [me, joinedAt] = await Promise.all([
       this.players.me(caller),
-      this.applications.joinedAt(caller.id),
+      this.applications.approvedAt(caller.id),
     ]);
     const { records } = await this.progress.now(
       me.id,

@@ -46,7 +46,7 @@ export class PlayerViews {
     const ids = userIds.map((id) => resolveMe(id, caller.id));
     const [users, sharing] = await Promise.all([
       this.users.findMany(ids),
-      this.members.sharingWith(
+      this.members.sharingAClubWith(
         caller.id,
         ids.filter((id) => id !== caller.id),
       ),
@@ -66,7 +66,7 @@ export class PlayerViews {
   }
 
   async stats(user: User, now: Date): Promise<Stats> {
-    const joinedAt = await this.applications.joinedAt(user.id);
+    const joinedAt = await this.applications.approvedAt(user.id);
     return this.statsService.of(user.id, user.createdAt, joinedAt, now);
   }
 
@@ -90,7 +90,7 @@ export class PlayerViews {
         const [room, play] = await Promise.all([
           this.rooms.find(owner.id, catalog),
           this.applications
-            .joinedAt(owner.id)
+            .approvedAt(owner.id)
             .then((joinedAt) =>
               this.progress.now(owner.id, owner.createdAt, joinedAt, now),
             ),

@@ -11,7 +11,7 @@ export function toGuestbookEntryBody(
   return {
     id: entry.id,
     clubId: entry.clubId,
-    userId: entry.userId,
+    userId: entry.ownerId,
     authorUserId: entry.authorUserId,
     body: entry.body,
     createdAt: entry.createdAt.toISOString(),

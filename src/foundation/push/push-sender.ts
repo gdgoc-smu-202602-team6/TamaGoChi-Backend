@@ -1,6 +1,8 @@
+import type { Id } from '../id/id.js';
+
 /** A push message to some users' devices. Each domain writes its own messages. */
 export interface PushMessage {
-  readonly userIds: readonly string[];
+  readonly userIds: readonly Id<'User'>[];
   readonly title: string;
   /** The text in full; a sender shortens it to fit its transport's limit (FCM: 4KB of payload). */
   readonly body: string;

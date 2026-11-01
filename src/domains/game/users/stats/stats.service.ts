@@ -5,6 +5,7 @@ import { LevelRepository } from '../../level/level.repository.js';
 import { Earnings } from '../progress/earnings.js';
 import { ProgressService } from '../progress/progress.service.js';
 import { Stats } from './stats.js';
+import type { Id } from '../../../../foundation/id/id.js';
 
 /** A user's stats now: the play, the volts spent and the highest level reached. */
 @Injectable()
@@ -16,7 +17,7 @@ export class StatsService {
   ) {}
 
   async of(
-    userId: string,
+    userId: Id<'User'>,
     accountCreatedAt: Date,
     joinedAt: readonly Date[],
     now: Date,

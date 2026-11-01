@@ -2,6 +2,7 @@ import { Day } from '../../day/day.js';
 import { LevelCurve } from '../../level/level-curve.js';
 import { Earnings } from '../progress/earnings.js';
 import type { Progress, ProgressRecords } from '../progress/progress.js';
+import type { Id } from '../../../../foundation/id/id.js';
 
 /** One day of the week chart (M-04): the study, the goal of that day, and whether it was met. */
 export interface DayStudy {
@@ -14,7 +15,7 @@ export interface DayStudy {
 /** A user's numbers now (H-02, H-20~H-22, M-02~M-04). Computed from the play, never stored. */
 export class Stats {
   constructor(
-    readonly userId: string,
+    readonly userId: Id<'User'>,
     readonly xp: number,
     readonly volts: number,
     readonly todaySeconds: number,
@@ -30,7 +31,7 @@ export class Stats {
 
   /** `progress` is what is shown, `earned` what counts for XP (ProgressService). */
   static of(
-    userId: string,
+    userId: Id<'User'>,
     records: ProgressRecords,
     progress: Progress,
     earned: Progress,

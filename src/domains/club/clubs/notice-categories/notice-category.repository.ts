@@ -4,6 +4,7 @@ import {
   isStillReferenced,
   orOnUniqueViolation,
 } from '../../../../foundation/database/database-errors.js';
+import { asId, type Id } from '../../../../foundation/id/id.js';
 import { Label } from '../../label/label.js';
 import type { PaletteColor } from '../../palette-color/palette-color.js';
 import { NoticeCategory } from './notice-category.js';
@@ -30,7 +31,7 @@ export class NoticeCategoryRepository {
   constructor(private readonly database: DatabaseClient) {}
 
   /** The preset category first, then by name. */
-  async list(clubId: string): Promise<NoticeCategory[]> {
+  async list(clubId: Id<'Club'>): Promise<NoticeCategory[]> {
     const rows = await this.database.clubNoticeCategory.findMany({
       where: { clubId },
       select: categoryColumns,
@@ -41,7 +42,7 @@ export class NoticeCategoryRepository {
 
   /** 'duplicate': the club already has a category with this name. */
   async create(
-    clubId: string,
+    clubId: Id<'Club'>,
     name: Label,
     color: PaletteColor,
   ): Promise<NoticeCategory | 'duplicate'> {
@@ -60,8 +61,8 @@ export class NoticeCategoryRepository {
    * subcategories, which the foreign keys decide at the delete.
    */
   async delete(
-    clubId: string,
-    categoryId: string,
+    clubId: Id<'Club'>,
+    categoryId: Id<'NoticeCategory'>,
   ): Promise<true | 'preset' | 'in-use' | null> {
     const row = await this.database.clubNoticeCategory.findFirst({
       where: { id: categoryId, clubId },
@@ -82,8 +83,8 @@ export class NoticeCategoryRepository {
 
   /** Null: no such category in the club. 'duplicate': the category already has a subcategory with this name. */
   async createSubcategory(
-    clubId: string,
-    categoryId: string,
+    clubId: Id<'Club'>,
+    categoryId: Id<'NoticeCategory'>,
     name: Label,
   ): Promise<Subcategory | 'duplicate' | null> {
     const category = await this.database.clubNoticeCategory.findFirst({
@@ -96,15 +97,18 @@ export class NoticeCategoryRepository {
         data: { categoryId, name: name.value },
         select: { id: true, name: true },
       });
-      return new Subcategory(row.id, Label.fromStored(row.name));
+      return new Subcategory(
+        asId<'Subcategory'>(row.id),
+        Label.fromStored(row.name),
+      );
     }, 'duplicate');
   }
 
   /** Null: no such subcategory in the club's category. 'in-use': a notice uses it. */
   async deleteSubcategory(
-    clubId: string,
-    categoryId: string,
-    subcategoryId: string,
+    clubId: Id<'Club'>,
+    categoryId: Id<'NoticeCategory'>,
+    subcategoryId: Id<'Subcategory'>,
   ): Promise<true | 'in-use' | null> {
     const subcategory =
       await this.database.clubNoticeCategorySubcategory.findFirst({
@@ -126,12 +130,16 @@ export class NoticeCategoryRepository {
 
 function toCategory(row: CategoryRow): NoticeCategory {
   return new NoticeCategory(
-    row.id,
+    asId<'NoticeCategory'>(row.id),
     Label.fromStored(row.name),
     row.color as PaletteColor,
     row.preset,
     row.subcategories.map(
-      (sub) => new Subcategory(sub.id, Label.fromStored(sub.name)),
+      (sub) =>
+        new Subcategory(
+          asId<'Subcategory'>(sub.id),
+          Label.fromStored(sub.name),
+        ),
     ),
   );
 }

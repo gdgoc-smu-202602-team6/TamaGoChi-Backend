@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import { isUniqueViolation } from '../../../foundation/database/database-errors.js';
+import { asId, type Id } from '../../../foundation/id/id.js';
 import { Label } from '../label/label.js';
 import type { PaletteColor } from '../palette-color/palette-color.js';
 import { NoticeCategory } from './notice-categories/notice-category.js';
@@ -32,10 +33,10 @@ type ClubRow = {
 export interface NewClub {
   readonly name: ClubName;
   readonly parts: readonly { name: Label; color: PaletteColor }[];
-  readonly creatorUserId: string;
+  readonly creatorUserId: Id<'User'>;
   /** One of `parts`. */
   readonly creatorPartName: Label;
-  readonly creatorRoleId: string;
+  readonly creatorRoleId: Id<'Role'>;
 }
 
 @Injectable()
@@ -94,7 +95,7 @@ export class ClubRepository {
     }
   }
 
-  async find(id: string): Promise<Club | null> {
+  async find(id: Id<'Club'>): Promise<Club | null> {
     const row = await this.database.club.findUnique({
       where: { id },
       select: clubColumns,
@@ -121,7 +122,7 @@ export class ClubRepository {
       parts: row.parts.map(
         (part) =>
           new Part(
-            part.id,
+            asId<'Part'>(part.id),
             Label.fromStored(part.name),
             part.color as PaletteColor,
           ),
@@ -134,7 +135,7 @@ export class ClubRepository {
    * Null: no such club. 'stale': the revision moved on.
    */
   async rename(
-    id: string,
+    id: Id<'Club'>,
     name: ClubName,
     expectedRevision?: number,
   ): Promise<Club | 'stale' | null> {
@@ -152,7 +153,7 @@ export class ClubRepository {
   }
 
   /** Replaces the invite code; the old one stops working at once. */
-  async regenerateInviteCode(id: string): Promise<Club | null> {
+  async regenerateInviteCode(id: Id<'Club'>): Promise<Club | null> {
     for (let attempt = 1; ; attempt += 1) {
       try {
         const { count } = await this.database.club.updateMany({
@@ -173,7 +174,7 @@ export class ClubRepository {
 
 function toClub(row: ClubRow): Club {
   return new Club(
-    row.id,
+    asId<'Club'>(row.id),
     ClubName.fromStored(row.name),
     InviteCode.fromStored(row.inviteCode),
     row.revision,

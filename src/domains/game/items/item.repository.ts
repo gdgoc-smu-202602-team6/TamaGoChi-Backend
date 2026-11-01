@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import type { Prisma } from '../../../foundation/database/generated/client.js';
+import { asId, type Id } from '../../../foundation/id/id.js';
 import type { OwnedItem } from '../users/items/owned-item.js';
 import { type Grade, Item } from './item.js';
 import type { SlotName } from './slot/slot.js';
@@ -33,7 +34,7 @@ export class ItemRepository {
     return rows.map(
       (row) =>
         new Item(
-          row.id,
+          asId<'Item'>(row.id),
           row.code,
           slotOf(row.slot as SlotName, row.roomSize),
           row.name,
@@ -47,7 +48,7 @@ export class ItemRepository {
 
   /** What the user has: the items owned from the start, then the bought ones (M-12). */
   async owned(
-    userId: string,
+    userId: Id<'User'>,
     catalog: readonly Item[],
     client: Client = this.database,
   ): Promise<OwnedItem[]> {
@@ -58,7 +59,7 @@ export class ItemRepository {
     });
     const byId = new Map(catalog.map((item) => [item.id, item]));
     const bought = rows.flatMap((row) => {
-      const item = byId.get(row.itemId);
+      const item = byId.get(asId<'Item'>(row.itemId));
       return item
         ? [{ item, pricePaid: row.price, purchasedAt: row.createdAt }]
         : [];
@@ -71,7 +72,10 @@ export class ItemRepository {
   }
 
   /** The volts the user has paid for items. */
-  async spent(userId: string, client: Client = this.database): Promise<number> {
+  async spent(
+    userId: Id<'User'>,
+    client: Client = this.database,
+  ): Promise<number> {
     const total = await client.userItem.aggregate({
       where: { userId },
       _sum: { price: true },
@@ -81,7 +85,7 @@ export class ItemRepository {
 
   /** Records a purchase at the item's price now; the price paid stays when the catalog changes (8.3). */
   async buy(
-    userId: string,
+    userId: Id<'User'>,
     item: Item,
     client: Client = this.database,
   ): Promise<OwnedItem> {

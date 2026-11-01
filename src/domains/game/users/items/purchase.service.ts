@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
+import type { Id } from '../../../../foundation/id/id.js';
 import { lockPlayer } from '../../lock/player-lock.js';
 import { Earnings } from '../progress/earnings.js';
 import { RoomRepository } from '../room/room.repository.js';
@@ -27,8 +28,8 @@ export class PurchaseService {
 
   /** Null: no such item. `level` is the user's level now (it never drops, F-36). */
   async purchase(
-    userId: string,
-    itemId: string,
+    userId: Id<'User'>,
+    itemId: Id<'Item'>,
     level: number,
     now: Date,
   ): Promise<PurchaseOutcome | null> {

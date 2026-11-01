@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
+import { asId, type Id } from '../../../../foundation/id/id.js';
 import { newestFirstPage } from '../../../../foundation/pagination/newest-first-page.js';
 import type { PageRequest } from '../../../../foundation/pagination/page-request.js';
 import type { Page } from '../../../../foundation/pagination/page.js';
@@ -40,7 +41,10 @@ type Tx = Prisma.TransactionClient;
 export class MemberRepository {
   constructor(private readonly database: DatabaseClient) {}
 
-  async find(clubId: string, memberId: string): Promise<Member | null> {
+  async find(
+    clubId: Id<'Club'>,
+    memberId: Id<'Member'>,
+  ): Promise<Member | null> {
     const row = await this.database.clubMember.findFirst({
       where: { id: memberId, clubId },
       select: memberColumns,
@@ -49,8 +53,8 @@ export class MemberRepository {
   }
 
   async list(
-    clubId: string,
-    partId: string | undefined,
+    clubId: Id<'Club'>,
+    partId: Id<'Part'> | undefined,
     page: PageRequest,
     query: string,
   ): Promise<Page<Member>> {
@@ -64,7 +68,7 @@ export class MemberRepository {
   }
 
   async listForUser(
-    userId: string,
+    userId: Id<'User'>,
     page: PageRequest,
     query: string,
   ): Promise<Page<Member>> {
@@ -78,24 +82,27 @@ export class MemberRepository {
   }
 
   /** What the user may do in the club: their membership and its role. Null when not a member (the club is not visible). */
-  async permissionsOf(
-    userId: string,
-    clubId: string,
+  async accessOf(
+    userId: Id<'User'>,
+    clubId: Id<'Club'>,
   ): Promise<ClubAccess | null> {
     const member = await this.database.clubMember.findUnique({
       where: { clubId_userId: { clubId, userId } },
       select: { id: true, role: { select: roleColumns } },
     });
     return member
-      ? { memberId: member.id, permissions: toRole(member.role).permissions }
+      ? {
+          memberId: asId<'Member'>(member.id),
+          permissions: toRole(member.role).permissions,
+        }
       : null;
   }
 
   /** Those of `others` who share at least one club with `userId` (seeing a friend's room). */
-  async sharingWith(
-    userId: string,
-    others: readonly string[],
-  ): Promise<ReadonlySet<string>> {
+  async sharingAClubWith(
+    userId: Id<'User'>,
+    others: readonly Id<'User'>[],
+  ): Promise<ReadonlySet<Id<'User'>>> {
     if (others.length === 0) return new Set();
     const rows = await this.database.clubMember.findMany({
       where: {
@@ -104,16 +111,18 @@ export class MemberRepository {
       },
       select: { userId: true },
     });
-    return new Set(rows.map((row) => row.userId));
+    return new Set(rows.map((row) => asId<'User'>(row.userId)));
   }
 
   /** The users of the club's members who turned notice notifications on (M-13). */
-  async notificationRecipients(clubId: string): Promise<readonly string[]> {
+  async notificationRecipients(
+    clubId: Id<'Club'>,
+  ): Promise<readonly Id<'User'>[]> {
     const rows = await this.database.clubMember.findMany({
       where: { clubId, notificationsOn: true },
       select: { userId: true },
     });
-    return rows.map((row) => row.userId);
+    return rows.map((row) => asId<'User'>(row.userId));
   }
 
   /**
@@ -121,8 +130,8 @@ export class MemberRepository {
    * 'last-manager': ClubManagers refuses the role. Judged under the club lock, so two managers cannot both step down.
    */
   async update(
-    clubId: string,
-    memberId: string,
+    clubId: Id<'Club'>,
+    memberId: Id<'Member'>,
     changes: MemberChanges,
   ): Promise<Member | 'no-part' | 'no-role' | 'last-manager' | null> {
     return this.database.$transaction(async (tx) => {
@@ -163,8 +172,8 @@ export class MemberRepository {
    * the leaving, judged under the club lock.
    */
   async remove(
-    clubId: string,
-    memberId: string,
+    clubId: Id<'Club'>,
+    memberId: Id<'Member'>,
   ): Promise<true | 'last-manager' | null> {
     return this.database.$transaction(async (tx) => {
       await lockClub(tx, clubId);
@@ -181,7 +190,9 @@ export class MemberRepository {
   }
 
   /** The managers of every club the user manages, by the user's member id there (deleting the account leaves them all). */
-  async managedBy(userId: string): Promise<ReadonlyMap<string, ClubManagers>> {
+  async managedBy(
+    userId: Id<'User'>,
+  ): Promise<ReadonlyMap<Id<'Member'>, ClubManagers>> {
     const rows = await this.database.clubMember.findMany({
       where: {
         ...managing,
@@ -189,37 +200,37 @@ export class MemberRepository {
       },
       select: { id: true, clubId: true, userId: true },
     });
-    const managed = new Map<string, ClubManagers>();
+    const managed = new Map<Id<'Member'>, ClubManagers>();
     for (const own of rows.filter((row) => row.userId === userId)) {
       const ids = rows
         .filter((row) => row.clubId === own.clubId)
-        .map((row) => row.id);
-      managed.set(own.id, new ClubManagers(new Set(ids)));
+        .map((row) => asId<'Member'>(row.id));
+      managed.set(asId<'Member'>(own.id), new ClubManagers(new Set(ids)));
     }
     return managed;
   }
 }
 
 /** Serializes membership changes of one club, so two managers cannot both step down at once. */
-async function lockClub(tx: Tx, clubId: string): Promise<void> {
+async function lockClub(tx: Tx, clubId: Id<'Club'>): Promise<void> {
   await tx.$queryRaw`SELECT id FROM clubs WHERE id = ${clubId}::uuid FOR UPDATE`;
 }
 
-async function managersOf(tx: Tx, clubId: string): Promise<ClubManagers> {
+async function managersOf(tx: Tx, clubId: Id<'Club'>): Promise<ClubManagers> {
   const rows = await tx.clubMember.findMany({
     where: { clubId, ...managing },
     select: { id: true },
   });
-  return new ClubManagers(new Set(rows.map((row) => row.id)));
+  return new ClubManagers(new Set(rows.map((row) => asId<'Member'>(row.id))));
 }
 
 function toMember(row: MemberRow): Member {
   return new Member(
-    row.id,
-    row.clubId,
-    row.userId,
-    row.partId,
-    row.roleId,
+    asId<'Member'>(row.id),
+    asId<'Club'>(row.clubId),
+    asId<'User'>(row.userId),
+    asId<'Part'>(row.partId),
+    asId<'Role'>(row.roleId),
     row.notificationsOn,
     row.createdAt,
   );

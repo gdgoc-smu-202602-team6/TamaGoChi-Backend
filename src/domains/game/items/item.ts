@@ -1,4 +1,5 @@
 import type { components } from '../../../foundation/contract/openapi.js';
+import type { Id } from '../../../foundation/id/id.js';
 import type { Slot } from './slot/slot.js';
 
 export type Grade = components['schemas']['Grade'];
@@ -20,7 +21,7 @@ export type PurchaseVerdict =
 /** One item of the catalog (merged 8.2). Catalog data, the same for everyone; developers change it, not code. */
 export class Item {
   constructor(
-    readonly id: string,
+    readonly id: Id<'Item'>,
     readonly code: string,
     readonly slot: Slot,
     readonly name: string,

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import type { Prisma } from '../../../../foundation/database/generated/client.js';
 import { orOnUniqueViolation } from '../../../../foundation/database/database-errors.js';
+import { asId, type Id } from '../../../../foundation/id/id.js';
 import { newestFirstPage } from '../../../../foundation/pagination/newest-first-page.js';
 import type { PageRequest } from '../../../../foundation/pagination/page-request.js';
 import type { Page } from '../../../../foundation/pagination/page.js';
@@ -32,7 +33,10 @@ export class StudySessionRepository {
    * Starts a session at `now`. A session left running past its 12-hour mark is ended at the mark first.
    * 'running': the user has a session running.
    */
-  async start(userId: string, now: Date): Promise<StudySession | 'running'> {
+  async start(
+    userId: Id<'User'>,
+    now: Date,
+  ): Promise<StudySession | 'running'> {
     return orOnUniqueViolation(
       () =>
         this.database.$transaction(async (tx) => {
@@ -60,7 +64,10 @@ export class StudySessionRepository {
     );
   }
 
-  async find(userId: string, id: string): Promise<StudySession | null> {
+  async find(
+    userId: Id<'User'>,
+    id: Id<'StudySession'>,
+  ): Promise<StudySession | null> {
     const row = await this.database.userStudySession.findFirst({
       where: { id, userId },
       select: sessionColumns,
@@ -70,7 +77,7 @@ export class StudySessionRepository {
 
   /** Every session of the user, oldest first. */
   async all(
-    userId: string,
+    userId: Id<'User'>,
     client: DatabaseClient | Prisma.TransactionClient = this.database,
   ): Promise<StudySession[]> {
     const rows = await client.userStudySession.findMany({
@@ -82,7 +89,7 @@ export class StudySessionRepository {
   }
 
   async list(
-    userId: string,
+    userId: Id<'User'>,
     state: SessionState | undefined,
     now: Date,
     page: PageRequest,
@@ -106,8 +113,8 @@ export class StudySessionRepository {
 
   /** Ends the session at the time `endTime` picks. 'ended': it was ended already. */
   async end(
-    userId: string,
-    id: string,
+    userId: Id<'User'>,
+    id: Id<'StudySession'>,
     endTime: (session: StudySession) => Date,
   ): Promise<StudySession | 'ended' | null> {
     return this.database.$transaction(async (tx) => {
@@ -131,5 +138,10 @@ export class StudySessionRepository {
 }
 
 function toSession(row: SessionRow): StudySession {
-  return new StudySession(row.id, row.userId, row.startedAt, row.endedAt);
+  return new StudySession(
+    asId<'StudySession'>(row.id),
+    asId<'User'>(row.userId),
+    row.startedAt,
+    row.endedAt,
+  );
 }

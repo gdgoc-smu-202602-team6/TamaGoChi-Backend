@@ -1,4 +1,5 @@
 import type { components } from '../../../../foundation/contract/openapi.js';
+import type { Id } from '../../../../foundation/id/id.js';
 
 export type NotificationState = components['schemas']['NotificationState'];
 
@@ -18,12 +19,12 @@ const transitions: Readonly<
  */
 export class Notice {
   constructor(
-    readonly id: string,
-    readonly clubId: string,
-    readonly categoryId: string,
-    readonly subcategoryId: string | null,
+    readonly id: Id<'Notice'>,
+    readonly clubId: Id<'Club'>,
+    readonly categoryId: Id<'NoticeCategory'>,
+    readonly subcategoryId: Id<'Subcategory'> | null,
     /** Null once the author deleted their account. */
-    readonly authorUserId: string | null,
+    readonly authorUserId: Id<'User'> | null,
     readonly title: string,
     readonly body: string,
     readonly pinned: boolean,
@@ -47,9 +48,12 @@ export class Notice {
    * Moving it to another category without naming a subcategory takes it out of its subcategory.
    */
   reclassified(
-    categoryId: string | undefined,
-    subcategoryId: string | null | undefined,
-  ): { readonly categoryId: string; readonly subcategoryId: string | null } {
+    categoryId: Id<'NoticeCategory'> | undefined,
+    subcategoryId: Id<'Subcategory'> | null | undefined,
+  ): {
+    readonly categoryId: Id<'NoticeCategory'>;
+    readonly subcategoryId: Id<'Subcategory'> | null;
+  } {
     const to = categoryId ?? this.categoryId;
     if (subcategoryId !== undefined) return { categoryId: to, subcategoryId };
     return {

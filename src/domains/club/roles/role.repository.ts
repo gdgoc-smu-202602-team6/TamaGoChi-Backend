@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { isPermission, type Permission } from '../clubs/access/permission.js';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
+import { asId } from '../../../foundation/id/id.js';
 import { Role } from './role.js';
 
 export const roleColumns = {
@@ -52,5 +53,5 @@ export function toRole(row: RoleRow): Role {
   const permissions = new Set<Permission>(
     row.permissions.map((p) => p.permission).filter(isPermission),
   );
-  return new Role(row.id, row.name, permissions);
+  return new Role(asId<'Role'>(row.id), row.name, permissions);
 }

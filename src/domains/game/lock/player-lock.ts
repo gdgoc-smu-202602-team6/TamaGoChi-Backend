@@ -1,4 +1,5 @@
 import type { Prisma } from '../../../foundation/database/generated/client.js';
+import type { Id } from '../../../foundation/id/id.js';
 
 /**
  * Serializes the game writes of one user (purchases, starting and ending sessions) inside the
@@ -6,7 +7,7 @@ import type { Prisma } from '../../../foundation/database/generated/client.js';
  */
 export async function lockPlayer(
   tx: Prisma.TransactionClient,
-  userId: string,
+  userId: Id<'User'>,
 ): Promise<void> {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))`;
 }

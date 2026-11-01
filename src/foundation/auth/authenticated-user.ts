@@ -1,9 +1,10 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
+import type { Id } from '../id/id.js';
 
 /** Who sent the request, as SessionGuard verified it. */
 export interface AuthenticatedUser {
-  readonly id: string;
+  readonly id: Id<'User'>;
 }
 
 export interface AuthenticatedRequest extends Request {

@@ -25,6 +25,7 @@ import {
   type AuthenticatedUser,
 } from '../../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../../foundation/contract/openapi.js';
+import type { Id } from '../../../../foundation/id/id.js';
 import { pageRequest } from '../../../../foundation/pagination/page-request.js';
 import { pageBody } from '../../../../foundation/pagination/page.js';
 import { parseField } from '../../../../foundation/problem/parse-field.js';
@@ -55,7 +56,7 @@ export class GuestbookEntriesController {
   async list(
     @CurrentUser() caller: AuthenticatedUser,
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Param('memberId') memberId: string,
     @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
@@ -81,7 +82,7 @@ export class GuestbookEntriesController {
   async create(
     @CurrentUser() caller: AuthenticatedUser,
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Param('memberId') memberId: string,
     @Body() body: GuestbookEntryCreateBody,
     @Res({ passthrough: true }) response: Response,
@@ -108,9 +109,9 @@ export class GuestbookEntriesController {
   async delete(
     @CurrentUser() caller: AuthenticatedUser,
     @CurrentClubAccess() access: ClubAccess,
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Param('memberId') memberId: string,
-    @Param('entryId') entryId: string,
+    @Param('entryId') entryId: Id<'GuestbookEntry'>,
   ): Promise<void> {
     const ownerId = await this.ownerOf(clubId, memberId, access);
     const entry = await this.guestbook.find(entryId, ownerId, clubId);
@@ -122,10 +123,10 @@ export class GuestbookEntriesController {
 
   /** The user whose room it is; `me` is the caller's membership. */
   private async ownerOf(
-    clubId: string,
+    clubId: Id<'Club'>,
     memberId: string,
     access: ClubAccess,
-  ): Promise<string> {
+  ): Promise<Id<'User'>> {
     const member = await this.members.find(
       clubId,
       resolveMe(memberId, access.memberId),

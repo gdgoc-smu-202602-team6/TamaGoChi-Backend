@@ -8,6 +8,7 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
+import type { Id } from '../../../foundation/id/id.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { NotFound } from '../../../foundation/problem/problems/not-found.js';
 import { PlayerViews } from '../player-views.js';
@@ -35,7 +36,7 @@ export class OwnedItemsController {
   @Put(':itemId')
   async purchase(
     @CurrentUser() caller: AuthenticatedUser,
-    @Param('itemId') itemId: string,
+    @Param('itemId') itemId: Id<'Item'>,
     @Res({ passthrough: true }) response: Response,
   ): Promise<OwnedItemBody> {
     const now = new Date();

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import type { Prisma } from '../../../../foundation/database/generated/client.js';
+import { asId, type Id } from '../../../../foundation/id/id.js';
 import type { Item } from '../../items/item.js';
 import type { SlotName } from '../../items/slot/slot.js';
 import { lockPlayer } from '../../lock/player-lock.js';
@@ -16,7 +17,7 @@ export class RoomRepository {
 
   /** The user's room; the default room when none is stored. `catalog` gives the items by id. */
   async find(
-    userId: string,
+    userId: Id<'User'>,
     catalog: readonly Item[],
     client: Client = this.database,
   ): Promise<Room> {
@@ -32,7 +33,7 @@ export class RoomRepository {
     const byId = new Map(catalog.map((item) => [item.id, item]));
     const equipped = new Map<SlotName, Item>();
     for (const one of row.items) {
-      const item = byId.get(one.itemId);
+      const item = byId.get(asId<'Item'>(one.itemId));
       if (item) equipped.set(one.slot as SlotName, item);
     }
     return Room.stored(
@@ -47,7 +48,7 @@ export class RoomRepository {
   }
 
   /** When the owner last opened their guestbook (M-21); null if never. */
-  async guestbookCheckedAt(userId: string): Promise<Date | null> {
+  async guestbookCheckedAt(userId: Id<'User'>): Promise<Date | null> {
     const row = await this.database.userRoom.findUnique({
       where: { userId },
       select: { guestbookCheckedAt: true },
@@ -60,7 +61,7 @@ export class RoomRepository {
    * `apply` gives the new room or why it is refused; a refusal stores nothing.
    */
   async change<R>(
-    userId: string,
+    userId: Id<'User'>,
     catalog: readonly Item[],
     apply: (room: Room) => Room | R,
   ): Promise<Room | R> {

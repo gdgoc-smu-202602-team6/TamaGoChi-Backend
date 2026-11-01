@@ -1,3 +1,4 @@
+import { asId } from '../../../../foundation/id/id.js';
 import { DailyGoalHistory } from '../daily-goals/daily-goal-history.js';
 import { Day } from '../../day/day.js';
 import { StudySession } from '../study-sessions/study-session.js';
@@ -13,8 +14,8 @@ function studyOn(n: number, length: number): StudySession {
     firstDay.plus(n - 1).start.getTime() + 6 * 60 * minutes,
   );
   return new StudySession(
-    `s${n}`,
-    'u',
+    asId<'StudySession'>(`s${n}`),
+    asId<'User'>('u'),
     startedAt,
     new Date(startedAt.getTime() + length * minutes),
   );
@@ -93,14 +94,14 @@ describe('Progress 경계', () => {
   it('29분 40초와 30초를 공부하면 하루 합 30분 10초라 출석이다', () => {
     const first = studyOn(1, 0);
     const a = new StudySession(
-      'a',
-      'u',
+      asId<'StudySession'>('a'),
+      asId<'User'>('u'),
       first.startedAt,
       new Date(first.startedAt.getTime() + (29 * 60 + 40) * 1000),
     );
     const b = new StudySession(
-      'b',
-      'u',
+      asId<'StudySession'>('b'),
+      asId<'User'>('u'),
       new Date(first.startedAt.getTime() + 60 * minutes),
       new Date(first.startedAt.getTime() + 60 * minutes + 30 * 1000),
     );
@@ -114,8 +115,8 @@ describe('Progress 경계', () => {
     const progress = Progress.at(
       records([
         new StudySession(
-          'a',
-          'u',
+          asId<'StudySession'>('a'),
+          asId<'User'>('u'),
           studyOn(1, 0).startedAt,
           new Date(studyOn(1, 0).startedAt.getTime() + (30 * 60 - 1) * 1000),
         ),
@@ -138,8 +139,8 @@ describe('Progress 경계', () => {
   it('오전 4시를 넘긴 세션은 두 날에 나눠 센다', () => {
     const start = new Date(firstDay.end.getTime() - 20 * minutes);
     const session = new StudySession(
-      's',
-      'u',
+      asId<'StudySession'>('s'),
+      asId<'User'>('u'),
       start,
       new Date(start.getTime() + 40 * minutes),
     );

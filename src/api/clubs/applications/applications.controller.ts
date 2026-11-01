@@ -26,6 +26,7 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
+import { asId, type Id } from '../../../foundation/id/id.js';
 import { pageRequest } from '../../../foundation/pagination/page-request.js';
 import { type Page, pageBody } from '../../../foundation/pagination/page.js';
 import { BadRequest } from '../../../foundation/problem/problems/bad-request.js';
@@ -80,9 +81,9 @@ export class ApplicationsController {
         { field: '/params/clubId', message: 'apply to one club' },
       ]);
     const result = await this.applications.create(
-      clubId,
+      asId<'Club'>(clubId),
       caller.id,
-      body.partId,
+      asId<'Part'>(body.partId),
     );
     if (result === null) throw new NotFound('club not found');
     if (result === 'no-part')
@@ -99,7 +100,7 @@ export class ApplicationsController {
   @Get(':clubId/applications')
   @RequireClubAccess(Application.decidedWith)
   async list(
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Query('state') state: ApplicationState | undefined,
     @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
@@ -118,8 +119,8 @@ export class ApplicationsController {
   @Get(':clubId/applications/:applicationId')
   async get(
     @CurrentUser() caller: AuthenticatedUser,
-    @Param('clubId') clubId: string,
-    @Param('applicationId') applicationId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('applicationId') applicationId: Id<'Application'>,
   ): Promise<ApplicationBody> {
     const application = await this.applications.findVisibleTo(
       clubId,
@@ -134,8 +135,8 @@ export class ApplicationsController {
   @Patch(':clubId/applications/:applicationId')
   @RequireClubAccess(Application.decidedWith)
   async decide(
-    @Param('clubId') clubId: string,
-    @Param('applicationId') applicationId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('applicationId') applicationId: Id<'Application'>,
     @Body() body: ApplicationDecisionBody,
   ): Promise<ApplicationBody> {
     const joinRole = await this.roles.assignedOnJoin();
@@ -157,8 +158,8 @@ export class ApplicationsController {
   @HttpCode(204)
   async cancel(
     @CurrentUser() caller: AuthenticatedUser,
-    @Param('clubId') clubId: string,
-    @Param('applicationId') applicationId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('applicationId') applicationId: Id<'Application'>,
   ): Promise<void> {
     const application = await this.applications.findVisibleTo(
       clubId,

@@ -26,6 +26,7 @@ import {
   type AuthenticatedUser,
 } from '../../foundation/auth/authenticated-user.js';
 import type { components } from '../../foundation/contract/openapi.js';
+import type { Id } from '../../foundation/id/id.js';
 import { parseField } from '../../foundation/problem/parse-field.js';
 import { BadRequest } from '../../foundation/problem/problems/bad-request.js';
 import { NotFound } from '../../foundation/problem/problems/not-found.js';
@@ -115,7 +116,7 @@ export class ClubsController {
   @Get(':clubId')
   @RequireClubAccess()
   async get(
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @CurrentClubAccess() access: ClubAccess,
     @Res({ passthrough: true }) response: Response,
   ): Promise<ClubBody> {
@@ -128,7 +129,7 @@ export class ClubsController {
   @Patch(':clubId')
   @RequireClubAccess('club.update')
   async update(
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Body() body: ClubUpdateBody,
     @Headers('if-match') ifMatch: string | undefined,
     @Res({ passthrough: true }) response: Response,
@@ -162,7 +163,7 @@ export class ClubsController {
   @Post(':clubId\\:regenerateInviteCode')
   @RequireClubAccess('club.update')
   async regenerateInviteCode(
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Res({ passthrough: true }) response: Response,
   ): Promise<ClubBody> {
     const club = found(await this.clubs.regenerateInviteCode(clubId));

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
+import type { Id } from '../../../../foundation/id/id.js';
 import { Day } from '../../day/day.js';
 import { DaySettlement } from './day-settlement.js';
 import { RoomCondition } from '../room/room-condition.js';
@@ -9,7 +10,7 @@ export class DaySettlementRepository {
   constructor(private readonly database: DatabaseClient) {}
 
   /** The user's confirmed days, oldest first. */
-  async all(userId: string): Promise<DaySettlement[]> {
+  async all(userId: Id<'User'>): Promise<DaySettlement[]> {
     const rows = await this.database.userDaySettlement.findMany({
       where: { userId },
       orderBy: { day: 'asc' },
@@ -34,7 +35,7 @@ export class DaySettlementRepository {
 
   /** Confirms days. A day confirmed meanwhile is kept: both computed it from the same records. */
   async confirm(
-    userId: string,
+    userId: Id<'User'>,
     settlements: readonly DaySettlement[],
   ): Promise<void> {
     if (settlements.length === 0) return;

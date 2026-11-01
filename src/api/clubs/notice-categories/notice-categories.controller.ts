@@ -15,6 +15,7 @@ import type { Subcategory } from '../../../domains/club/clubs/notice-categories/
 import { NoticeCategoryRepository } from '../../../domains/club/clubs/notice-categories/notice-category.repository.js';
 import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
 import type { components } from '../../../foundation/contract/openapi.js';
+import type { Id } from '../../../foundation/id/id.js';
 import { parseField } from '../../../foundation/problem/parse-field.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { NotFound } from '../../../foundation/problem/problems/not-found.js';
@@ -32,7 +33,7 @@ export class NoticeCategoriesController {
   @Get()
   @RequireClubAccess()
   async list(
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
   ): Promise<{ items: CategoryBody[] }> {
     return { items: (await this.categories.list(clubId)).map(toBody) };
   }
@@ -41,7 +42,7 @@ export class NoticeCategoriesController {
   @Post()
   @RequireClubAccess('noticeCategories.manage')
   async create(
-    @Param('clubId') clubId: string,
+    @Param('clubId') clubId: Id<'Club'>,
     @Body() body: CategoryCreateBody,
     @Res({ passthrough: true }) response: Response,
   ): Promise<CategoryBody> {
@@ -59,8 +60,8 @@ export class NoticeCategoriesController {
   @RequireClubAccess('noticeCategories.manage')
   @HttpCode(204)
   async delete(
-    @Param('clubId') clubId: string,
-    @Param('categoryId') categoryId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('categoryId') categoryId: Id<'NoticeCategory'>,
   ): Promise<void> {
     const result = await this.categories.delete(clubId, categoryId);
     if (result === null) throw new NotFound('notice category not found');
@@ -71,8 +72,8 @@ export class NoticeCategoriesController {
   @Post(':categoryId/subcategories')
   @RequireClubAccess('noticeCategories.manage')
   async createSubcategory(
-    @Param('clubId') clubId: string,
-    @Param('categoryId') categoryId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('categoryId') categoryId: Id<'NoticeCategory'>,
     @Body() body: SubcategoryCreateBody,
     @Res({ passthrough: true }) response: Response,
   ): Promise<SubcategoryBody> {
@@ -97,9 +98,9 @@ export class NoticeCategoriesController {
   @RequireClubAccess('noticeCategories.manage')
   @HttpCode(204)
   async deleteSubcategory(
-    @Param('clubId') clubId: string,
-    @Param('categoryId') categoryId: string,
-    @Param('subcategoryId') subcategoryId: string,
+    @Param('clubId') clubId: Id<'Club'>,
+    @Param('categoryId') categoryId: Id<'NoticeCategory'>,
+    @Param('subcategoryId') subcategoryId: Id<'Subcategory'>,
   ): Promise<void> {
     const result = await this.categories.deleteSubcategory(
       clubId,

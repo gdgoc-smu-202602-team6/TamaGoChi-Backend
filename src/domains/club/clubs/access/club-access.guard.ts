@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { AuthenticatedRequest } from '../../../../foundation/auth/authenticated-user.js';
+import { asId } from '../../../../foundation/id/id.js';
 import { Forbidden } from '../../../../foundation/problem/problems/forbidden.js';
 import { NotFound } from '../../../../foundation/problem/problems/not-found.js';
 import { MemberRepository } from '../members/member.repository.js';
@@ -60,7 +61,7 @@ export class ClubAccessGuard implements CanActivate {
     if (!user || typeof clubId !== 'string')
       throw new Error('RequireClubAccess needs a secured route with :clubId');
 
-    const access = await this.members.permissionsOf(user.id, clubId);
+    const access = await this.members.accessOf(user.id, asId<'Club'>(clubId));
     if (!access) throw new NotFound('club not found');
     if (rule.permission && !access.permissions.has(rule.permission)) {
       throw new Forbidden(`requires ${rule.permission}`);
