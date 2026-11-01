@@ -9,6 +9,6 @@ export interface PushMessage {
 
 /** Delivers push messages. The account domain implements it, since it owns the device tokens. */
 export abstract class PushSender {
-  /** Best effort: a failure is logged, never thrown at the caller. */
-  abstract send(message: PushMessage): Promise<void>;
+  /** Whether it was delivered. Best effort: a failure is reported this way and logged, never thrown at the caller. */
+  abstract send(message: PushMessage): Promise<boolean>;
 }

@@ -6,9 +6,7 @@ import { AUTH, createAuth } from './auth/auth.js';
 import { AuthMailer } from './auth/auth-mailer.js';
 import { BetterAuthSessionVerifier } from './auth/better-auth-session-verifier.js';
 import { LoggingAuthMailer } from './auth/logging-auth-mailer.js';
-import { PushSender } from '../../foundation/push/push-sender.js';
 import { DeviceTokenRepository } from './device-token/device-token.repository.js';
-import { LoggingPushSender } from './device-token/logging-push-sender.js';
 import { UserRepository } from './user/user.repository.js';
 
 @Module({
@@ -22,14 +20,7 @@ import { UserRepository } from './user/user.repository.js';
     { provide: SessionVerifier, useClass: BetterAuthSessionVerifier },
     UserRepository,
     DeviceTokenRepository,
-    { provide: PushSender, useClass: LoggingPushSender },
   ],
-  exports: [
-    AUTH,
-    SessionVerifier,
-    UserRepository,
-    DeviceTokenRepository,
-    PushSender,
-  ],
+  exports: [AUTH, SessionVerifier, UserRepository, DeviceTokenRepository],
 })
 export class AccountModule {}

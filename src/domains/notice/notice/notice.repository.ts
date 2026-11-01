@@ -1,0 +1,247 @@
+import { Injectable } from '@nestjs/common';
+import { DatabaseClient } from '../../../foundation/database/database-client.js';
+import {
+  afterCursor,
+  type Page,
+  type PageRequest,
+  toPage,
+} from '../../../foundation/pagination/page.js';
+import { Notice, type NotificationState } from './notice.js';
+import type { NoticeBody } from './notice-body.js';
+import type { NoticeTitle } from './notice-title.js';
+
+const noticeColumns = {
+  id: true,
+  clubId: true,
+  categoryId: true,
+  subcategoryId: true,
+  authorUserId: true,
+  title: true,
+  body: true,
+  pinned: true,
+  notificationState: true,
+  createdAt: true,
+} as const;
+
+type NoticeRow = {
+  id: string;
+  clubId: string;
+  categoryId: string;
+  subcategoryId: string | null;
+  authorUserId: string | null;
+  title: string;
+  body: string;
+  pinned: boolean;
+  notificationState: string;
+  createdAt: Date;
+};
+
+export interface NoticeFilter {
+  readonly categoryId?: string;
+  readonly subcategoryId?: string;
+  /** Only the ones the member read (true) or did not (false). */
+  readonly read?: boolean;
+}
+
+export interface NoticeDraft {
+  readonly categoryId: string;
+  readonly subcategoryId: string | null;
+  readonly title: NoticeTitle;
+  readonly body: NoticeBody;
+  readonly pinned: boolean;
+}
+
+export interface NoticeChanges {
+  readonly categoryId?: string;
+  readonly subcategoryId?: string | null;
+  readonly title?: NoticeTitle;
+  readonly body?: NoticeBody;
+  readonly pinned?: boolean;
+}
+
+/** Pinned first, newest first in each group (N-04). */
+const pinnedFirst = [
+  { pinned: 'desc' },
+  { createdAt: 'desc' },
+  { id: 'desc' },
+] as const;
+
+/** Notices of a club, each read as one member sees it (`memberId` gives `read`). */
+@Injectable()
+export class NoticeRepository {
+  constructor(private readonly database: DatabaseClient) {}
+
+  async list(
+    clubId: string,
+    memberId: string,
+    filter: NoticeFilter,
+    page: PageRequest,
+    query: string,
+  ): Promise<Page<Notice>> {
+    const rows = await this.database.clubNotice.findMany({
+      where: {
+        AND: [
+          this.matching(clubId, memberId, filter),
+          afterCursor(page.after, 'pinned'),
+        ],
+      },
+      select: { ...noticeColumns, reads: readBy(memberId) },
+      orderBy: [...pinnedFirst],
+      take: page.size + 1,
+    });
+    return toPage(
+      query,
+      page,
+      rows.map((row) => ({ ...row, leadingKey: row.pinned })),
+      toNotice,
+    );
+  }
+
+  async count(
+    clubId: string,
+    memberId: string,
+    filter: NoticeFilter,
+  ): Promise<number> {
+    return this.database.clubNotice.count({
+      where: this.matching(clubId, memberId, filter),
+    });
+  }
+
+  async find(
+    clubId: string,
+    id: string,
+    memberId: string,
+  ): Promise<Notice | null> {
+    const row = await this.database.clubNotice.findFirst({
+      where: { id, clubId },
+      select: { ...noticeColumns, reads: readBy(memberId) },
+    });
+    return row ? toNotice(row) : null;
+  }
+
+  async create(
+    clubId: string,
+    authorUserId: string,
+    draft: NoticeDraft,
+    notificationState: NotificationState,
+  ): Promise<Notice> {
+    const row = await this.database.clubNotice.create({
+      data: {
+        clubId,
+        authorUserId,
+        categoryId: draft.categoryId,
+        subcategoryId: draft.subcategoryId,
+        title: draft.title.value,
+        body: draft.body.value,
+        pinned: draft.pinned,
+        notificationState,
+      },
+      select: noticeColumns,
+    });
+    return toNotice({ ...row, reads: [] });
+  }
+
+  /** Null: no such notice in the club. Editing never notifies again (N-16). */
+  async update(
+    clubId: string,
+    id: string,
+    memberId: string,
+    changes: NoticeChanges,
+  ): Promise<Notice | null> {
+    const { count } = await this.database.clubNotice.updateMany({
+      where: { id, clubId },
+      data: {
+        ...(changes.categoryId !== undefined
+          ? { categoryId: changes.categoryId }
+          : {}),
+        ...(changes.subcategoryId !== undefined
+          ? { subcategoryId: changes.subcategoryId }
+          : {}),
+        ...(changes.title ? { title: changes.title.value } : {}),
+        ...(changes.body ? { body: changes.body.value } : {}),
+        ...(changes.pinned !== undefined ? { pinned: changes.pinned } : {}),
+      },
+    });
+    return count === 0 ? null : this.find(clubId, id, memberId);
+  }
+
+  async delete(clubId: string, id: string): Promise<boolean> {
+    const { count } = await this.database.clubNotice.deleteMany({
+      where: { id, clubId },
+    });
+    return count > 0;
+  }
+
+  /** Marks it read by the member (N-07). False: no such notice in the club. */
+  async markRead(
+    clubId: string,
+    id: string,
+    memberId: string,
+  ): Promise<boolean> {
+    const notice = await this.database.clubNotice.findFirst({
+      where: { id, clubId },
+      select: { id: true },
+    });
+    if (!notice) return false;
+    await this.database.clubNoticeRead.upsert({
+      where: { noticeId_memberId: { noticeId: id, memberId } },
+      create: { noticeId: id, memberId },
+      update: {},
+    });
+    return true;
+  }
+
+  /** The notices waiting to be sent, oldest first. */
+  async pending(): Promise<Notice[]> {
+    const rows = await this.database.clubNotice.findMany({
+      where: { notificationState: 'PENDING' },
+      select: noticeColumns,
+      orderBy: { createdAt: 'asc' },
+    });
+    return rows.map((row) => toNotice({ ...row, reads: [] }));
+  }
+
+  /** Moves the notification state, only along an allowed transition. */
+  async moveNotification(
+    id: string,
+    from: NotificationState,
+    to: NotificationState,
+  ): Promise<void> {
+    if (!Notice.canMove(from, to))
+      throw new Error(`notification cannot go from ${from} to ${to}`);
+    await this.database.clubNotice.updateMany({
+      where: { id, notificationState: from },
+      data: { notificationState: to },
+    });
+  }
+
+  private matching(clubId: string, memberId: string, filter: NoticeFilter) {
+    return {
+      clubId,
+      ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
+      ...(filter.subcategoryId ? { subcategoryId: filter.subcategoryId } : {}),
+      ...(filter.read === true ? { reads: { some: { memberId } } } : {}),
+      ...(filter.read === false ? { reads: { none: { memberId } } } : {}),
+    };
+  }
+}
+
+function readBy(memberId: string) {
+  return { where: { memberId }, select: { memberId: true } } as const;
+}
+
+function toNotice(row: NoticeRow & { reads: readonly unknown[] }): Notice {
+  return new Notice(
+    row.id,
+    row.clubId,
+    row.categoryId,
+    row.subcategoryId,
+    row.authorUserId,
+    row.title,
+    row.body,
+    row.pinned,
+    row.notificationState as NotificationState,
+    row.createdAt,
+    row.reads.length > 0,
+  );
+}

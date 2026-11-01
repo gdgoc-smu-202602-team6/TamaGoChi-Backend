@@ -37,4 +37,26 @@ describe('pageRequest and toPage', () => {
   it('깨진 토큰이면 400이다', () => {
     expect(() => pageRequest('q', 1, 'not-base64-json')).toThrow(BadRequest);
   });
+
+  it('맨 앞 정렬 키가 있는 목록의 토큰은 그 키도 기억한다', () => {
+    const pinned = rows.map((row, index) => ({
+      ...row,
+      leadingKey: index === 0,
+    }));
+    const first = toPage('q', pageRequest('q', 1), pinned, (row) => row.id);
+
+    const next = pageRequest('q', 1, first.nextPageToken);
+
+    expect(next.after).toEqual({
+      id: 'c',
+      createdAt: rows[0].createdAt,
+      leadingKey: true,
+    });
+  });
+
+  it('페이지 크기가 0이면 항목도 토큰도 없다', () => {
+    expect(toPage('q', pageRequest('q', 0), rows, (row) => row.id)).toEqual({
+      items: [],
+    });
+  });
 });

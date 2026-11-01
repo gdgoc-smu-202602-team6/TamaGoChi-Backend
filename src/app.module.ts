@@ -6,6 +6,7 @@ import { RolesModule } from './api/roles/roles.module.js';
 import { UsersModule } from './api/users/users.module.js';
 import { AccountModule } from './domains/account/account.module.js';
 import { authBasePath } from './domains/account/auth/auth.js';
+import { PushModule } from './domains/account/push.module.js';
 import { ClubModule } from './domains/club/club.module.js';
 import { MembershipModule } from './domains/club/membership.module.js';
 import { ClubAccessGuard } from './foundation/access/club-access.guard.js';
@@ -26,6 +27,7 @@ import { HealthModule } from './foundation/health/health.module.js';
     ContractModule.forRoot(new RegExp(`^${authBasePath}/`)),
     HealthModule,
     AccountModule,
+    PushModule,
     MembershipModule,
     ClubModule,
     UsersModule,

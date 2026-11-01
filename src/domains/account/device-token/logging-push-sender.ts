@@ -9,10 +9,10 @@ import {
 export class LoggingPushSender extends PushSender {
   private readonly logger = new Logger(LoggingPushSender.name);
 
-  send(message: PushMessage): Promise<void> {
+  send(message: PushMessage): Promise<boolean> {
     this.logger.log(
       `push to ${message.userIds.length} user(s): ${message.title} → ${message.link}`,
     );
-    return Promise.resolve();
+    return Promise.resolve(true);
   }
 }
