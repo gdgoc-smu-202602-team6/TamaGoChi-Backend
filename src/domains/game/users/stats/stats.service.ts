@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { ItemRepository } from '../../items/item.repository.js';
 import { LevelCurve } from '../../level/level-curve.js';
 import { LevelRepository } from '../../level/level.repository.js';
+import { OwnedItemRepository } from '../items/owned-item.repository.js';
 import { Earnings } from '../progress/earnings.js';
 import { ProgressService } from '../progress/progress.service.js';
 import { Stats } from './stats.js';
@@ -12,7 +12,7 @@ import type { Id } from '../../../../foundation/id/id.js';
 export class StatsService {
   constructor(
     private readonly progress: ProgressService,
-    private readonly items: ItemRepository,
+    private readonly ownedItems: OwnedItemRepository,
     private readonly levels: LevelRepository,
   ) {}
 
@@ -24,7 +24,7 @@ export class StatsService {
   ): Promise<Stats> {
     const [play, spent] = await Promise.all([
       this.progress.now(userId, accountCreatedAt, joinedAt, now),
-      this.items.spent(userId),
+      this.ownedItems.spent(userId),
     ]);
     const xp = Earnings.earnedXp(play.records.sessions, play.earned, now);
     const reached = await this.levels.reach(userId, LevelCurve.levelOf(xp));

@@ -2,6 +2,7 @@ import { Controller, Get, Param, Put, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import type { OwnedItem } from '../../../domains/game/users/items/owned-item.js';
 import { ItemRepository } from '../../../domains/game/items/item.repository.js';
+import { OwnedItemRepository } from '../../../domains/game/users/items/owned-item.repository.js';
 import { PurchaseService } from '../../../domains/game/users/items/purchase.service.js';
 import {
   CurrentUser,
@@ -19,6 +20,7 @@ type OwnedItemBody = components['schemas']['OwnedItem'];
 export class OwnedItemsController {
   constructor(
     private readonly items: ItemRepository,
+    private readonly ownedItems: OwnedItemRepository,
     private readonly purchases: PurchaseService,
     private readonly players: PlayerViews,
   ) {}
@@ -28,7 +30,10 @@ export class OwnedItemsController {
   async list(
     @CurrentUser() caller: AuthenticatedUser,
   ): Promise<{ items: OwnedItemBody[] }> {
-    const owned = await this.items.owned(caller.id, await this.items.catalog());
+    const owned = await this.ownedItems.owned(
+      caller.id,
+      await this.items.catalog(),
+    );
     return { items: owned.map(toBody) };
   }
 

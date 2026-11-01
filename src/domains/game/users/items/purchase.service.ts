@@ -8,6 +8,7 @@ import { StudySessionRepository } from '../study-sessions/study-session.reposito
 import type { PurchaseVerdict } from '../../items/item.js';
 import type { OwnedItem } from './owned-item.js';
 import { ItemRepository } from '../../items/item.repository.js';
+import { OwnedItemRepository } from './owned-item.repository.js';
 
 export type PurchaseOutcome =
   | { readonly owned: OwnedItem; readonly bought: boolean }
@@ -22,6 +23,7 @@ export class PurchaseService {
   constructor(
     private readonly database: DatabaseClient,
     private readonly items: ItemRepository,
+    private readonly ownedItems: OwnedItemRepository,
     private readonly sessions: StudySessionRepository,
     private readonly rooms: RoomRepository,
   ) {}
@@ -38,17 +40,17 @@ export class PurchaseService {
       const catalog = await this.items.catalog(tx);
       const item = catalog.find((one) => one.id === itemId);
       if (!item) return null;
-      const had = (await this.items.owned(userId, catalog, tx)).find(
+      const had = (await this.ownedItems.owned(userId, catalog, tx)).find(
         (one) => one.item.id === itemId,
       );
       if (had) return { owned: had, bought: false };
       const volts = Earnings.volts(
         Earnings.paidMinutes(await this.sessions.all(userId, tx), now),
-        await this.items.spent(userId, tx),
+        await this.ownedItems.spent(userId, tx),
       );
       const verdict = item.purchaseVerdict(level, volts);
       if (!verdict.ok) return verdict;
-      const owned = await this.items.buy(userId, item, tx);
+      const owned = await this.ownedItems.buy(userId, item, tx);
       const room = await this.rooms.find(userId, catalog, tx);
       await this.rooms.save(room.equip(item), tx);
       return { owned, bought: true };

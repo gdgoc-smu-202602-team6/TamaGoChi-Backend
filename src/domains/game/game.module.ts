@@ -3,6 +3,7 @@ import { DailyGoalRepository } from './users/daily-goals/daily-goal.repository.j
 import { GuestbookRepository } from './users/guestbook-entries/guestbook.repository.js';
 import { ItemRepository } from './items/item.repository.js';
 import { LevelRepository } from './level/level.repository.js';
+import { OwnedItemRepository } from './users/items/owned-item.repository.js';
 import { PurchaseService } from './users/items/purchase.service.js';
 import { LikeRepository } from './users/likes/like.repository.js';
 import { DaySettlementRepository } from './users/progress/day-settlement.repository.js';
@@ -19,6 +20,7 @@ const providers = [
   LevelRepository,
   StatsService,
   ItemRepository,
+  OwnedItemRepository,
   PurchaseService,
   RoomRepository,
   LikeRepository,

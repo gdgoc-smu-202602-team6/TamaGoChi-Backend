@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { ItemRepository } from '../../../domains/game/items/item.repository.js';
+import { OwnedItemRepository } from '../../../domains/game/users/items/owned-item.repository.js';
 import { Placement } from '../../../domains/game/users/room/placement.js';
 import type { PlacementTargetName } from '../../../domains/game/users/room/placement-target.js';
 import type {
@@ -29,6 +30,7 @@ export class RoomController {
     private readonly players: PlayerViews,
     private readonly rooms: RoomRepository,
     private readonly items: ItemRepository,
+    private readonly ownedItems: OwnedItemRepository,
   ) {}
 
   /** batchGetRooms: the friend cards (R-01~R-03), in the order asked. */
@@ -66,7 +68,7 @@ export class RoomController {
     const catalog = await this.items.catalog();
     const owned = body.equipped
       ? new Set(
-          (await this.items.owned(caller.id, catalog)).map(
+          (await this.ownedItems.owned(caller.id, catalog)).map(
             (one) => one.item.id,
           ),
         )

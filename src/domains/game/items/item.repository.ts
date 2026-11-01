@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import type { Prisma } from '../../../foundation/database/generated/client.js';
-import { asId, type Id } from '../../../foundation/id/id.js';
-import type { OwnedItem } from '../users/items/owned-item.js';
+import { asId } from '../../../foundation/id/id.js';
 import { type Grade, Item } from './item.js';
 import type { SlotName } from './slot/slot.js';
 import { slotOf } from './slot/slot-of.js';
@@ -44,55 +43,5 @@ export class ItemRepository {
           row.defaultOwned,
         ),
     );
-  }
-
-  /** What the user has: the items owned from the start, then the bought ones (M-12). */
-  async owned(
-    userId: Id<'User'>,
-    catalog: readonly Item[],
-    client: Client = this.database,
-  ): Promise<OwnedItem[]> {
-    const rows = await client.userItem.findMany({
-      where: { userId },
-      select: { itemId: true, price: true, createdAt: true },
-      orderBy: { createdAt: 'asc' },
-    });
-    const byId = new Map(catalog.map((item) => [item.id, item]));
-    const bought = rows.flatMap((row) => {
-      const item = byId.get(asId<'Item'>(row.itemId));
-      return item
-        ? [{ item, pricePaid: row.price, purchasedAt: row.createdAt }]
-        : [];
-    });
-    const boughtIds = new Set(bought.map((one) => one.item.id));
-    const fromStart = catalog
-      .filter((item) => item.defaultOwned && !boughtIds.has(item.id))
-      .map((item) => ({ item, pricePaid: 0 }));
-    return [...fromStart, ...bought];
-  }
-
-  /** The volts the user has paid for items. */
-  async spent(
-    userId: Id<'User'>,
-    client: Client = this.database,
-  ): Promise<number> {
-    const total = await client.userItem.aggregate({
-      where: { userId },
-      _sum: { price: true },
-    });
-    return total._sum.price ?? 0;
-  }
-
-  /** Records a purchase at the item's price now; the price paid stays when the catalog changes (8.3). */
-  async buy(
-    userId: Id<'User'>,
-    item: Item,
-    client: Client = this.database,
-  ): Promise<OwnedItem> {
-    const row = await client.userItem.create({
-      data: { userId, itemId: item.id, price: item.price },
-      select: { price: true, createdAt: true },
-    });
-    return { item, pricePaid: row.price, purchasedAt: row.createdAt };
   }
 }
