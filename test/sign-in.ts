@@ -15,7 +15,7 @@ export async function signUpVerifiedUser(
   nickname = '부원',
 ): Promise<SignedInUser> {
   const email = `e2e-${randomUUID()}@example.com`;
-  const password = 'correct horse battery';
+  const password = 'correct horse battery 1';
   const server = app.getHttpServer();
 
   await request(server)

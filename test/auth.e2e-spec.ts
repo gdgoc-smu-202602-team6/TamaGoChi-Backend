@@ -8,7 +8,7 @@ describe('sign-up, sign-in and the current user', () => {
   let app: INestApplication;
   let mailer: CapturingAuthMailer;
   const email = `e2e-${randomUUID()}@example.com`;
-  const password = 'correct horse battery';
+  const password = 'correct horse battery 1';
 
   beforeAll(async () => {
     ({ app, mailer } = await createTestApp());
@@ -39,6 +39,18 @@ describe('sign-up, sign-in and the current user', () => {
     const response = await request(app.getHttpServer())
       .post('/auth/sign-up/email')
       .send({ email: `blank-${email}`, password, name: '   ' });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('비밀번호에 숫자가 없으면 가입을 400으로 거절한다', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/sign-up/email')
+      .send({
+        email: `weak-${email}`,
+        password: 'correct horse battery',
+        name: '서연',
+      });
 
     expect(response.status).toBe(400);
   });
