@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ClubsModule } from './api/clubs/clubs.module.js';
+import { HealthModule } from './api/health/health.module.js';
 import { ItemsModule } from './api/items/items.module.js';
 import { RolesModule } from './api/roles/roles.module.js';
 import { UsersModule } from './api/users/users.module.js';
@@ -13,7 +14,6 @@ import { SessionGuard } from './foundation/auth/session.guard.js';
 import { ConfigModule } from './foundation/config/config.module.js';
 import { ContractModule } from './foundation/contract/contract.module.js';
 import { DatabaseModule } from './foundation/database/database.module.js';
-import { HealthModule } from './foundation/health/health.module.js';
 
 /**
  * The composition root: wires the domains' implementations into the foundation's interfaces. Guards run in the

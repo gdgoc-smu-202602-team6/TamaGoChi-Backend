@@ -1,7 +1,7 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppConfig } from './app-config.js';
 
-@Global()
+/** The server process's settings, read by main and configureApp. */
 @Module({
   providers: [
     { provide: AppConfig, useFactory: () => AppConfig.fromEnv(process.env) },

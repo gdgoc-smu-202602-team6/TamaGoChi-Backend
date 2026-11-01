@@ -2,11 +2,11 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { bearer } from 'better-auth/plugins';
-import type { AppConfig } from '../../../foundation/config/app-config.js';
 import type { DatabaseClient } from '../../../foundation/database/database-client.js';
 import { parseOrBadRequest } from '../../../foundation/problem/parse-field.js';
 import { Nickname } from '../user/nickname.js';
 import { Password } from '../user/password.js';
+import type { AuthConfig } from './auth-config.js';
 import type { AuthMailer } from './mailer/auth-mailer.js';
 
 /** Where better-auth's own routes live. The API contract does not describe them. */
@@ -29,14 +29,14 @@ function nicknameOf(name: string): string {
 }
 
 export function createAuth(
-  config: AppConfig,
+  config: AuthConfig,
   database: DatabaseClient,
   mailer: AuthMailer,
 ) {
   return betterAuth({
     baseURL: config.publicUrl,
     basePath: authBasePath,
-    secret: config.authSecret,
+    secret: config.secret,
     database: prismaAdapter(database, { provider: 'postgresql' }),
     emailAndPassword: {
       enabled: true,

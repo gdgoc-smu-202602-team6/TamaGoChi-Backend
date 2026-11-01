@@ -2,10 +2,7 @@ import { SendEmailCommand, type SESv2Client } from '@aws-sdk/client-sesv2';
 import { type AuthMail, authMails } from './auth-mail.js';
 import { AuthMailer } from './auth-mailer.js';
 
-/**
- * Sends the mail through Amazon SES. The client finds its credentials and region the AWS SDK's way (on EC2, the
- * instance role); `from` is a sender of an identity SES has verified.
- */
+/** Sends the mail through Amazon SES (MailModule's client), as MailConfig's sender. */
 export class SesAuthMailer extends AuthMailer {
   constructor(
     private readonly client: Pick<SESv2Client, 'send'>,
