@@ -55,17 +55,20 @@ export class NoticeCategoryRepository {
     }, 'duplicate');
   }
 
-  /** Null: no such category. 'preset': the preset one. 'in-use': a notice uses it or one of its subcategories. */
+  /**
+   * Null: no such category. 'preset': not NoticeCategory.deletable. 'in-use': a notice uses it or one of its
+   * subcategories, which the foreign keys decide at the delete.
+   */
   async delete(
     clubId: string,
     categoryId: string,
   ): Promise<true | 'preset' | 'in-use' | null> {
-    const category = await this.database.clubNoticeCategory.findFirst({
+    const row = await this.database.clubNoticeCategory.findFirst({
       where: { id: categoryId, clubId },
-      select: { preset: true },
+      select: categoryColumns,
     });
-    if (!category) return null;
-    if (category.preset) return 'preset';
+    if (!row) return null;
+    if (!toCategory(row).deletable) return 'preset';
     try {
       await this.database.clubNoticeCategory.delete({
         where: { id: categoryId },

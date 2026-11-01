@@ -51,11 +51,16 @@ export class UsersController {
     return toBody(found(await this.users.rename(caller.id, nickname)));
   }
 
-  /** deleteMe */
+  /** deleteMe: leaves every club, so not while the last manager of one. */
   @Delete()
   @HttpCode(204)
   async deleteMe(@CurrentUser() caller: AuthenticatedUser): Promise<void> {
-    if (await this.members.isLastManagerSomewhere(caller.id)) {
+    const managed = await this.members.managedBy(caller.id);
+    if (
+      [...managed].some(
+        ([memberId, managers]) => !managers.allowLeaving(memberId),
+      )
+    ) {
       throw new Conflict('last-manager');
     }
     if (!(await this.users.delete(caller.id)))

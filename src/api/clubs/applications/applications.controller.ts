@@ -13,13 +13,12 @@ import {
 import type { Response } from 'express';
 import type { User } from '../../../domains/account/users/user.js';
 import { UserRepository } from '../../../domains/account/users/user.repository.js';
-import type {
+import {
   Application,
-  ApplicationState,
+  type ApplicationState,
 } from '../../../domains/club/clubs/applications/application.js';
 import { decidedMessage } from '../../../domains/club/clubs/applications/application-messages.js';
 import { ApplicationRepository } from '../../../domains/club/clubs/applications/application.repository.js';
-import { MemberRepository } from '../../../domains/club/clubs/members/member.repository.js';
 import { RoleRepository } from '../../../domains/club/roles/role.repository.js';
 import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
 import {
@@ -47,7 +46,6 @@ export class ApplicationsController {
     private readonly applications: ApplicationRepository,
     private readonly roles: RoleRepository,
     private readonly users: UserRepository,
-    private readonly members: MemberRepository,
     private readonly push: PushSender,
   ) {}
 
@@ -99,7 +97,7 @@ export class ApplicationsController {
 
   /** listApplications of one club (the waiting list). */
   @Get(':clubId/applications')
-  @RequireClubAccess('applications.decide')
+  @RequireClubAccess(Application.decidedWith)
   async list(
     @Param('clubId') clubId: string,
     @Query('state') state: ApplicationState | undefined,
@@ -116,22 +114,25 @@ export class ApplicationsController {
     return this.toPageBody(page);
   }
 
-  /** getApplication: the applicant, or someone who decides applications. */
+  /** getApplication: as the caller may see it (ApplicationRepository.findVisibleTo). */
   @Get(':clubId/applications/:applicationId')
   async get(
     @CurrentUser() caller: AuthenticatedUser,
     @Param('clubId') clubId: string,
     @Param('applicationId') applicationId: string,
   ): Promise<ApplicationBody> {
-    const application = await this.applications.find(clubId, applicationId);
-    if (!application || !(await this.canSee(caller, application)))
-      throw new NotFound('application not found');
+    const application = await this.applications.findVisibleTo(
+      clubId,
+      applicationId,
+      caller.id,
+    );
+    if (!application) throw new NotFound('application not found');
     return this.toBody(application);
   }
 
   /** decideApplication */
   @Patch(':clubId/applications/:applicationId')
-  @RequireClubAccess('applications.decide')
+  @RequireClubAccess(Application.decidedWith)
   async decide(
     @Param('clubId') clubId: string,
     @Param('applicationId') applicationId: string,
@@ -151,7 +152,7 @@ export class ApplicationsController {
     return this.toBody(result);
   }
 
-  /** cancelApplication: only the applicant, only while pending. */
+  /** cancelApplication: Application.mayBeCancelledBy, only while open. */
   @Delete(':clubId/applications/:applicationId')
   @HttpCode(204)
   async cancel(
@@ -159,26 +160,17 @@ export class ApplicationsController {
     @Param('clubId') clubId: string,
     @Param('applicationId') applicationId: string,
   ): Promise<void> {
-    const application = await this.applications.find(clubId, applicationId);
-    if (!application || !(await this.canSee(caller, application)))
-      throw new NotFound('application not found');
-    if (application.userId !== caller.id)
+    const application = await this.applications.findVisibleTo(
+      clubId,
+      applicationId,
+      caller.id,
+    );
+    if (!application) throw new NotFound('application not found');
+    if (!application.mayBeCancelledBy(caller.id))
       throw new Forbidden('only the applicant can cancel');
     const result = await this.applications.cancel(clubId, applicationId);
     if (result === null) throw new NotFound('application not found');
     if (result === 'not-pending') throw new Conflict('not-pending');
-  }
-
-  private async canSee(
-    caller: AuthenticatedUser,
-    application: Application,
-  ): Promise<boolean> {
-    if (application.userId === caller.id) return true;
-    const access = await this.members.permissionsOf(
-      caller.id,
-      application.clubId,
-    );
-    return access?.permissions.has('applications.decide') ?? false;
   }
 
   private async toBody(application: Application): Promise<ApplicationBody> {

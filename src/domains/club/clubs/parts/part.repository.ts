@@ -3,6 +3,7 @@ import { DatabaseClient } from '../../../../foundation/database/database-client.
 import { orOnUniqueViolation } from '../../../../foundation/database/database-errors.js';
 import { Label } from '../../label/label.js';
 import type { PaletteColor } from '../../palette-color/palette-color.js';
+import { Application } from '../applications/application.js';
 import { Part } from './part.js';
 
 const partColumns = { id: true, name: true, color: true } as const;
@@ -37,7 +38,7 @@ export class PartRepository {
   }
 
   /**
-   * Deletes the part unless a member or a pending application uses it. Decided applications that named it stay,
+   * Deletes the part unless a member or an open application uses it. Decided applications that named it stay,
    * with no part, so their approval days remain (B-16). Null: no such part. 'in-use': still used.
    */
   async delete(
@@ -51,7 +52,9 @@ export class PartRepository {
           _count: {
             select: {
               members: true,
-              applications: { where: { state: 'PENDING' } },
+              applications: {
+                where: { state: { in: [...Application.openStates] } },
+              },
             },
           },
         },

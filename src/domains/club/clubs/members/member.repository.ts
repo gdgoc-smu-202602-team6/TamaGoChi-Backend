@@ -5,12 +5,14 @@ import type { PageRequest } from '../../../../foundation/pagination/page-request
 import type { Page } from '../../../../foundation/pagination/page.js';
 import type { Prisma } from '../../../../foundation/database/generated/client.js';
 import type { ClubAccess } from '../access/club-access.js';
-import type { Permission } from '../access/permission.js';
 import { roleColumns, toRole } from '../../roles/role.repository.js';
+import { ClubManagers } from './club-managers.js';
 import { Member, type MemberChanges } from './member.js';
 
-/** The permission whose holders must never drop to zero in a club. */
-const managing: Permission = 'members.manage';
+/** The members holding ClubManagers.permission, as a query condition. */
+const managing = {
+  role: { permissions: { some: { permission: ClubManagers.permission } } },
+} as const;
 
 const memberColumns = {
   id: true,
@@ -116,7 +118,7 @@ export class MemberRepository {
 
   /**
    * Null: no such member. 'no-part', 'no-role': the part is not the club's, the role does not exist.
-   * 'last-manager': the change would leave the club without anyone holding members.manage.
+   * 'last-manager': ClubManagers refuses the role. Judged under the club lock, so two managers cannot both step down.
    */
   async update(
     clubId: string,
@@ -140,22 +142,11 @@ export class MemberRepository {
       if (changes.roleId) {
         const role = await tx.role.findUnique({
           where: { id: changes.roleId },
-          select: {
-            permissions: {
-              where: { permission: managing },
-              select: { permission: true },
-            },
-          },
+          select: roleColumns,
         });
         if (!role) return 'no-role';
-        const keepsManaging = role.permissions.length > 0;
-        if (
-          !keepsManaging &&
-          (await managersOtherThan(tx, clubId, memberId)) === 0 &&
-          (await manages(tx, memberId))
-        ) {
+        if (!(await managersOf(tx, clubId)).allowRole(memberId, toRole(role)))
           return 'last-manager';
-        }
       }
       return toMember(
         await tx.clubMember.update({
@@ -167,7 +158,10 @@ export class MemberRepository {
     });
   }
 
-  /** Leaving or removal. Deletes the member's game data with it (foreign keys). */
+  /**
+   * Leaving or removal. Deletes the member's game data with it (foreign keys). 'last-manager': ClubManagers refuses
+   * the leaving, judged under the club lock.
+   */
   async remove(
     clubId: string,
     memberId: string,
@@ -179,33 +173,30 @@ export class MemberRepository {
         select: { id: true },
       });
       if (!current) return null;
-      if (
-        (await manages(tx, memberId)) &&
-        (await managersOtherThan(tx, clubId, memberId)) === 0
-      ) {
+      if (!(await managersOf(tx, clubId)).allowLeaving(memberId))
         return 'last-manager';
-      }
       await tx.clubMember.delete({ where: { id: memberId } });
       return true;
     });
   }
 
-  /** Whether the user is the only holder of members.manage in some club (so cannot delete their account). */
-  async isLastManagerSomewhere(userId: string): Promise<boolean> {
-    const held = await this.database.clubMember.findMany({
+  /** The managers of every club the user manages, by the user's member id there (deleting the account leaves them all). */
+  async managedBy(userId: string): Promise<ReadonlyMap<string, ClubManagers>> {
+    const rows = await this.database.clubMember.findMany({
       where: {
-        userId,
-        role: { permissions: { some: { permission: managing } } },
+        ...managing,
+        club: { members: { some: { userId, ...managing } } },
       },
-      select: { id: true, clubId: true },
+      select: { id: true, clubId: true, userId: true },
     });
-    for (const member of held) {
-      if (
-        (await managersOtherThan(this.database, member.clubId, member.id)) === 0
-      )
-        return true;
+    const managed = new Map<string, ClubManagers>();
+    for (const own of rows.filter((row) => row.userId === userId)) {
+      const ids = rows
+        .filter((row) => row.clubId === own.clubId)
+        .map((row) => row.id);
+      managed.set(own.id, new ClubManagers(new Set(ids)));
     }
-    return false;
+    return managed;
   }
 }
 
@@ -214,28 +205,12 @@ async function lockClub(tx: Tx, clubId: string): Promise<void> {
   await tx.$queryRaw`SELECT id FROM clubs WHERE id = ${clubId}::uuid FOR UPDATE`;
 }
 
-async function manages(tx: Tx, memberId: string): Promise<boolean> {
-  const count = await tx.clubMember.count({
-    where: {
-      id: memberId,
-      role: { permissions: { some: { permission: managing } } },
-    },
+async function managersOf(tx: Tx, clubId: string): Promise<ClubManagers> {
+  const rows = await tx.clubMember.findMany({
+    where: { clubId, ...managing },
+    select: { id: true },
   });
-  return count > 0;
-}
-
-async function managersOtherThan(
-  tx: Tx | DatabaseClient,
-  clubId: string,
-  memberId: string,
-): Promise<number> {
-  return tx.clubMember.count({
-    where: {
-      clubId,
-      id: { not: memberId },
-      role: { permissions: { some: { permission: managing } } },
-    },
-  });
+  return new ClubManagers(new Set(rows.map((row) => row.id)));
 }
 
 function toMember(row: MemberRow): Member {

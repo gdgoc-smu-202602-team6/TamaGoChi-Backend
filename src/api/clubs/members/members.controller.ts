@@ -10,7 +10,10 @@ import {
 } from '@nestjs/common';
 import type { User } from '../../../domains/account/users/user.js';
 import { UserRepository } from '../../../domains/account/users/user.repository.js';
-import type { Member } from '../../../domains/club/clubs/members/member.js';
+import {
+  Member,
+  type MemberRefusal,
+} from '../../../domains/club/clubs/members/member.js';
 import { MemberRepository } from '../../../domains/club/clubs/members/member.repository.js';
 import type { ClubAccess } from '../../../domains/club/clubs/access/club-access.js';
 import {
@@ -106,7 +109,7 @@ export class MembersController {
     return this.toBody(member, caller);
   }
 
-  /** updateMember: part and notifications are the member's own; the role needs members.manage. */
+  /** updateMember: who may change which field is Member.changeRefusal. */
   @Patch(':clubId/members/:memberId')
   @RequireClubAccess()
   async update(
@@ -117,21 +120,8 @@ export class MembersController {
     @Body() body: MemberUpdateBody,
   ): Promise<MemberBody> {
     const targetId = resolveMe(memberId, access.memberId);
-    const own = targetId === access.memberId;
-    if (
-      !own &&
-      (body.partId !== undefined || body.notificationsOn !== undefined)
-    ) {
-      throw new Forbidden(
-        'only the member changes their part and notifications',
-      );
-    }
-    if (
-      body.roleId !== undefined &&
-      !access.permissions.has('members.manage')
-    ) {
-      throw new Forbidden('requires members.manage');
-    }
+    const refusal = Member.changeRefusal(access, targetId, body);
+    if (refusal) throw forbidden(refusal);
     const result = await this.members.update(clubId, targetId, body);
     if (result === null) throw new NotFound('member not found');
     if (result === 'no-part')
@@ -146,7 +136,7 @@ export class MembersController {
     return this.toBody(result, caller);
   }
 
-  /** removeMember: `me` leaves; removing someone else needs members.manage. */
+  /** removeMember: `me` leaves; who may remove someone is Member.removalRefusal. */
   @Delete(':clubId/members/:memberId')
   @RequireClubAccess()
   @HttpCode(204)
@@ -156,12 +146,8 @@ export class MembersController {
     @Param('memberId') memberId: string,
   ): Promise<void> {
     const targetId = resolveMe(memberId, access.memberId);
-    if (
-      targetId !== access.memberId &&
-      !access.permissions.has('members.manage')
-    ) {
-      throw new Forbidden('requires members.manage');
-    }
+    const refusal = Member.removalRefusal(access, targetId);
+    if (refusal) throw forbidden(refusal);
     const result = await this.members.remove(clubId, targetId);
     if (result === null) throw new NotFound('member not found');
     if (result === 'last-manager') throw new Conflict('last-manager');
@@ -186,6 +172,14 @@ export class MembersController {
       toBody(item, users.get(item.userId), caller),
     );
   }
+}
+
+function forbidden(refusal: MemberRefusal): Forbidden {
+  return new Forbidden(
+    refusal === 'not-own'
+      ? 'only the member changes their part and notifications'
+      : 'requires members.manage',
+  );
 }
 
 function toBody(

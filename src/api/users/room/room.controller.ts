@@ -89,8 +89,9 @@ export class RoomController {
     });
     if (isRefusal(changed)) {
       if (changed.kind === 'not-owned') throw new Conflict('not-owned');
+      const entry = changed.index === undefined ? '' : `/${changed.index}`;
       throw new BadRequest([
-        { field: changed.field, message: changed.message },
+        { field: `/body/${changed.list}${entry}`, message: changed.message },
       ]);
     }
     const me = await this.players.me(caller);

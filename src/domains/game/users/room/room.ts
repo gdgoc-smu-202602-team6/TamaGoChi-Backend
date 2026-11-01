@@ -3,11 +3,15 @@ import type { SlotName } from '../../items/slot.js';
 import { Placement } from './placement.js';
 import type { PlacementTarget } from './placement-target.js';
 
-/** Why a change of the room is refused: a request that breaks a rule (400), or an item the user does not have (409). */
+/**
+ * Why a change of the room is refused: a change that breaks a rule (400), or an item the user does not have (409).
+ * An invalid one names the list of the change and its entry; no index is the list as a whole.
+ */
 export type RoomRefusal =
   | {
       readonly kind: 'invalid';
-      readonly field: string;
+      readonly list: 'equipped' | 'placements';
+      readonly index?: number;
       readonly message: string;
     }
   | { readonly kind: 'not-owned'; readonly itemId: string };
@@ -51,24 +55,24 @@ export class Room {
   ): Room | RoomRefusal {
     const equipped = new Map<SlotName, Item>();
     for (const [index, request] of requests.entries()) {
-      const field = `/body/equipped/${index}`;
+      const at = { list: 'equipped', index } as const;
       const item = catalog.get(request.itemId);
-      if (!item) return { kind: 'invalid', field, message: 'no such item' };
+      if (!item) return { kind: 'invalid', ...at, message: 'no such item' };
       if (item.slot.name !== request.slot)
         return {
           kind: 'invalid',
-          field,
+          ...at,
           message: `the item is not for ${request.slot}`,
         };
       if (equipped.has(request.slot))
-        return { kind: 'invalid', field, message: 'one item per slot' };
+        return { kind: 'invalid', ...at, message: 'one item per slot' };
       if (!owned.has(item.id)) return { kind: 'not-owned', itemId: item.id };
       equipped.set(request.slot, item);
     }
     if (!equipped.has('ROOM'))
       return {
         kind: 'invalid',
-        field: '/body/equipped',
+        list: 'equipped',
         message: 'a house must be equipped',
       };
     return this.rearranged(equipped);
@@ -86,19 +90,19 @@ export class Room {
     const targets = this.targets();
     const seen = new Set<PlacementTarget>();
     for (const [index, placement] of placements.entries()) {
-      const field = `/body/placements/${index}`;
+      const at = { list: 'placements', index } as const;
       if (!targets.has(placement.target))
         return {
           kind: 'invalid',
-          field,
+          ...at,
           message: `${placement.target} is not equipped`,
         };
       if (seen.has(placement.target))
-        return { kind: 'invalid', field, message: 'one placement per target' };
+        return { kind: 'invalid', ...at, message: 'one placement per target' };
       if (!placement.fitsIn(this.size))
         return {
           kind: 'invalid',
-          field,
+          ...at,
           message: 'outside the room or off its grid',
         };
       seen.add(placement.target);

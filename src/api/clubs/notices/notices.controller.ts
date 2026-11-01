@@ -138,14 +138,10 @@ export class NoticesController {
   ): Promise<NoticeBodyJson> {
     const current = await this.notices.find(clubId, noticeId, access.memberId);
     if (!current) throw new NotFound('notice not found');
-    const categoryId = body.categoryId ?? current.categoryId;
-    const subcategoryId =
-      body.subcategoryId !== undefined
-        ? body.subcategoryId
-        : body.categoryId !== undefined &&
-            body.categoryId !== current.categoryId
-          ? null
-          : current.subcategoryId;
+    const { categoryId, subcategoryId } = current.reclassified(
+      body.categoryId,
+      body.subcategoryId,
+    );
     await this.checkCategory(clubId, categoryId, subcategoryId ?? undefined);
     const { title, body: text, pinned } = body;
     const updated = await this.notices.update(
@@ -206,10 +202,7 @@ export class NoticesController {
       throw new BadRequest([
         { field: '/body/categoryId', message: 'not a category of this club' },
       ]);
-    if (
-      subcategoryId &&
-      !category.subcategories.some((one) => one.id === subcategoryId)
-    )
+    if (subcategoryId && !category.has(subcategoryId))
       throw new BadRequest([
         {
           field: '/body/subcategoryId',

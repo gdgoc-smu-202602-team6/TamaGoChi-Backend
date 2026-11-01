@@ -41,4 +41,20 @@ export class Notice {
   static canMove(from: NotificationState, to: NotificationState): boolean {
     return transitions[from].includes(to);
   }
+
+  /**
+   * Where the notice is filed after an update that names `categoryId` and `subcategoryId` (undefined: unchanged).
+   * Moving it to another category without naming a subcategory takes it out of its subcategory.
+   */
+  reclassified(
+    categoryId: string | undefined,
+    subcategoryId: string | null | undefined,
+  ): { readonly categoryId: string; readonly subcategoryId: string | null } {
+    const to = categoryId ?? this.categoryId;
+    if (subcategoryId !== undefined) return { categoryId: to, subcategoryId };
+    return {
+      categoryId: to,
+      subcategoryId: to === this.categoryId ? this.subcategoryId : null,
+    };
+  }
 }

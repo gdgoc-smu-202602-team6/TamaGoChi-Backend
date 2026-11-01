@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { MemberRepository } from '../../../../domains/club/clubs/members/member.repository.js';
+import { GuestbookEntry } from '../../../../domains/game/users/guestbook-entries/guestbook-entry.js';
 import { GuestbookText } from '../../../../domains/game/users/guestbook-entries/guestbook-text.js';
 import { GuestbookRepository } from '../../../../domains/game/users/guestbook-entries/guestbook.repository.js';
 import { RoomRepository } from '../../../../domains/game/users/room/room.repository.js';
@@ -87,11 +88,11 @@ export class GuestbookEntriesController {
   ): Promise<GuestbookEntryBody> {
     const ownerId = await this.ownerOf(clubId, memberId, access);
     const text = parseField('/body/body', () => GuestbookText.parse(body.body));
-    const entry = await this.guestbook.write(ownerId, clubId, caller.id, text);
-    if (entry === 'own-room')
+    if (!GuestbookEntry.mayBeWritten(ownerId, caller.id))
       throw new BadRequest([
         { field: '/params/memberId', message: 'not your own room' },
       ]);
+    const entry = await this.guestbook.write(ownerId, clubId, caller.id, text);
     response
       .status(201)
       .location(
@@ -112,9 +113,8 @@ export class GuestbookEntriesController {
     @Param('entryId') entryId: string,
   ): Promise<void> {
     const ownerId = await this.ownerOf(clubId, memberId, access);
-    const entry = await this.guestbook.find(entryId);
-    if (!entry || entry.userId !== ownerId || entry.clubId !== clubId)
-      throw new NotFound('entry not found');
+    const entry = await this.guestbook.find(entryId, ownerId, clubId);
+    if (!entry) throw new NotFound('entry not found');
     if (!entry.mayBeDeletedBy(caller.id))
       throw new Forbidden('only its author or the room owner deletes it');
     await this.guestbook.delete(entryId);

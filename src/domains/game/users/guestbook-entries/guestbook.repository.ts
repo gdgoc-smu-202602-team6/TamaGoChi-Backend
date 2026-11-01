@@ -44,22 +44,26 @@ export class GuestbookRepository {
     );
   }
 
-  async find(id: string): Promise<GuestbookEntry | null> {
-    const row = await this.database.userGuestbookEntry.findUnique({
-      where: { id },
+  /** The entry of `userId`'s room written in `clubId`; null when there is none such. */
+  async find(
+    id: string,
+    userId: string,
+    clubId: string,
+  ): Promise<GuestbookEntry | null> {
+    const row = await this.database.userGuestbookEntry.findFirst({
+      where: { id, userId, clubId },
       select: entryColumns,
     });
     return row ? toEntry(row) : null;
   }
 
-  /** 'own-room': nobody writes in their own room. */
+  /** Whether one may write it is GuestbookEntry.mayBeWritten, the caller's to check. */
   async write(
     userId: string,
     clubId: string,
     authorUserId: string,
     text: GuestbookText,
-  ): Promise<GuestbookEntry | 'own-room'> {
-    if (!GuestbookEntry.mayBeWritten(userId, authorUserId)) return 'own-room';
+  ): Promise<GuestbookEntry> {
     return toEntry(
       await this.database.userGuestbookEntry.create({
         data: { userId, clubId, authorUserId, body: text.value },

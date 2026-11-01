@@ -3,17 +3,12 @@ import { DatabaseClient } from '../../../foundation/database/database-client.js'
 import { isUniqueViolation } from '../../../foundation/database/database-errors.js';
 import { Label } from '../label/label.js';
 import type { PaletteColor } from '../palette-color/palette-color.js';
+import { NoticeCategory } from './notice-categories/notice-category.js';
 import { Part } from './parts/part.js';
 import { Club } from './club.js';
 import { ClubName } from './club-name.js';
 import { InviteCode } from './invite-code.js';
 
-/** The notice category every club starts with and can never delete. */
-const presetNoticeCategory = {
-  name: '전체공지',
-  color: 'RED',
-  preset: true,
-} as const;
 const inviteCodeAttempts = 3;
 
 const clubColumns = {
@@ -62,7 +57,13 @@ export class ClubRepository {
                   color: part.color,
                 })),
               },
-              noticeCategories: { create: presetNoticeCategory },
+              noticeCategories: {
+                create: {
+                  name: NoticeCategory.presetName.value,
+                  color: NoticeCategory.presetColor,
+                  preset: true,
+                },
+              },
             },
             select: { id: true, parts: { select: { id: true, name: true } } },
           });

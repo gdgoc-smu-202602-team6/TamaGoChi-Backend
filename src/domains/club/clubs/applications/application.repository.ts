@@ -63,9 +63,34 @@ export class ApplicationRepository {
     }, 'pending');
   }
 
-  async find(clubId: string, id: string): Promise<Application | null> {
+  /** The application as `viewerId` may see it: their own, or any of the club when they decide applications. */
+  async findVisibleTo(
+    clubId: string,
+    id: string,
+    viewerId: string,
+  ): Promise<Application | null> {
     const row = await this.database.clubApplication.findFirst({
-      where: { id, clubId },
+      where: {
+        id,
+        clubId,
+        OR: [
+          { userId: viewerId },
+          {
+            club: {
+              members: {
+                some: {
+                  userId: viewerId,
+                  role: {
+                    permissions: {
+                      some: { permission: Application.decidedWith },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
       select: applicationColumns,
     });
     return row ? toApplication(row) : null;
@@ -129,7 +154,8 @@ export class ApplicationRepository {
 
   /**
    * Decides a pending application. Approving makes the applicant a member with `joinRoleId` in the same
-   * transaction. 'not-pending': already decided. 'already-member': the applicant joined meanwhile.
+   * transaction. 'not-pending': already decided. 'already-member': the applicant joined meanwhile. Whether it may
+   * move is the update's condition, so two deciders at once cannot both move it.
    */
   async decide(
     clubId: string,
@@ -141,7 +167,11 @@ export class ApplicationRepository {
       () =>
         this.database.$transaction(async (tx) => {
           const { count } = await tx.clubApplication.updateMany({
-            where: { id, clubId, state: 'PENDING' },
+            where: {
+              id,
+              clubId,
+              state: { in: [...Application.movingTo(decision)] },
+            },
             data: { state: decision, decidedAt: new Date() },
           });
           const row = await tx.clubApplication.findFirst({
@@ -169,16 +199,23 @@ export class ApplicationRepository {
     );
   }
 
-  /** Withdraws a pending application. 'not-pending': already decided. */
+  /**
+   * Withdraws an open application. 'not-pending': already decided. Whether it is open is the delete's condition, so a
+   * decision at the same moment cannot be lost.
+   */
   async cancel(
     clubId: string,
     id: string,
   ): Promise<true | 'not-pending' | null> {
     const { count } = await this.database.clubApplication.deleteMany({
-      where: { id, clubId, state: 'PENDING' },
+      where: { id, clubId, state: { in: [...Application.openStates] } },
     });
     if (count === 1) return true;
-    return (await this.find(clubId, id)) ? 'not-pending' : null;
+    const left = await this.database.clubApplication.findFirst({
+      where: { id, clubId },
+      select: { id: true },
+    });
+    return left ? 'not-pending' : null;
   }
 }
 
