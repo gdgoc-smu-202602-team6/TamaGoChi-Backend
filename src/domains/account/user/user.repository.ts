@@ -36,8 +36,8 @@ export class UserRepository {
   }
 
   /**
-   * Deletes the account. Foreign keys cascade to its sessions, linked accounts, device tokens, applications and
-   * memberships (and each membership's game data); notices it wrote keep their text with no author.
+   * Deletes the account. Foreign keys cascade to its sessions, linked accounts, device tokens, applications,
+   * memberships and game data; notices and guestbook entries it wrote stay, with no author.
    */
   async delete(id: string): Promise<boolean> {
     const { count } = await this.database.user.deleteMany({ where: { id } });
