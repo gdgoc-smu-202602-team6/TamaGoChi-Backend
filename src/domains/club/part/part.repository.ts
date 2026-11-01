@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
-import { isUniqueViolation } from '../../../foundation/database/database-errors.js';
+import { orOnUniqueViolation } from '../../../foundation/database/database-errors.js';
 import { Label, type PaletteColor } from '../label/label.js';
 import { Part } from './part.js';
 
@@ -25,17 +25,14 @@ export class PartRepository {
     name: Label,
     color: PaletteColor,
   ): Promise<Part | 'duplicate'> {
-    try {
+    return orOnUniqueViolation(async () => {
       return toPart(
         await this.database.clubPart.create({
           data: { clubId, name: name.value, color },
           select: partColumns,
         }),
       );
-    } catch (error) {
-      if (isUniqueViolation(error)) return 'duplicate';
-      throw error;
-    }
+    }, 'duplicate');
   }
 
   /**

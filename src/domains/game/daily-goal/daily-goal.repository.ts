@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
-import { isUniqueViolation } from '../../../foundation/database/database-errors.js';
+import { orOnUniqueViolation } from '../../../foundation/database/database-errors.js';
 import { Day } from '../day/day.js';
 import { DailyGoal, DailyGoalHistory } from './daily-goal.js';
 
@@ -24,14 +24,11 @@ export class DailyGoalRepository {
     startOn: Day,
     minutes: number,
   ): Promise<DailyGoal | 'duplicate'> {
-    try {
+    return orOnUniqueViolation(async () => {
       await this.database.userDailyGoal.create({
         data: { userId, startOn: startOn.toDate(), minutes },
       });
       return new DailyGoal(startOn, minutes);
-    } catch (error) {
-      if (isUniqueViolation(error)) return 'duplicate';
-      throw error;
-    }
+    }, 'duplicate');
   }
 }

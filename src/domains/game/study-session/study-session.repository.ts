@@ -1,14 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import type { Prisma } from '../../../foundation/database/generated/client.js';
-import { isUniqueViolation } from '../../../foundation/database/database-errors.js';
-import {
-  afterCursor,
-  newestFirst,
-  type Page,
-  type PageRequest,
-  toPage,
-} from '../../../foundation/pagination/page.js';
+import { orOnUniqueViolation } from '../../../foundation/database/database-errors.js';
+import { newestFirstPage } from '../../../foundation/pagination/newest-first-page.js';
+import type { Page, PageRequest } from '../../../foundation/pagination/page.js';
 import { lockPlayer } from '../lock/player-lock.js';
 import { type SessionState, StudySession } from './study-session.js';
 
@@ -37,32 +32,31 @@ export class StudySessionRepository {
    * 'running': the user has a session running.
    */
   async start(userId: string, now: Date): Promise<StudySession | 'running'> {
-    try {
-      return await this.database.$transaction(async (tx) => {
-        await lockPlayer(tx, userId);
-        const open = await tx.userStudySession.findFirst({
-          where: { userId, endedAt: null },
-          select: sessionColumns,
-        });
-        if (open) {
-          const session = toSession(open);
-          if (session.state(now) === 'RUNNING') return 'running';
-          await tx.userStudySession.update({
-            where: { id: open.id },
-            data: { endedAt: session.maxEndAt },
-          });
-        }
-        return toSession(
-          await tx.userStudySession.create({
-            data: { userId, startedAt: now },
+    return orOnUniqueViolation(
+      () =>
+        this.database.$transaction(async (tx) => {
+          await lockPlayer(tx, userId);
+          const open = await tx.userStudySession.findFirst({
+            where: { userId, endedAt: null },
             select: sessionColumns,
-          }),
-        );
-      });
-    } catch (error) {
-      if (isUniqueViolation(error)) return 'running';
-      throw error;
-    }
+          });
+          if (open) {
+            const session = toSession(open);
+            if (session.state(now) === 'RUNNING') return 'running';
+            await tx.userStudySession.update({
+              where: { id: open.id },
+              data: { endedAt: session.maxEndAt },
+            });
+          }
+          return toSession(
+            await tx.userStudySession.create({
+              data: { userId, startedAt: now },
+              select: sessionColumns,
+            }),
+          );
+        }),
+      'running',
+    );
   }
 
   async find(userId: string, id: string): Promise<StudySession | null> {
@@ -105,13 +99,13 @@ export class StudySessionRepository {
               ],
             }
           : {};
-    const rows = await this.database.userStudySession.findMany({
-      where: { userId, AND: [byState, afterCursor(page.after)] },
-      select: sessionColumns,
-      orderBy: [...newestFirst],
-      take: page.size + 1,
-    });
-    return toPage(query, page, rows, toSession);
+    return newestFirstPage(query, page, toSession, ({ after, ...window }) =>
+      this.database.userStudySession.findMany({
+        where: { userId, AND: [byState, after] },
+        select: sessionColumns,
+        ...window,
+      }),
+    );
   }
 
   /** Ends the session at the time `endTime` picks. 'ended': it was ended already. */

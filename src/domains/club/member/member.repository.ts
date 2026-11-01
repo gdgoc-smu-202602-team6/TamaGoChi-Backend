@@ -1,13 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { Permission } from '../../../foundation/access/permission.js';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
-import {
-  afterCursor,
-  newestFirst,
-  type Page,
-  type PageRequest,
-  toPage,
-} from '../../../foundation/pagination/page.js';
+import { newestFirstPage } from '../../../foundation/pagination/newest-first-page.js';
+import type { Page, PageRequest } from '../../../foundation/pagination/page.js';
 import type { Prisma } from '../../../foundation/database/generated/client.js';
 import { Member, type MemberChanges } from './member.js';
 
@@ -54,17 +49,13 @@ export class MemberRepository {
     page: PageRequest,
     query: string,
   ): Promise<Page<Member>> {
-    const rows = await this.database.clubMember.findMany({
-      where: {
-        clubId,
-        ...(partId ? { partId } : {}),
-        ...afterCursor(page.after),
-      },
-      select: memberColumns,
-      orderBy: [...newestFirst],
-      take: page.size + 1,
-    });
-    return toPage(query, page, rows, toMember);
+    return newestFirstPage(query, page, toMember, ({ after, ...window }) =>
+      this.database.clubMember.findMany({
+        where: { clubId, ...(partId ? { partId } : {}), ...after },
+        select: memberColumns,
+        ...window,
+      }),
+    );
   }
 
   async listForUser(
@@ -72,13 +63,13 @@ export class MemberRepository {
     page: PageRequest,
     query: string,
   ): Promise<Page<Member>> {
-    const rows = await this.database.clubMember.findMany({
-      where: { userId, ...afterCursor(page.after) },
-      select: memberColumns,
-      orderBy: [...newestFirst],
-      take: page.size + 1,
-    });
-    return toPage(query, page, rows, toMember);
+    return newestFirstPage(query, page, toMember, ({ after, ...window }) =>
+      this.database.clubMember.findMany({
+        where: { userId, ...after },
+        select: memberColumns,
+        ...window,
+      }),
+    );
   }
 
   /**

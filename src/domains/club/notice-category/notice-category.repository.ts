@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import {
   isStillReferenced,
-  isUniqueViolation,
+  orOnUniqueViolation,
 } from '../../../foundation/database/database-errors.js';
 import { Label, type PaletteColor } from '../label/label.js';
 import { NoticeCategory, Subcategory } from './notice-category.js';
@@ -43,17 +43,14 @@ export class NoticeCategoryRepository {
     name: Label,
     color: PaletteColor,
   ): Promise<NoticeCategory | 'duplicate'> {
-    try {
+    return orOnUniqueViolation(async () => {
       return toCategory(
         await this.database.clubNoticeCategory.create({
           data: { clubId, name: name.value, color },
           select: categoryColumns,
         }),
       );
-    } catch (error) {
-      if (isUniqueViolation(error)) return 'duplicate';
-      throw error;
-    }
+    }, 'duplicate');
   }
 
   /** Null: no such category. 'preset': the preset one. 'in-use': a notice uses it or one of its subcategories. */
@@ -89,16 +86,13 @@ export class NoticeCategoryRepository {
       select: { id: true },
     });
     if (!category) return null;
-    try {
+    return orOnUniqueViolation(async () => {
       const row = await this.database.clubNoticeCategorySubcategory.create({
         data: { categoryId, name: name.value },
         select: { id: true, name: true },
       });
       return new Subcategory(row.id, Label.fromStored(row.name));
-    } catch (error) {
-      if (isUniqueViolation(error)) return 'duplicate';
-      throw error;
-    }
+    }, 'duplicate');
   }
 
   /** Null: no such subcategory in the club's category. 'in-use': a notice uses it. */

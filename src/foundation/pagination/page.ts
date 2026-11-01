@@ -104,5 +104,3 @@ export function afterCursor(
       }
     : { [leadingField]: false, ...withinKey };
 }
-
-export const newestFirst = [{ createdAt: 'desc' }, { id: 'desc' }] as const;

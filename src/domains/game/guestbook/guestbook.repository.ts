@@ -1,12 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
-import {
-  afterCursor,
-  newestFirst,
-  type Page,
-  type PageRequest,
-  toPage,
-} from '../../../foundation/pagination/page.js';
+import { newestFirstPage } from '../../../foundation/pagination/newest-first-page.js';
+import type { Page, PageRequest } from '../../../foundation/pagination/page.js';
 import { GuestbookEntry } from './guestbook-entry.js';
 import type { GuestbookText } from './guestbook-text.js';
 
@@ -39,17 +34,13 @@ export class GuestbookRepository {
     page: PageRequest,
     query: string,
   ): Promise<Page<GuestbookEntry>> {
-    const rows = await this.database.userGuestbookEntry.findMany({
-      where: {
-        userId,
-        ...(clubId ? { clubId } : {}),
-        ...afterCursor(page.after),
-      },
-      select: entryColumns,
-      orderBy: [...newestFirst],
-      take: page.size + 1,
-    });
-    return toPage(query, page, rows, toEntry);
+    return newestFirstPage(query, page, toEntry, ({ after, ...window }) =>
+      this.database.userGuestbookEntry.findMany({
+        where: { userId, ...(clubId ? { clubId } : {}), ...after },
+        select: entryColumns,
+        ...window,
+      }),
+    );
   }
 
   async find(id: string): Promise<GuestbookEntry | null> {
