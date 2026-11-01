@@ -36,9 +36,27 @@ API(`https://api.tmgoc.kro.kr`)는 EC2 한 대에서 컨테이너로 돌고, 데
    - SES가 주는 CNAME 3개를 내도메인.한국의 "별칭(CNAME)"에 넣습니다.
    - 확인이 끝나면 `noreply@tmgoc.kro.kr`처럼 이 도메인의 어떤 주소로도 보낼 수 있습니다.
    - Gmail 주소는 보내는 주소로 쓰지 않습니다(DMARC에 걸려 스팸함으로 갑니다).
-2. **샌드박스 해제**: 새 계정의 SES는 샌드박스라서, 확인된 주소로만 보낼 수 있습니다. 시험하는 사람의 주소를 SES에 "이메일 주소" 자격 증명으로 하나씩 확인하거나, 계정 대시보드에서 프로덕션 액세스를 요청합니다(AWS 심사).
-3. **EC2 인스턴스 역할**: EC2에 IAM 역할을 붙이고 `ses:SendEmail` 권한을 줍니다(리소스는 그 도메인 자격 증명). 액세스 키는 만들지 않습니다.
-4. **메타데이터 홉 제한**: 앱은 컨테이너 안에서 인스턴스 역할의 자격 증명을 받으므로, 인스턴스 메타데이터의 IMDSv2 홉 제한이 2 이상이어야 합니다.
+2. **샌드박스**: 새 계정의 SES는 샌드박스라서 **받는 주소도** 확인된 주소여야 합니다(아니면 `MessageRejected: Email address is not verified`). 시험하는 사람의 주소를 SES에 "이메일 주소" 자격 증명으로 하나씩 확인하거나, 계정 대시보드에서 프로덕션 액세스를 요청합니다(AWS 심사, 트랜잭션 메일).
+3. **EC2 인스턴스 역할**: 신뢰 대상이 EC2인 IAM 역할을 만들어 EC2에 붙이고(작업 → 보안 → IAM 역할 수정), 아래 인라인 정책을 줍니다. 액세스 키는 만들지 않습니다.
+   - 자격 증명(`identity/*`): 보내는 도메인과, 샌드박스에서는 받는 주소까지 검사합니다.
+   - 설정 세트(`configuration-set/*`): SES 시작 마법사가 도메인에 기본 설정 세트(`my-first-configuration-set`)를 붙이면, 그 설정 세트에도 권한이 필요합니다(`not authorized to perform 'ses:SendEmail' on resource ...:configuration-set/...`).
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "ses:SendEmail",
+      "Resource": [
+        "arn:aws:ses:ap-northeast-2:<계정 ID>:identity/*",
+        "arn:aws:ses:ap-northeast-2:<계정 ID>:configuration-set/*"
+      ]
+    }
+  ]
+}
+```
+4. **메타데이터 홉 제한**: 앱은 컨테이너 안에서 인스턴스 역할의 자격 증명을 받으므로, 인스턴스 메타데이터의 IMDSv2 홉 제한이 2 이상이어야 합니다(역할이 없거나 홉 제한이 1이면 `Could not load credentials from any providers`). 콘솔에서는 작업 → 인스턴스 설정 → 인스턴스 메타데이터 옵션 수정입니다.
 
 ```bash
 aws ec2 modify-instance-metadata-options --instance-id <인스턴스 ID> --http-put-response-hop-limit 2 --http-tokens required
