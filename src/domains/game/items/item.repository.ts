@@ -3,7 +3,8 @@ import { DatabaseClient } from '../../../foundation/database/database-client.js'
 import type { Prisma } from '../../../foundation/database/generated/client.js';
 import type { OwnedItem } from '../users/items/owned-item.js';
 import { type Grade, Item } from './item.js';
-import { Slot, type SlotName } from './slot.js';
+import type { SlotName } from './slot/slot.js';
+import { slotOf } from './slot/slot-of.js';
 
 type Client = DatabaseClient | Prisma.TransactionClient;
 
@@ -34,13 +35,12 @@ export class ItemRepository {
         new Item(
           row.id,
           row.code,
-          Slot.of(row.slot as SlotName),
+          slotOf(row.slot as SlotName, row.roomSize),
           row.name,
           row.grade as Grade,
           row.price,
           row.minLevel,
           row.defaultOwned,
-          row.roomSize,
         ),
     );
   }

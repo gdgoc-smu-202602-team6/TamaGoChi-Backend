@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
 import type { Prisma } from '../../../../foundation/database/generated/client.js';
 import type { Item } from '../../items/item.js';
-import type { SlotName } from '../../items/slot.js';
+import type { SlotName } from '../../items/slot/slot.js';
 import { lockPlayer } from '../../lock/player-lock.js';
 import { Placement } from './placement.js';
-import type { PlacementTarget } from './placement-target.js';
+import type { PlacementTargetName } from './placement-target.js';
 import { Room } from './room.js';
 
 type Client = DatabaseClient | Prisma.TransactionClient;
@@ -28,23 +28,21 @@ export class RoomRepository {
         placements: { select: { target: true, x: true, y: true } },
       },
     });
-    const fallback = Room.default(userId, catalog);
-    if (!row) return fallback;
+    if (!row) return Room.default(userId, catalog);
     const byId = new Map(catalog.map((item) => [item.id, item]));
     const equipped = new Map<SlotName, Item>();
     for (const one of row.items) {
       const item = byId.get(one.itemId);
       if (item) equipped.set(one.slot as SlotName, item);
     }
-    const house = fallback.equipped.get('ROOM');
-    if (!equipped.has('ROOM') && house) equipped.set('ROOM', house);
-    return new Room(
+    return Room.stored(
       userId,
       equipped,
       row.placements.map(
-        (one) => new Placement(one.target as PlacementTarget, one.x, one.y),
+        (one) => new Placement(one.target as PlacementTargetName, one.x, one.y),
       ),
       row.guestbookCheckedAt,
+      catalog,
     );
   }
 

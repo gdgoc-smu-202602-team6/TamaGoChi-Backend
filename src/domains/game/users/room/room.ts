@@ -1,7 +1,10 @@
 import type { Item } from '../../items/item.js';
-import type { SlotName } from '../../items/slot.js';
-import { Placement } from './placement.js';
-import type { PlacementTarget } from './placement-target.js';
+import type { SlotName } from '../../items/slot/slot.js';
+import type { Placement } from './placement.js';
+import {
+  PlacementTarget,
+  type PlacementTargetName,
+} from './placement-target.js';
 
 /**
  * Why a change of the room is refused: a change that breaks a rule (400), or an item the user does not have (409).
@@ -42,9 +45,23 @@ export class Room {
     return new Room(userId, equipped, [], null);
   }
 
+  /** A stored room. A slot that cannot be emptied keeps the default room's item when none is stored for it. */
+  static stored(
+    userId: string,
+    equipped: ReadonlyMap<SlotName, Item>,
+    placements: readonly Placement[],
+    guestbookCheckedAt: Date | null,
+    catalog: readonly Item[],
+  ): Room {
+    const kept = new Map(equipped);
+    for (const [slot, item] of Room.default(userId, catalog).equipped)
+      if (!item.slot.removable && !kept.has(slot)) kept.set(slot, item);
+    return new Room(userId, kept, placements, guestbookCheckedAt);
+  }
+
   /** The floor is size × size cells; the house sets it. */
   get size(): number {
-    return this.equipped.get('ROOM')?.roomSize ?? 0;
+    return floorSizeOf(this.equipped);
   }
 
   /** Replaces everything equipped (updateRoom). */
@@ -69,12 +86,13 @@ export class Room {
       if (!owned.has(item.id)) return { kind: 'not-owned', itemId: item.id };
       equipped.set(request.slot, item);
     }
-    if (!equipped.has('ROOM'))
-      return {
-        kind: 'invalid',
-        list: 'equipped',
-        message: 'a house must be equipped',
-      };
+    for (const item of catalog.values())
+      if (!item.slot.removable && !equipped.has(item.slot.name))
+        return {
+          kind: 'invalid',
+          list: 'equipped',
+          message: 'a house must be equipped',
+        };
     return this.rearranged(equipped);
   }
 
@@ -88,10 +106,11 @@ export class Room {
   /** Replaces the placements (updateRoom). Only what is equipped, and the character, is placed (D-10). */
   withPlacements(placements: readonly Placement[]): Room | RoomRefusal {
     const targets = this.targets();
-    const seen = new Set<PlacementTarget>();
+    const seen = new Set<PlacementTargetName>();
     for (const [index, placement] of placements.entries()) {
       const at = { list: 'placements', index } as const;
-      if (!targets.has(placement.target))
+      const target = targets.get(placement.target);
+      if (!target)
         return {
           kind: 'invalid',
           ...at,
@@ -99,7 +118,7 @@ export class Room {
         };
       if (seen.has(placement.target))
         return { kind: 'invalid', ...at, message: 'one placement per target' };
-      if (!placement.fitsIn(this.size))
+      if (!placement.fitsIn(this.size, target.grid))
         return {
           kind: 'invalid',
           ...at,
@@ -119,14 +138,16 @@ export class Room {
     return new Room(this.userId, this.equipped, this.placements, moment);
   }
 
-  /** What can be placed: the character and the equipped floor things. */
+  /** What can be placed, by name: the character and the equipped floor things. */
   private targets(
     equipped: ReadonlyMap<SlotName, Item> = this.equipped,
-  ): Set<PlacementTarget> {
-    const targets = new Set<PlacementTarget>(['CHARACTER']);
+  ): Map<PlacementTargetName, PlacementTarget> {
+    const targets = new Map([
+      [PlacementTarget.character.name, PlacementTarget.character],
+    ]);
     for (const item of equipped.values()) {
       const target = item.slot.target;
-      if (target) targets.add(target);
+      if (target) targets.set(target.name, target);
     }
     return targets;
   }
@@ -134,12 +155,23 @@ export class Room {
   /** The new equipment with the placements kept for what is still there, moved when the house changed (S-09). */
   private rearranged(equipped: ReadonlyMap<SlotName, Item>): Room {
     const targets = this.targets(equipped);
-    const toSize = equipped.get('ROOM')?.roomSize ?? 0;
-    const placements = this.placements
-      .filter((placement) => targets.has(placement.target))
-      .map((placement) =>
-        toSize === this.size ? placement : placement.movedTo(this.size, toSize),
-      );
+    const toSize = floorSizeOf(equipped);
+    const placements = this.placements.flatMap((placement) => {
+      const target = targets.get(placement.target);
+      if (!target) return [];
+      return toSize === this.size
+        ? [placement]
+        : [placement.movedTo(this.size, toSize, target.grid)];
+    });
     return new Room(this.userId, equipped, placements, this.guestbookCheckedAt);
   }
+}
+
+/** The floor the equipped house gives; none without one. */
+function floorSizeOf(equipped: ReadonlyMap<SlotName, Item>): number {
+  for (const item of equipped.values()) {
+    const size = item.slot.floorSize;
+    if (size !== null) return size;
+  }
+  return 0;
 }

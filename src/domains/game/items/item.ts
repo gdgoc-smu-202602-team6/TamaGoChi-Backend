@@ -1,5 +1,5 @@
 import type { components } from '../../../foundation/contract/openapi.js';
-import type { Slot } from './slot.js';
+import type { Slot } from './slot/slot.js';
 
 export type Grade = components['schemas']['Grade'];
 
@@ -28,8 +28,6 @@ export class Item {
     readonly price: number,
     readonly minLevel: number,
     readonly defaultOwned: boolean,
-    /** The floor is roomSize × roomSize; only a house has one. */
-    readonly roomSize: number | null,
   ) {}
 
   /** The level comes first, then the volts (8.3). */

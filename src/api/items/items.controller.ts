@@ -25,6 +25,7 @@ export class ItemsController {
 }
 
 function toBody(item: Item): ItemBody {
+  const floorSize = item.slot.floorSize;
   return {
     id: item.id,
     code: item.code,
@@ -35,6 +36,6 @@ function toBody(item: Item): ItemBody {
     price: item.price,
     minLevel: item.minLevel,
     defaultOwned: item.defaultOwned,
-    ...(item.roomSize !== null ? { roomSize: item.roomSize } : {}),
+    ...(floorSize !== null ? { roomSize: floorSize } : {}),
   };
 }
