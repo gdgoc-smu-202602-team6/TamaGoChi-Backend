@@ -1,6 +1,6 @@
 {
   "name": "tamagochi-backend",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "",
   "author": "",
   "private": true,
@@ -26,8 +26,7 @@
     "generate": "pnpm spec:types && prisma generate",
     "postinstall": "pnpm generate",
     "db:schema": "node prisma/build-schema.ts",
-    "db:deploy": "pnpm db:schema && prisma db execute --file prisma/schema.sql",
-    "db:seed": "prisma db seed",
+    "db:deploy": "pnpm db:schema && node prisma/deploy.ts",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\""
   },
   "dependencies": {

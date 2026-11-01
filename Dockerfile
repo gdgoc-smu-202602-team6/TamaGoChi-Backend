@@ -14,6 +14,8 @@ RUN pnpm build && pnpm db:schema && pnpm prune --prod --ignore-scripts
 FROM node:26-slim
 WORKDIR /app
 ENV NODE_ENV=production
+# The CA bundle of Amazon RDS, for DATABASE_URL=...?sslmode=verify-full&sslrootcert=/etc/ssl/rds/global-bundle.pem
+ADD --chmod=444 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /etc/ssl/rds/global-bundle.pem
 COPY --from=build /app/package.json /app/prisma.config.ts /app/openapi.yaml ./
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/node_modules ./node_modules

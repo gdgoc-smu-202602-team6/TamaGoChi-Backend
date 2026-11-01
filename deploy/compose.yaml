@@ -1,0 +1,28 @@
+# The server on the EC2 host: the API image from GHCR behind Caddy, which serves HTTPS for DOMAIN with a certificate
+# it gets and renews itself. The database is RDS; nothing here keeps data but Caddy's certificates.
+services:
+  app:
+    image: ghcr.io/gdgoc-smu-202602-team6/tamagochi-backend:${TAG:-main}
+    env_file: .env
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://localhost:3000/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  caddy-data:

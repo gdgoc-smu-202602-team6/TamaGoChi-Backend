@@ -23,15 +23,14 @@ cp .env.example .env
 openssl rand -base64 32
 ```
 
-로컬 PostgreSQL 18을 띄우고 스키마와 시드(역할·권한, 아이템 카탈로그)를 적용합니다. `db:deploy`는 빈 DB에만 적용됩니다. 시드는 멱등이라 여러 번 돌려도 됩니다.
+로컬 PostgreSQL 18을 띄우고 스키마와 시드(역할·권한, 아이템 카탈로그)를 적용합니다. `db:deploy`는 빈 DB에는 스키마를, 이미 있는 DB에는 새 릴리스 파일을 적용하고, 시드는 늘 적용합니다(자세히는 [`deploy/README.md`](deploy/README.md)의 "스키마 릴리스").
 
 ```bash
 docker compose up -d --wait
 pnpm db:deploy
-pnpm db:seed
 ```
 
-스키마가 바뀌면 로컬 DB를 지우고 다시 만듭니다. 데이터가 모두 지워집니다.
+개발 중에 스키마를 바꾸면 로컬 DB를 지우고 다시 만듭니다. 데이터가 모두 지워집니다.
 
 ```bash
 docker compose down -v
@@ -66,7 +65,8 @@ pnpm test:e2e
 
 ```
 openapi.yaml       API 계약
-prisma/            Prisma 스키마(도메인마다 파일 하나), 도메인별 SQL, 시드, 스키마 빌드 스크립트
+prisma/            Prisma 스키마(도메인마다 파일 하나), 도메인별 SQL, 시드, 릴리스 SQL, 스키마 빌드·적용 스크립트
+deploy/            EC2 배포: compose, Caddy, 배포 스크립트
 src/foundation/    foundation 계층: 설정, DB 클라이언트, 오류 응답, 계약 검증, 세션 확인
 src/domains/       도메인: account, club, game, notice
 src/api/           컨트롤러
@@ -76,16 +76,10 @@ src/api/           컨트롤러
 
 ## 컨테이너 이미지
 
+CI가 main 푸시와 `v*` 태그마다 이미지를 빌드해, 빈 DB에서 돌려 본 뒤 GHCR에 올립니다. 로컬에서 빌드하려면 이렇게 합니다.
+
 ```bash
 docker build --platform linux/amd64 -t tamagochi-backend .
 ```
 
-이미지에는 빌드할 때 생성한 `prisma/schema.sql`이 들어 있습니다. 빈 DB에 스키마와 시드를 적용한 뒤 서버를 띄웁니다.
-
-```bash
-docker run --rm --env-file .env tamagochi-backend node_modules/.bin/prisma db execute --file prisma/schema.sql
-```
-
-```bash
-docker run --rm --env-file .env tamagochi-backend node_modules/.bin/prisma db seed
-```
+이미지에는 빌드할 때 생성한 `prisma/schema.sql`이 들어 있습니다. EC2에 배포하는 방법은 [`deploy/README.md`](deploy/README.md)에 있습니다.
