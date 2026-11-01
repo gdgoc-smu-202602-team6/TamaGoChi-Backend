@@ -1,0 +1,9 @@
+# This file instructs Redocly's linter to ignore the rules contained for specific parts of your API.
+# See https://redocly.com/docs/cli/ for more information.
+openapi.yaml:
+  # The license is package.json's "license" (UNLICENSED); the contract does not restate it.
+  info-license:
+    - '#/info'
+  # /health has no client error to report: no auth, no parameters, no body.
+  operation-4xx-response:
+    - '#/paths/~1health/get/responses'

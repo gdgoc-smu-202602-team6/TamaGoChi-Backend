@@ -20,10 +20,15 @@ security:
   - bearerAuth: []
 tags:
   - name: system
+    description: 서버 상태
   - name: account
+    description: 계정과 기기 토큰
   - name: club
+    description: 동아리, 파트, 공지 분류, 가입 신청, 부원, 역할
   - name: game
+    description: 목표, 공부 세션, 방, 통계, 아이템, 좋아요, 방명록
   - name: notice
+    description: 공지와 읽음
 
 paths:
   /health:
