@@ -21,17 +21,22 @@ import {
   CurrentUser,
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
+import type { Permission } from '../../../foundation/access/permission.js';
 import type { components } from '../../../foundation/contract/openapi.js';
-import { type Page, pageRequest } from '../../../foundation/pagination/page.js';
+import {
+  type Page,
+  pageBody,
+  pageRequest,
+} from '../../../foundation/pagination/page.js';
 import { BadRequest } from '../../../foundation/problem/problems/bad-request.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { Forbidden } from '../../../foundation/problem/problems/forbidden.js';
 import { NotFound } from '../../../foundation/problem/problems/not-found.js';
+import { requireMe, resolveMe } from '../../me.js';
 
 type MemberBody = components['schemas']['Member'];
 type MemberPageBody = components['schemas']['MemberPage'];
 type MemberUpdateBody = components['schemas']['MemberUpdate'];
-type Permission = components['schemas']['Permission'];
 
 @Controller('clubs')
 export class MembersController {
@@ -44,18 +49,11 @@ export class MembersController {
   @Get('-/members')
   async listMine(
     @CurrentUser() caller: AuthenticatedUser,
-    @Query('userId') userId?: string,
-    @Query('pageSize') pageSize?: string,
+    @Query('userId') userId: string | undefined,
+    @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<MemberPageBody> {
-    if (userId !== 'me') {
-      throw new BadRequest([
-        {
-          field: '/query/userId',
-          message: 'listing across clubs needs userId=me',
-        },
-      ]);
-    }
+    requireMe(userId);
     const query = `members:user:${caller.id}`;
     const page = await this.members.listForUser(
       caller.id,
@@ -71,8 +69,8 @@ export class MembersController {
   async list(
     @CurrentUser() caller: AuthenticatedUser,
     @Param('clubId') clubId: string,
-    @Query('partId') partId?: string,
-    @Query('pageSize') pageSize?: string,
+    @Query('partId') partId: string | undefined,
+    @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<MemberPageBody> {
     const query = `members:club:${clubId}:${partId ?? ''}`;
@@ -103,7 +101,10 @@ export class MembersController {
     @Param('clubId') clubId: string,
     @Param('memberId') memberId: string,
   ): Promise<MemberBody> {
-    const member = await this.members.find(clubId, resolve(memberId, access));
+    const member = await this.members.find(
+      clubId,
+      resolveMe(memberId, access.memberId),
+    );
     if (!member) throw new NotFound('member not found');
     return this.toBody(member, caller);
   }
@@ -118,7 +119,7 @@ export class MembersController {
     @Param('memberId') memberId: string,
     @Body() body: MemberUpdateBody,
   ): Promise<MemberBody> {
-    const targetId = resolve(memberId, access);
+    const targetId = resolveMe(memberId, access.memberId);
     const own = targetId === access.memberId;
     if (
       !own &&
@@ -157,7 +158,7 @@ export class MembersController {
     @Param('clubId') clubId: string,
     @Param('memberId') memberId: string,
   ): Promise<void> {
-    const targetId = resolve(memberId, access);
+    const targetId = resolveMe(memberId, access.memberId);
     if (
       targetId !== access.memberId &&
       !access.permissions.has('members.manage')
@@ -184,18 +185,10 @@ export class MembersController {
     const users = await this.users.findMany(
       page.items.map((item) => item.userId),
     );
-    return {
-      items: page.items.map((item) =>
-        toBody(item, users.get(item.userId), caller),
-      ),
-      ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
-    };
+    return pageBody(page, (item) =>
+      toBody(item, users.get(item.userId), caller),
+    );
   }
-}
-
-/** `me` is the caller's own membership in this club. */
-function resolve(memberId: string, access: ClubAccess): string {
-  return memberId === 'me' ? access.memberId : memberId;
 }
 
 function toBody(

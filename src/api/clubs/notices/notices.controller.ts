@@ -31,7 +31,7 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
-import { pageRequest } from '../../../foundation/pagination/page.js';
+import { pageBody, pageRequest } from '../../../foundation/pagination/page.js';
 import { parseField } from '../../../foundation/problem/parse-field.js';
 import { BadRequest } from '../../../foundation/problem/problems/bad-request.js';
 import { NotFound } from '../../../foundation/problem/problems/not-found.js';
@@ -55,11 +55,11 @@ export class NoticesController {
   async list(
     @CurrentClubAccess() access: ClubAccess,
     @Param('clubId') clubId: string,
-    @Query('categoryId') categoryId?: string,
-    @Query('subcategoryId') subcategoryId?: string,
-    @Query('read') read?: string | boolean,
-    @Query('totalSize') totalSize?: string | boolean,
-    @Query('pageSize') pageSize?: string,
+    @Query('categoryId') categoryId: string | undefined,
+    @Query('subcategoryId') subcategoryId: string | undefined,
+    @Query('read') read: string | boolean | undefined,
+    @Query('totalSize') totalSize: string | boolean | undefined,
+    @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<NoticePageBody> {
     const filter: NoticeFilter = {
@@ -81,8 +81,7 @@ export class NoticesController {
         : undefined,
     ]);
     return {
-      items: page.items.map(toBody),
-      ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
+      ...pageBody(page, toBody),
       ...(total !== undefined ? { totalSize: total } : {}),
     };
   }

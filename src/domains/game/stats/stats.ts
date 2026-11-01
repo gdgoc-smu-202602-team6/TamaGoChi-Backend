@@ -61,7 +61,7 @@ export class Stats {
     });
     return new Stats(
       userId,
-      Earnings.xp(paid, earned.attendedDays, earned.goalDays),
+      Earnings.earnedXp(records.sessions, earned, now),
       Earnings.volts(paid, spent),
       progress.today.studiedSeconds,
       progress.today.attended,

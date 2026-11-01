@@ -87,18 +87,13 @@ export class StudySessionRepository {
     page: PageRequest,
     query: string,
   ): Promise<Page<StudySession>> {
-    const markPassed = StudySession.markPassedBy(now);
+    // StudySession.state as a query: RUNNING is not ended and started after the mark; ENDED is everything else.
+    const running = {
+      endedAt: null,
+      startedAt: { gt: StudySession.markPassedBy(now) },
+    };
     const byState =
-      state === 'RUNNING'
-        ? { endedAt: null, startedAt: { gt: markPassed } }
-        : state === 'ENDED'
-          ? {
-              OR: [
-                { endedAt: { not: null } },
-                { startedAt: { lte: markPassed } },
-              ],
-            }
-          : {};
+      state === 'RUNNING' ? running : state === 'ENDED' ? { NOT: running } : {};
     return newestFirstPage(query, page, toSession, ({ after, ...window }) =>
       this.database.userStudySession.findMany({
         where: { userId, AND: [byState, after] },

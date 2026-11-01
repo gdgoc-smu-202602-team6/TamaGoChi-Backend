@@ -13,6 +13,7 @@ import type { AuthenticatedUser } from '../../foundation/auth/authenticated-user
 import type { components } from '../../foundation/contract/openapi.js';
 import { SharedClubs } from '../../foundation/membership/shared-clubs.js';
 import { NotFound } from '../../foundation/problem/problems/not-found.js';
+import { resolveMe } from '../me.js';
 
 type RoomBody = components['schemas']['Room'];
 type StatsBody = components['schemas']['Stats'];
@@ -39,7 +40,7 @@ export class PlayerViews {
     caller: AuthenticatedUser,
     userIds: readonly string[],
   ): Promise<User[]> {
-    const ids = userIds.map((id) => (id === 'me' ? caller.id : id));
+    const ids = userIds.map((id) => resolveMe(id, caller.id));
     const [users, sharing] = await Promise.all([
       this.users.findMany(ids),
       this.sharedClubs.sharingWith(

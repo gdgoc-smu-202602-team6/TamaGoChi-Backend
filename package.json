@@ -7,10 +7,10 @@
   "scripts": {
     "build": "pnpm generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start": "nest start --env-file .env",
+    "start:dev": "nest start --watch --env-file .env",
+    "start:debug": "nest start --debug --watch --env-file .env",
+    "start:prod": "node --env-file-if-exists=.env dist/main",
     "lint": "oxlint --type-aware src/ test/",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -24,7 +24,7 @@
     "generate": "pnpm spec:types && prisma generate",
     "postinstall": "pnpm generate",
     "db:schema": "node prisma/build-schema.ts",
-    "db:deploy": "pnpm db:schema && node prisma/deploy.ts",
+    "db:deploy": "pnpm db:schema && node --env-file-if-exists=.env prisma/deploy.ts",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\""
   },
   "dependencies": {

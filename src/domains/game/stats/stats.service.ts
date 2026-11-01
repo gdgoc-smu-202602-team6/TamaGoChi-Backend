@@ -20,11 +20,7 @@ export class StatsService {
       this.progress.now(userId, accountCreatedAt, now),
       this.items.spent(userId),
     ]);
-    const xp = Earnings.xp(
-      Earnings.paidMinutes(play.records.sessions, now),
-      play.earned.attendedDays,
-      play.earned.goalDays,
-    );
+    const xp = Earnings.earnedXp(play.records.sessions, play.earned, now);
     const reached = await this.levels.reach(userId, LevelCurve.levelOf(xp));
     return Stats.of(
       userId,

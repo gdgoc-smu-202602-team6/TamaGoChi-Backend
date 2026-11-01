@@ -1,5 +1,6 @@
 import { rules } from '../rules/rules.js';
 import type { StudySession } from '../study-session/study-session.js';
+import type { Progress } from './progress.js';
 
 /** What a user has earned (merged 6.3, 6.4, 8.2). Volts and XP are two counts; spending volts never lowers XP. */
 export class Earnings {
@@ -25,6 +26,19 @@ export class Earnings {
       paidMinutes +
       attendedDays * rules.attendanceBonusXp +
       goalDays * rules.goalBonusXp
+    );
+  }
+
+  /** The XP earned by now: the minutes of the ended sessions, with the days `earned` attended and met the goal. */
+  static earnedXp(
+    sessions: readonly StudySession[],
+    earned: Progress,
+    now: Date,
+  ): number {
+    return Earnings.xp(
+      Earnings.paidMinutes(sessions, now),
+      earned.attendedDays,
+      earned.goalDays,
     );
   }
 }

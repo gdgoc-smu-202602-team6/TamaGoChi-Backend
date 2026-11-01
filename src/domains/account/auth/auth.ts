@@ -4,6 +4,7 @@ import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { bearer } from 'better-auth/plugins';
 import type { AppConfig } from '../../../foundation/config/app-config.js';
 import type { DatabaseClient } from '../../../foundation/database/database-client.js';
+import { parseOrBadRequest } from '../../../foundation/problem/parse-field.js';
 import { Nickname } from '../user/nickname.js';
 import { Password } from '../user/password.js';
 import type { AuthMailer } from './mailer/auth-mailer.js';
@@ -18,20 +19,13 @@ const passwordFields: Readonly<Record<string, string>> = {
   '/change-password': 'newPassword',
 };
 
-/** Runs a value object's parse, turning its RangeError into better-auth's 400. */
-function parsed<T>(parse: () => T): T {
-  try {
-    return parse();
-  } catch (error) {
-    if (error instanceof RangeError)
-      throw new APIError('BAD_REQUEST', { message: error.message });
-    throw error;
-  }
-}
+/** better-auth's 400, for a value that breaks its type's rule. */
+const badRequest = (message: string) =>
+  new APIError('BAD_REQUEST', { message });
 
 /** better-auth keeps the user's nickname as `name`; it goes through Nickname on the way in. */
 function nicknameOf(name: string): string {
-  return parsed(() => Nickname.parse(name)).value;
+  return parseOrBadRequest(() => Nickname.parse(name), badRequest).value;
 }
 
 export function createAuth(
@@ -60,7 +54,8 @@ export function createAuth(
         const field = passwordFields[ctx.path];
         const body = ctx.body as Record<string, unknown> | undefined;
         const input = field ? body?.[field] : undefined;
-        if (typeof input === 'string') parsed(() => Password.parse(input));
+        if (typeof input === 'string')
+          parseOrBadRequest(() => Password.parse(input), badRequest);
         return Promise.resolve();
       }),
     },

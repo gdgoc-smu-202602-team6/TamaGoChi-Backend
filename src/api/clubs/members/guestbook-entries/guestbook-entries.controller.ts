@@ -24,7 +24,10 @@ import {
   type AuthenticatedUser,
 } from '../../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../../foundation/contract/openapi.js';
-import { pageRequest } from '../../../../foundation/pagination/page.js';
+import {
+  pageBody,
+  pageRequest,
+} from '../../../../foundation/pagination/page.js';
 import { parseField } from '../../../../foundation/problem/parse-field.js';
 import { BadRequest } from '../../../../foundation/problem/problems/bad-request.js';
 import { Forbidden } from '../../../../foundation/problem/problems/forbidden.js';
@@ -33,6 +36,7 @@ import {
   type GuestbookEntryBody,
   toGuestbookEntryBody,
 } from '../../../users/guestbook-entries/guestbook-entry-body.js';
+import { resolveMe } from '../../../me.js';
 
 type GuestbookEntryPageBody = components['schemas']['GuestbookEntryPage'];
 type GuestbookEntryCreateBody = components['schemas']['GuestbookEntryCreate'];
@@ -54,7 +58,7 @@ export class GuestbookEntriesController {
     @CurrentClubAccess() access: ClubAccess,
     @Param('clubId') clubId: string,
     @Param('memberId') memberId: string,
-    @Query('pageSize') pageSize?: string,
+    @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<GuestbookEntryPageBody> {
     const ownerId = await this.ownerOf(clubId, memberId, access);
@@ -69,10 +73,7 @@ export class GuestbookEntriesController {
       ownerId === caller.id
         ? await this.rooms.guestbookCheckedAt(ownerId)
         : undefined;
-    return {
-      items: page.items.map((entry) => toGuestbookEntryBody(entry, checkedAt)),
-      ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
-    };
+    return pageBody(page, (entry) => toGuestbookEntryBody(entry, checkedAt));
   }
 
   /** createGuestbookEntry: by the caller, in this club; not in one's own room (9.2). */
@@ -129,7 +130,7 @@ export class GuestbookEntriesController {
   ): Promise<string> {
     const member = await this.members.find(
       clubId,
-      memberId === 'me' ? access.memberId : memberId,
+      resolveMe(memberId, access.memberId),
     );
     if (!member) throw new NotFound('member not found');
     return member.userId;

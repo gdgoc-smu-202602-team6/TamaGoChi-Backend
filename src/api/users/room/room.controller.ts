@@ -12,6 +12,7 @@ import type { components } from '../../../foundation/contract/openapi.js';
 import { BadRequest } from '../../../foundation/problem/problems/bad-request.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { Forbidden } from '../../../foundation/problem/problems/forbidden.js';
+import { resolveMe } from '../../me.js';
 import { PlayerViews } from '../player-views.js';
 import { userIdsOf } from '../user-ids.js';
 
@@ -56,7 +57,7 @@ export class RoomController {
     @Param('userId') userId: string,
     @Body() body: RoomUpdateBody,
   ): Promise<RoomBody> {
-    if (userId !== 'me' && userId !== caller.id)
+    if (resolveMe(userId, caller.id) !== caller.id)
       throw new Forbidden('only the owner changes a room');
     const catalog = await this.items.catalog();
     const owned = body.equipped

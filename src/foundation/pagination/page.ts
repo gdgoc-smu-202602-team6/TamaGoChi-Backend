@@ -22,18 +22,16 @@ export interface Page<T> {
   readonly nextPageToken?: string;
 }
 
-const defaultSize = 50;
-
 /**
- * Reads pageSize and pageToken for one list. `query` names the list and its filters; a token only works with the
- * query it came from (another query's token is 400).
+ * Reads pageSize and pageToken for one list. The contract gives pageSize its default and limits before a route runs.
+ * `query` names the list and its filters; a token only works with the query it came from (another query's token is
+ * 400).
  */
 export function pageRequest(
   query: string,
-  pageSize?: string | number,
+  size: number,
   pageToken?: string,
 ): PageRequest {
-  const size = pageSize === undefined ? defaultSize : Number(pageSize);
   if (!pageToken) return { size, after: null };
   try {
     const decoded = JSON.parse(
@@ -80,6 +78,17 @@ export function toPage<R extends Cursor, T>(
     }),
   ).toString('base64url');
   return { items: items.map(map), nextPageToken: token };
+}
+
+/** The page as a list response carries it: each item turned into its body, and the token when another page follows. */
+export function pageBody<T, B>(
+  page: Page<T>,
+  toBody: (item: T) => B,
+): { items: B[]; nextPageToken?: string } {
+  return {
+    items: page.items.map(toBody),
+    ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
+  };
 }
 
 /**

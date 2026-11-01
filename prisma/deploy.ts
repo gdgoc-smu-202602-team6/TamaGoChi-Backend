@@ -130,11 +130,6 @@ async function seed(client: pg.Client): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  try {
-    process.loadEnvFile();
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-  }
   const current = (
     JSON.parse(readFileSync('package.json', 'utf8')) as { version: string }
   ).version;

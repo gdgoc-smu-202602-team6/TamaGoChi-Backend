@@ -1118,7 +1118,7 @@ components:
       required: [minutes]
       properties:
         startOn: { type: [string, 'null'], format: date, description: null이면 기본값 }
-        minutes: { type: integer, minimum: 30, maximum: 720, multipleOf: 10 }
+        minutes: { type: integer, minimum: 30, maximum: 720, multipleOf: 10, default: 180 }
     DailyGoalCreate:
       type: object
       additionalProperties: false

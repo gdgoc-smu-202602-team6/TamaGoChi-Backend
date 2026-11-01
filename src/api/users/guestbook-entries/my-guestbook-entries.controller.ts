@@ -6,7 +6,7 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
-import { pageRequest } from '../../../foundation/pagination/page.js';
+import { pageBody, pageRequest } from '../../../foundation/pagination/page.js';
 import { toGuestbookEntryBody } from './guestbook-entry-body.js';
 
 type GuestbookEntryPageBody = components['schemas']['GuestbookEntryPage'];
@@ -22,7 +22,7 @@ export class MyGuestbookEntriesController {
   @Get()
   async list(
     @CurrentUser() caller: AuthenticatedUser,
-    @Query('pageSize') pageSize?: string,
+    @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<GuestbookEntryPageBody> {
     const query = `guestbook:${caller.id}`;
@@ -35,9 +35,6 @@ export class MyGuestbookEntriesController {
       ),
       this.rooms.guestbookCheckedAt(caller.id),
     ]);
-    return {
-      items: page.items.map((entry) => toGuestbookEntryBody(entry, checkedAt)),
-      ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
-    };
+    return pageBody(page, (entry) => toGuestbookEntryBody(entry, checkedAt));
   }
 }

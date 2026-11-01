@@ -21,7 +21,7 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
-import { pageRequest } from '../../../foundation/pagination/page.js';
+import { pageBody, pageRequest } from '../../../foundation/pagination/page.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { NotFound } from '../../../foundation/problem/problems/not-found.js';
 import { PlayerViews } from '../player-views.js';
@@ -55,8 +55,8 @@ export class StudySessionsController {
   @Get()
   async list(
     @CurrentUser() caller: AuthenticatedUser,
-    @Query('state') state?: SessionState,
-    @Query('pageSize') pageSize?: string,
+    @Query('state') state: SessionState | undefined,
+    @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<SessionPageBody> {
     const now = new Date();
@@ -68,10 +68,7 @@ export class StudySessionsController {
       pageRequest(query, pageSize, pageToken),
       query,
     );
-    return {
-      items: page.items.map((session) => toBody(session, now)),
-      ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
-    };
+    return pageBody(page, (session) => toBody(session, now));
   }
 
   /** getStudySession: an ended one with its result, the same every time (F-37). */

@@ -1,7 +1,7 @@
 // game domain, all per user: daily goals by start date, study sessions, day settlements, the item catalog, owned
 // items, rooms, likes and guestbooks.
 
-/// One version of a user's daily goal. The version for a day is the latest start_on on or before it; none means 3 hours.
+/// One version of a user's daily goal. The version for a day is the latest start_on on or before it; none means the default goal (DailyGoal.default).
 model UserDailyGoal {
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

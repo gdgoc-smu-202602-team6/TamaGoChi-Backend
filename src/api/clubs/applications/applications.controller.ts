@@ -27,12 +27,17 @@ import {
   type AuthenticatedUser,
 } from '../../../foundation/auth/authenticated-user.js';
 import type { components } from '../../../foundation/contract/openapi.js';
-import { type Page, pageRequest } from '../../../foundation/pagination/page.js';
+import {
+  type Page,
+  pageBody,
+  pageRequest,
+} from '../../../foundation/pagination/page.js';
 import { BadRequest } from '../../../foundation/problem/problems/bad-request.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';
 import { Forbidden } from '../../../foundation/problem/problems/forbidden.js';
 import { NotFound } from '../../../foundation/problem/problems/not-found.js';
 import { PushSender } from '../../../foundation/push/push-sender.js';
+import { requireMe } from '../../me.js';
 
 type ApplicationBody = components['schemas']['Application'];
 type ApplicationPageBody = components['schemas']['ApplicationPage'];
@@ -53,18 +58,11 @@ export class ApplicationsController {
   @Get('-/applications')
   async listMine(
     @CurrentUser() caller: AuthenticatedUser,
-    @Query('userId') userId?: string,
-    @Query('pageSize') pageSize?: string,
+    @Query('userId') userId: string | undefined,
+    @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<ApplicationPageBody> {
-    if (userId !== 'me') {
-      throw new BadRequest([
-        {
-          field: '/query/userId',
-          message: 'listing across clubs needs userId=me',
-        },
-      ]);
-    }
+    requireMe(userId);
     const query = `applications:user:${caller.id}`;
     const page = await this.applications.listForUser(
       caller.id,
@@ -107,8 +105,8 @@ export class ApplicationsController {
   @RequireClubAccess('applications.decide')
   async list(
     @Param('clubId') clubId: string,
-    @Query('state') state?: ApplicationState,
-    @Query('pageSize') pageSize?: string,
+    @Query('state') state: ApplicationState | undefined,
+    @Query('pageSize') pageSize: number,
     @Query('pageToken') pageToken?: string,
   ): Promise<ApplicationPageBody> {
     const query = `applications:club:${clubId}:${state ?? ''}`;
@@ -197,10 +195,7 @@ export class ApplicationsController {
     const users = await this.users.findMany(
       page.items.map((item) => item.userId),
     );
-    return {
-      items: page.items.map((item) => toBody(item, users.get(item.userId))),
-      ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
-    };
+    return pageBody(page, (item) => toBody(item, users.get(item.userId)));
   }
 }
 
