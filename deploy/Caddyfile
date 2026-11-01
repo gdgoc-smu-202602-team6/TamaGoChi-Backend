@@ -1,8 +1,20 @@
-# HTTPS for DOMAIN. Caddy gets and renews the certificate itself (Let's Encrypt, then ZeroSSL when that fails: kro.kr
-# is not on the Public Suffix List, so its Let's Encrypt rate limit is shared by every kro.kr user) and redirects
-# HTTP to HTTPS on its own.
+# HTTPS for DOMAIN. Caddy gets and renews the certificate itself and redirects HTTP to HTTPS on its own. The issuers
+# are tried in order: Let's Encrypt, Google Trust Services, ZeroSSL. kro.kr is not on the Public Suffix List, so its
+# Let's Encrypt limit on new certificates per registered domain is shared by every kro.kr user and often used up;
+# Google Trust Services has no such shared limit. Its EAB key registers the ACME account once (used within 7 days of
+# its creation); the account then stays in the caddy-data volume.
 {
 	email {$ACME_EMAIL}
+	cert_issuer acme {
+		dir https://acme-v02.api.letsencrypt.org/directory
+	}
+	cert_issuer acme {
+		dir https://dv.acme-v02.api.pki.goog/directory
+		eab {$GTS_EAB_KEY_ID} {$GTS_EAB_MAC_KEY}
+	}
+	cert_issuer acme {
+		dir https://acme.zerossl.com/v2/DV90
+	}
 }
 
 {$DOMAIN} {

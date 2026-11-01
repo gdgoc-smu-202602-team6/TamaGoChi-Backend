@@ -46,10 +46,18 @@ cp .env.example .env
 
 ## HTTPS
 
-Caddy가 `DOMAIN`의 인증서를 받고 만료 전에 갱신합니다. 사람이 할 일은 DNS와 보안 그룹을 맞추고 `.env`에 `ACME_EMAIL`(인증서 문제를 알려 받을 주소)을 넣는 것뿐입니다.
+Caddy가 `DOMAIN`의 인증서를 받고 만료 전에 갱신합니다. 사람이 할 일은 DNS와 보안 그룹을 맞추고, `.env`에 `ACME_EMAIL`(인증서 문제를 알려 받을 주소)과 Google Trust Services의 EAB 키를 넣는 것입니다.
 
 - HTTP(80)로 온 요청은 HTTPS로 넘깁니다. 응답에는 HSTS(`max-age=31536000`)를 붙입니다.
-- 발급은 Let's Encrypt로 하고, 실패하면 ZeroSSL로 넘어갑니다. `kro.kr`은 공개 접미사 목록에 없어서, Let's Encrypt의 등록 도메인당 발급 한도를 모든 `kro.kr` 사용자가 함께 쓰기 때문입니다.
+- 발급처는 Let's Encrypt → Google Trust Services → ZeroSSL 순서로 시도합니다. `kro.kr`은 공개 접미사 목록에 없어서 Let's Encrypt의 등록 도메인당 발급 한도를 모든 `kro.kr` 사용자가 함께 쓰고, 그 한도가 자주 찹니다. Google Trust Services에는 그런 공용 한도가 없습니다.
+- Google Trust Services는 EAB 키가 있어야 계정을 만듭니다. Google Cloud 프로젝트에서 한 번 만들어 `.env`의 `GTS_EAB_KEY_ID`·`GTS_EAB_MAC_KEY`에 넣습니다. 키는 만든 뒤 7일 안에 한 번만 쓰이고, 그 뒤 계정은 `caddy-data` 볼륨에 남습니다.
+
+```bash
+gcloud services enable publicca.googleapis.com
+gcloud publicca external-account-keys create
+```
+
+  출력의 `keyId`가 `GTS_EAB_KEY_ID`, `b64MacKey`가 `GTS_EAB_MAC_KEY`입니다.
 - 인증서는 `caddy-data` 볼륨에 남아서, 다시 배포해도 새로 발급하지 않습니다. 이 볼륨은 지우지 않습니다.
 - 발급이 안 되면 `docker compose logs caddy`로 원인을 봅니다. 대개 DNS가 아직 EC2를 가리키지 않거나 80번이 막힌 경우입니다.
 
