@@ -55,9 +55,6 @@ export function createAuth(
       sendVerificationEmail: ({ user, url }) =>
         mailer.sendVerification(user.email, url),
     },
-    account: {
-      accountLinking: { enabled: true, trustedProviders: ['google'] },
-    },
     hooks: {
       before: createAuthMiddleware((ctx) => {
         const field = passwordFields[ctx.path];
