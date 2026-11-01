@@ -14,9 +14,11 @@ services:
   caddy:
     image: caddy:2.10
     restart: unless-stopped
-    ports: ['80:80', '443:443']
+    # 80 for the HTTP challenge and the redirect, 443/tcp for HTTPS, 443/udp for HTTP/3
+    ports: ['80:80', '443:443', '443:443/udp']
     environment:
       DOMAIN: ${DOMAIN:?set DOMAIN in deploy/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in deploy/.env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

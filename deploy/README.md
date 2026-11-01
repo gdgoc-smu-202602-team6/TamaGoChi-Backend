@@ -24,7 +24,7 @@ API(`https://api.tmgoc.kro.kr`)는 EC2 한 대에서 컨테이너로 돌고, 데
 1. **RDS**: PostgreSQL 18, 데이터베이스 이름 `tamagochi`, 퍼블릭 접근 끔, 자동 백업 켬.
 2. **EC2**: t3.micro, Docker와 Docker Compose 플러그인 설치.
 3. **보안 그룹**
-   - EC2: 80·443은 인터넷에서, 22는 관리자 IP에서만
+   - EC2: TCP 80·443과 UDP 443(HTTP/3)은 인터넷에서, 22는 관리자 IP에서만
    - RDS: 5432는 EC2의 보안 그룹에서만
 4. **DNS**: `tmgoc.kro.kr`의 하위 도메인 `api`에 A 레코드를 EC2의 탄력적 IP로. Caddy는 80번으로 인증서를 받으므로 배포 전에 DNS가 맞아야 합니다.
 
@@ -43,6 +43,15 @@ echo "$GHCR_TOKEN" | docker login ghcr.io -u <GitHub 사용자> --password-stdin
 ```bash
 cp .env.example .env
 ```
+
+## HTTPS
+
+Caddy가 `DOMAIN`의 인증서를 받고 만료 전에 갱신합니다. 사람이 할 일은 DNS와 보안 그룹을 맞추고 `.env`에 `ACME_EMAIL`(인증서 문제를 알려 받을 주소)을 넣는 것뿐입니다.
+
+- HTTP(80)로 온 요청은 HTTPS로 넘깁니다. 응답에는 HSTS(`max-age=31536000`)를 붙입니다.
+- 발급은 Let's Encrypt로 하고, 실패하면 ZeroSSL로 넘어갑니다. `kro.kr`은 공개 접미사 목록에 없어서, Let's Encrypt의 등록 도메인당 발급 한도를 모든 `kro.kr` 사용자가 함께 쓰기 때문입니다.
+- 인증서는 `caddy-data` 볼륨에 남아서, 다시 배포해도 새로 발급하지 않습니다. 이 볼륨은 지우지 않습니다.
+- 발급이 안 되면 `docker compose logs caddy`로 원인을 봅니다. 대개 DNS가 아직 EC2를 가리키지 않거나 80번이 막힌 경우입니다.
 
 ## 배포와 되돌리기
 

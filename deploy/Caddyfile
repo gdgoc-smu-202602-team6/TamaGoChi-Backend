@@ -1,3 +1,11 @@
+# HTTPS for DOMAIN. Caddy gets and renews the certificate itself (Let's Encrypt, then ZeroSSL when that fails: kro.kr
+# is not on the Public Suffix List, so its Let's Encrypt rate limit is shared by every kro.kr user) and redirects
+# HTTP to HTTPS on its own.
+{
+	email {$ACME_EMAIL}
+}
+
 {$DOMAIN} {
+	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy app:3000
 }
