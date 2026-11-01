@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AuthMailer } from './auth-mailer.js';
 
-/** Writes the mail to the log instead of sending it. For development. */
+/** Writes the mail's link to the log instead of sending it. Development and tests, with no MAIL_FROM. */
 @Injectable()
 export class LoggingAuthMailer extends AuthMailer {
   private readonly logger = new Logger(LoggingAuthMailer.name);

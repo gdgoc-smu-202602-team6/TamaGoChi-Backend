@@ -1,4 +1,4 @@
-/** Sends the mail better-auth asks for. Development logs it; production sends it through SES. */
+/** Sends the mail better-auth asks for: through SES when MAIL_FROM is set (SesAuthMailer), else to the log. */
 export abstract class AuthMailer {
   abstract sendVerification(to: string, url: string): Promise<void>;
 

@@ -28,6 +28,22 @@ API(`https://api.tmgoc.kro.kr`)는 EC2 한 대에서 컨테이너로 돌고, 데
    - RDS: 5432는 EC2의 보안 그룹에서만
 4. **DNS**: `tmgoc.kro.kr`의 하위 도메인 `api`에 A 레코드를 EC2의 탄력적 IP로. Caddy는 80번으로 인증서를 받으므로 배포 전에 DNS가 맞아야 합니다.
 
+## 처음 한 번: 메일(SES)
+
+가입 인증 메일과 비밀번호 재설정 메일은 Amazon SES로 보냅니다. `.env`에 `MAIL_FROM`이 없으면 메일을 보내지 않고 서버 로그에 링크만 남깁니다.
+
+1. **도메인 확인**: SES 콘솔(서울 리전) → 자격 증명 생성 → 도메인 `tmgoc.kro.kr`, Easy DKIM(RSA 2048).
+   - SES가 주는 CNAME 3개를 내도메인.한국의 "별칭(CNAME)"에 넣습니다.
+   - 확인이 끝나면 `noreply@tmgoc.kro.kr`처럼 이 도메인의 어떤 주소로도 보낼 수 있습니다.
+   - Gmail 주소는 보내는 주소로 쓰지 않습니다(DMARC에 걸려 스팸함으로 갑니다).
+2. **샌드박스 해제**: 새 계정의 SES는 샌드박스라서, 확인된 주소로만 보낼 수 있습니다. 시험하는 사람의 주소를 SES에 "이메일 주소" 자격 증명으로 하나씩 확인하거나, 계정 대시보드에서 프로덕션 액세스를 요청합니다(AWS 심사).
+3. **EC2 인스턴스 역할**: EC2에 IAM 역할을 붙이고 `ses:SendEmail` 권한을 줍니다(리소스는 그 도메인 자격 증명). 액세스 키는 만들지 않습니다.
+4. **메타데이터 홉 제한**: 앱은 컨테이너 안에서 인스턴스 역할의 자격 증명을 받으므로, 인스턴스 메타데이터의 IMDSv2 홉 제한이 2 이상이어야 합니다.
+
+```bash
+aws ec2 modify-instance-metadata-options --instance-id <인스턴스 ID> --http-put-response-hop-limit 2 --http-tokens required
+```
+
 ## 처음 한 번: 서버 준비
 
 이 저장소의 `deploy/` 디렉터리를 서버에 복사합니다.

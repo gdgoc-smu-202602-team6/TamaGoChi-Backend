@@ -6,7 +6,7 @@ import type { AppConfig } from '../../../foundation/config/app-config.js';
 import type { DatabaseClient } from '../../../foundation/database/database-client.js';
 import { Nickname } from '../user/nickname.js';
 import { Password } from '../user/password.js';
-import type { AuthMailer } from './auth-mailer.js';
+import type { AuthMailer } from './mailer/auth-mailer.js';
 
 /** Where better-auth's own routes live. The API contract does not describe them. */
 export const authBasePath = '/auth';

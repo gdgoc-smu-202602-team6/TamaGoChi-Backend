@@ -7,6 +7,8 @@ export class AppConfig {
     readonly authSecret: string,
     /** The server's public base URL; better-auth builds links (email verification) from it. */
     readonly publicUrl: string,
+    /** The sender of account mail, e.g. `다마GoC치 <noreply@tmgoc.kro.kr>`; null keeps mail in the log. */
+    readonly mailFrom: string | null,
   ) {}
 
   static fromEnv(env: NodeJS.ProcessEnv): AppConfig {
@@ -32,6 +34,11 @@ export class AppConfig {
       problems.push('PUBLIC_URL must be an http(s) URL');
     }
 
+    const mailFrom = env.MAIL_FROM?.trim() || null;
+    if (mailFrom !== null && !/@[^@\s>]+\.[^@\s>]+>?$/.test(mailFrom)) {
+      problems.push('MAIL_FROM must be an address, optionally with a name');
+    }
+
     if (problems.length > 0) {
       throw new Error(`Invalid environment: ${problems.join('; ')}`);
     }
@@ -41,6 +48,7 @@ export class AppConfig {
       env.NODE_ENV === 'production',
       authSecret,
       publicUrl,
+      mailFrom,
     );
   }
 }

@@ -3,7 +3,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module.js';
 import { applicationOptions, configureApp } from '../src/configure-app.js';
-import { AuthMailer } from '../src/domains/account/auth/auth-mailer.js';
+import { AuthMailer } from '../src/domains/account/auth/mailer/auth-mailer.js';
 
 /** Keeps the links better-auth asks to send, instead of sending them. */
 export class CapturingAuthMailer extends AuthMailer {
