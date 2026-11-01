@@ -14,8 +14,8 @@ info:
     - 볼트·경험치·방·하트·버그·공부는 사용자 단위, 부원 자격·공지·방명록 노출은 동아리 단위(0.1).
     - 글자 수는 grapheme cluster(Unicode UAX #29) 기준.
 servers:
-  - url: https://api.example.com
-    description: 플레이스홀더. 배포 주소가 정해지면 바꾼다
+  - url: https://api.tmgoc.kro.kr
+    description: 운영
 security:
   - bearerAuth: []
 tags:

@@ -1,6 +1,6 @@
 # 배포
 
-API는 EC2 한 대에서 컨테이너로 돌고, 데이터베이스는 RDS PostgreSQL 18입니다. 이미지는 CI가 만들어 GHCR(`ghcr.io/gdgoc-smu-202602-team6/tamagochi-backend`)에 올립니다. 서버는 이미지를 받아서 돌리기만 하고 빌드하지 않습니다.
+API(`https://api.tmgoc.kro.kr`)는 EC2 한 대에서 컨테이너로 돌고, 데이터베이스는 RDS PostgreSQL 18입니다. 이미지는 CI가 만들어 GHCR(`ghcr.io/gdgoc-smu-202602-team6/tamagochi-backend`)에 올립니다. 서버는 이미지를 받아서 돌리기만 하고 빌드하지 않습니다.
 
 | 파일 | 하는 일 |
 |---|---|
@@ -26,7 +26,7 @@ API는 EC2 한 대에서 컨테이너로 돌고, 데이터베이스는 RDS Postg
 3. **보안 그룹**
    - EC2: 80·443은 인터넷에서, 22는 관리자 IP에서만
    - RDS: 5432는 EC2의 보안 그룹에서만
-4. **DNS**: `DOMAIN`의 A 레코드를 EC2의 탄력적 IP로. Caddy는 80번으로 인증서를 받으므로 배포 전에 DNS가 맞아야 합니다.
+4. **DNS**: `tmgoc.kro.kr`의 하위 도메인 `api`에 A 레코드를 EC2의 탄력적 IP로. Caddy는 80번으로 인증서를 받으므로 배포 전에 DNS가 맞아야 합니다.
 
 ## 처음 한 번: 서버 준비
 
