@@ -25,7 +25,7 @@ const providers = [
   GuestbookRepository,
 ];
 
-/** game: per user (merged 0.1). JoinDays comes from the foundation; AppModule wires its implementation. */
+/** game: per user (merged 0.1). */
 @Module({
   providers,
   exports: providers,

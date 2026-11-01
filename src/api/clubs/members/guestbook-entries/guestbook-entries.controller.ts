@@ -14,11 +14,11 @@ import { MemberRepository } from '../../../../domains/club/member/member.reposit
 import { GuestbookText } from '../../../../domains/game/guestbook/guestbook-text.js';
 import { GuestbookRepository } from '../../../../domains/game/guestbook/guestbook.repository.js';
 import { RoomRepository } from '../../../../domains/game/room/room.repository.js';
-import type { ClubAccess } from '../../../../foundation/access/access-resolver.js';
+import type { ClubAccess } from '../../../../domains/club/clubs/access/club-access.js';
 import {
   CurrentClubAccess,
   RequireClubAccess,
-} from '../../../../foundation/access/club-access.guard.js';
+} from '../../../../domains/club/clubs/access/club-access.guard.js';
 import {
   CurrentUser,
   type AuthenticatedUser,

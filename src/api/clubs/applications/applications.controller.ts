@@ -19,9 +19,9 @@ import type {
 } from '../../../domains/club/application/application.js';
 import { decidedMessage } from '../../../domains/club/application/application-messages.js';
 import { ApplicationRepository } from '../../../domains/club/application/application.repository.js';
+import { MemberRepository } from '../../../domains/club/member/member.repository.js';
 import { RoleRepository } from '../../../domains/club/role/role.repository.js';
-import { AccessResolver } from '../../../foundation/access/access-resolver.js';
-import { RequireClubAccess } from '../../../foundation/access/club-access.guard.js';
+import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
 import {
   CurrentUser,
   type AuthenticatedUser,
@@ -50,7 +50,7 @@ export class ApplicationsController {
     private readonly applications: ApplicationRepository,
     private readonly roles: RoleRepository,
     private readonly users: UserRepository,
-    private readonly access: AccessResolver,
+    private readonly members: MemberRepository,
     private readonly push: PushSender,
   ) {}
 
@@ -177,7 +177,7 @@ export class ApplicationsController {
     application: Application,
   ): Promise<boolean> {
     if (application.userId === caller.id) return true;
-    const access = await this.access.permissionsOf(
+    const access = await this.members.permissionsOf(
       caller.id,
       application.clubId,
     );

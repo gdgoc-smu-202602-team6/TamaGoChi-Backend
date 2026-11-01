@@ -21,11 +21,11 @@ import {
   type NoticeFilter,
   NoticeRepository,
 } from '../../../domains/club/clubs/notices/notice.repository.js';
-import type { ClubAccess } from '../../../foundation/access/access-resolver.js';
+import type { ClubAccess } from '../../../domains/club/clubs/access/club-access.js';
 import {
   CurrentClubAccess,
   RequireClubAccess,
-} from '../../../foundation/access/club-access.guard.js';
+} from '../../../domains/club/clubs/access/club-access.guard.js';
 import {
   CurrentUser,
   type AuthenticatedUser,

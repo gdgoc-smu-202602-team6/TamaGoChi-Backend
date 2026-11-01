@@ -85,6 +85,19 @@ export class ApplicationRepository {
     );
   }
 
+  /**
+   * Every moment an application of the user was approved, in clubs left since included (B-16: that day has no
+   * absence penalty). An application outlives the membership it made, so leaving or being removed from a club keeps
+   * the day; creating a club approves nothing, so that day is not one.
+   */
+  async joinedAt(userId: string): Promise<readonly Date[]> {
+    const rows = await this.database.clubApplication.findMany({
+      where: { userId, state: 'APPROVED' },
+      select: { decidedAt: true },
+    });
+    return rows.flatMap((row) => (row.decidedAt ? [row.decidedAt] : []));
+  }
+
   /** The applicant's own list: rejected ones only while still shown (Application.rejectedShownSince). */
   async listForUser(
     userId: string,

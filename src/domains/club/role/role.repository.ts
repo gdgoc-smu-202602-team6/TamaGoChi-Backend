@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  isPermission,
-  type Permission,
-} from '../../../foundation/access/permission.js';
+import { isPermission, type Permission } from '../clubs/access/permission.js';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import { Role } from './role.js';
 

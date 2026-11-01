@@ -1,8 +1,11 @@
-import { type components, permissionValues } from '../contract/openapi.js';
+import {
+  type components,
+  permissionValues,
+} from '../../../../foundation/contract/openapi.js';
 
 /**
  * What a club member may do beyond being a member. The list is the contract's; which role has which permission is
- * data. Keys are `<resource>.<action>` and span domains (club, notice), so the list lives below them.
+ * data. Keys are `<resource>.<action>`.
  */
 const permissions = permissionValues;
 

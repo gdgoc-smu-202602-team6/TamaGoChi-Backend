@@ -15,7 +15,7 @@ import type {
   Subcategory,
 } from '../../../domains/club/notice-category/notice-category.js';
 import { NoticeCategoryRepository } from '../../../domains/club/notice-category/notice-category.repository.js';
-import { RequireClubAccess } from '../../../foundation/access/club-access.guard.js';
+import { RequireClubAccess } from '../../../domains/club/clubs/access/club-access.guard.js';
 import type { components } from '../../../foundation/contract/openapi.js';
 import { parseField } from '../../../foundation/problem/parse-field.js';
 import { Conflict } from '../../../foundation/problem/problems/conflict.js';

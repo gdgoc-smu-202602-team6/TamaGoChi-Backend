@@ -15,9 +15,14 @@ export class StatsService {
     private readonly levels: LevelRepository,
   ) {}
 
-  async of(userId: string, accountCreatedAt: Date, now: Date): Promise<Stats> {
+  async of(
+    userId: string,
+    accountCreatedAt: Date,
+    joinedAt: readonly Date[],
+    now: Date,
+  ): Promise<Stats> {
     const [play, spent] = await Promise.all([
-      this.progress.now(userId, accountCreatedAt, now),
+      this.progress.now(userId, accountCreatedAt, joinedAt, now),
       this.items.spent(userId),
     ]);
     const xp = Earnings.earnedXp(play.records.sessions, play.earned, now);

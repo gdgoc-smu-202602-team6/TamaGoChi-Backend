@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { JoinDays } from '../../../foundation/membership/join-days.js';
 import { DailyGoalRepository } from '../daily-goal/daily-goal.repository.js';
 import { Day } from '../day/day.js';
 import { StudySessionRepository } from '../study-session/study-session.repository.js';
@@ -26,25 +25,27 @@ export class ProgressService {
     private readonly sessions: StudySessionRepository,
     private readonly goals: DailyGoalRepository,
     private readonly settlements: DaySettlementRepository,
-    private readonly joinDays: JoinDays,
   ) {}
 
-  /** `accountCreatedAt` starts the play: that day is the first day. */
+  /**
+   * `accountCreatedAt` starts the play: that day is the first day. `joinedAt` are the moments the user joined clubs
+   * (B-16: those days have no absence penalty).
+   */
   private async records(
     userId: string,
     accountCreatedAt: Date,
+    joinedAt: readonly Date[],
   ): Promise<ProgressRecords> {
-    const [sessions, goals, settlements, joined] = await Promise.all([
+    const [sessions, goals, settlements] = await Promise.all([
       this.sessions.all(userId),
       this.goals.history(userId),
       this.settlements.all(userId),
-      this.joinDays.joinedAt(userId),
     ]);
     return {
       firstDay: Day.of(accountCreatedAt),
       sessions,
       goals,
-      joinDays: new Set(joined.map((moment) => Day.of(moment).index)),
+      joinDays: new Set(joinedAt.map((moment) => Day.of(moment).index)),
       settlements,
     };
   }
@@ -52,9 +53,10 @@ export class ProgressService {
   async now(
     userId: string,
     accountCreatedAt: Date,
+    joinedAt: readonly Date[],
     now: Date,
   ): Promise<PlayNow> {
-    const records = await this.records(userId, accountCreatedAt);
+    const records = await this.records(userId, accountCreatedAt, joinedAt);
     const progress = Progress.at(records, now);
     const running = records.sessions.find(
       (session) => session.state(now) === 'RUNNING',

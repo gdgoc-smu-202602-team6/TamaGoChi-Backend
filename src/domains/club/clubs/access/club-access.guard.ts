@@ -6,10 +6,11 @@ import {
   createParamDecorator,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { AuthenticatedRequest } from '../auth/authenticated-user.js';
-import { Forbidden } from '../problem/problems/forbidden.js';
-import { NotFound } from '../problem/problems/not-found.js';
-import { AccessResolver, type ClubAccess } from './access-resolver.js';
+import type { AuthenticatedRequest } from '../../../../foundation/auth/authenticated-user.js';
+import { Forbidden } from '../../../../foundation/problem/problems/forbidden.js';
+import { NotFound } from '../../../../foundation/problem/problems/not-found.js';
+import { MemberRepository } from '../../member/member.repository.js';
+import type { ClubAccess } from './club-access.js';
 import type { Permission } from './permission.js';
 
 const clubAccessKey = Symbol('ClubAccess');
@@ -43,7 +44,7 @@ export const CurrentClubAccess = createParamDecorator(
 export class ClubAccessGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly resolver: AccessResolver,
+    private readonly members: MemberRepository,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -59,7 +60,7 @@ export class ClubAccessGuard implements CanActivate {
     if (!user || typeof clubId !== 'string')
       throw new Error('RequireClubAccess needs a secured route with :clubId');
 
-    const access = await this.resolver.permissionsOf(user.id, clubId);
+    const access = await this.members.permissionsOf(user.id, clubId);
     if (!access) throw new NotFound('club not found');
     if (rule.permission && !access.permissions.has(rule.permission)) {
       throw new Forbidden(`requires ${rule.permission}`);

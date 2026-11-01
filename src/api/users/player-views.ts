@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { User } from '../../domains/account/user/user.js';
 import { UserRepository } from '../../domains/account/user/user.repository.js';
+import { ApplicationRepository } from '../../domains/club/application/application.repository.js';
+import { MemberRepository } from '../../domains/club/member/member.repository.js';
 import { GuestbookRepository } from '../../domains/game/guestbook/guestbook.repository.js';
 import { ItemRepository } from '../../domains/game/item/item.repository.js';
 import { LevelCurve } from '../../domains/game/level/level-curve.js';
@@ -11,7 +13,6 @@ import type { Stats } from '../../domains/game/stats/stats.js';
 import { StatsService } from '../../domains/game/stats/stats.service.js';
 import type { AuthenticatedUser } from '../../foundation/auth/authenticated-user.js';
 import type { components } from '../../foundation/contract/openapi.js';
-import { SharedClubs } from '../../foundation/membership/shared-clubs.js';
 import { NotFound } from '../../foundation/problem/problems/not-found.js';
 import { resolveMe } from '../me.js';
 
@@ -20,7 +21,8 @@ type StatsBody = components['schemas']['Stats'];
 
 /**
  * What the game shows of users: whom the caller may see (themselves, or someone in a club with them, api.md 3절) and
- * their rooms and stats as the contract shapes them. The account gives when each started; the game the rest.
+ * their rooms and stats as the contract shapes them. The account gives when each started, the club when each joined
+ * clubs and who shares one; the game the rest.
  */
 @Injectable()
 export class PlayerViews {
@@ -31,7 +33,8 @@ export class PlayerViews {
     private readonly rooms: RoomRepository,
     private readonly likes: LikeRepository,
     private readonly guestbook: GuestbookRepository,
-    private readonly sharedClubs: SharedClubs,
+    private readonly members: MemberRepository,
+    private readonly applications: ApplicationRepository,
     private readonly statsService: StatsService,
   ) {}
 
@@ -43,7 +46,7 @@ export class PlayerViews {
     const ids = userIds.map((id) => resolveMe(id, caller.id));
     const [users, sharing] = await Promise.all([
       this.users.findMany(ids),
-      this.sharedClubs.sharingWith(
+      this.members.sharingWith(
         caller.id,
         ids.filter((id) => id !== caller.id),
       ),
@@ -62,8 +65,9 @@ export class PlayerViews {
     return user;
   }
 
-  stats(user: User, now: Date): Promise<Stats> {
-    return this.statsService.of(user.id, user.createdAt, now);
+  async stats(user: User, now: Date): Promise<Stats> {
+    const joinedAt = await this.applications.joinedAt(user.id);
+    return this.statsService.of(user.id, user.createdAt, joinedAt, now);
   }
 
   async statsBody(user: User, now: Date): Promise<StatsBody> {
@@ -85,7 +89,11 @@ export class PlayerViews {
       owners.map(async (owner) => {
         const [room, play] = await Promise.all([
           this.rooms.find(owner.id, catalog),
-          this.progress.now(owner.id, owner.createdAt, now),
+          this.applications
+            .joinedAt(owner.id)
+            .then((joinedAt) =>
+              this.progress.now(owner.id, owner.createdAt, joinedAt, now),
+            ),
         ]);
         const condition = play.progress.condition;
         const tally = tallies.get(owner.id) ?? {

@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import type { Permission } from '../../../foundation/access/permission.js';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import { newestFirstPage } from '../../../foundation/pagination/newest-first-page.js';
 import type { Page, PageRequest } from '../../../foundation/pagination/page.js';
 import type { Prisma } from '../../../foundation/database/generated/client.js';
+import type { ClubAccess } from '../clubs/access/club-access.js';
+import type { Permission } from '../clubs/access/permission.js';
+import { roleColumns, toRole } from '../role/role.repository.js';
 import { Member, type MemberChanges } from './member.js';
 
 /** The permission whose holders must never drop to zero in a club. */
@@ -70,6 +72,36 @@ export class MemberRepository {
         ...window,
       }),
     );
+  }
+
+  /** What the user may do in the club: their membership and its role. Null when not a member (the club is not visible). */
+  async permissionsOf(
+    userId: string,
+    clubId: string,
+  ): Promise<ClubAccess | null> {
+    const member = await this.database.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId } },
+      select: { id: true, role: { select: roleColumns } },
+    });
+    return member
+      ? { memberId: member.id, permissions: toRole(member.role).permissions }
+      : null;
+  }
+
+  /** Those of `others` who share at least one club with `userId` (seeing a friend's room). */
+  async sharingWith(
+    userId: string,
+    others: readonly string[],
+  ): Promise<ReadonlySet<string>> {
+    if (others.length === 0) return new Set();
+    const rows = await this.database.clubMember.findMany({
+      where: {
+        userId: { in: [...others] },
+        club: { members: { some: { userId } } },
+      },
+      select: { userId: true },
+    });
+    return new Set(rows.map((row) => row.userId));
   }
 
   /** The users of the club's members who turned notice notifications on (M-13). */

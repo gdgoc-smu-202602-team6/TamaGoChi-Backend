@@ -8,8 +8,7 @@ import { AccountModule } from './domains/account/account.module.js';
 import { authBasePath } from './domains/account/auth/auth.js';
 import { PushModule } from './domains/account/push.module.js';
 import { ClubModule } from './domains/club/club.module.js';
-import { MembershipModule } from './domains/club/membership.module.js';
-import { ClubAccessGuard } from './foundation/access/club-access.guard.js';
+import { ClubAccessGuard } from './domains/club/clubs/access/club-access.guard.js';
 import { SessionGuard } from './foundation/auth/session.guard.js';
 import { ConfigModule } from './foundation/config/config.module.js';
 import { ContractModule } from './foundation/contract/contract.module.js';
@@ -18,7 +17,8 @@ import { HealthModule } from './foundation/health/health.module.js';
 
 /**
  * The composition root: wires the domains' implementations into the foundation's interfaces. Guards run in the
- * order listed: who the caller is (SessionGuard), then what they may do in the club (ClubAccessGuard).
+ * order listed: who the caller is (SessionGuard), then what they may do in the club (ClubAccessGuard, which reads the
+ * club's members, hence ClubModule).
  */
 @Module({
   imports: [
@@ -28,7 +28,6 @@ import { HealthModule } from './foundation/health/health.module.js';
     HealthModule,
     AccountModule,
     PushModule,
-    MembershipModule,
     ClubModule,
     UsersModule,
     RolesModule,

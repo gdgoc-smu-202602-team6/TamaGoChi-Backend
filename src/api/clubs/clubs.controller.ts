@@ -16,11 +16,11 @@ import { ClubRepository } from '../../domains/club/club/club.repository.js';
 import { InviteCode } from '../../domains/club/club/invite-code.js';
 import { Label } from '../../domains/club/label/label.js';
 import { RoleRepository } from '../../domains/club/role/role.repository.js';
-import type { ClubAccess } from '../../foundation/access/access-resolver.js';
+import type { ClubAccess } from '../../domains/club/clubs/access/club-access.js';
 import {
   CurrentClubAccess,
   RequireClubAccess,
-} from '../../foundation/access/club-access.guard.js';
+} from '../../domains/club/clubs/access/club-access.guard.js';
 import {
   CurrentUser,
   type AuthenticatedUser,
