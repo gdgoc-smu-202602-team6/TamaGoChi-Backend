@@ -97,13 +97,27 @@ export class ApplicationRepository {
     return toPage(query, page, rows, toApplication);
   }
 
+  /** The applicant's own list: rejected ones only while still shown (Application.rejectedShownSince). */
   async listForUser(
     userId: string,
     page: PageRequest,
     query: string,
   ): Promise<Page<Application>> {
     const rows = await this.database.clubApplication.findMany({
-      where: { userId, ...afterCursor(page.after) },
+      where: {
+        userId,
+        AND: [
+          {
+            OR: [
+              { state: { not: 'REJECTED' } },
+              {
+                decidedAt: { gt: Application.rejectedShownSince(new Date()) },
+              },
+            ],
+          },
+          afterCursor(page.after),
+        ],
+      },
       select: applicationColumns,
       orderBy: [...newestFirst],
       take: page.size + 1,

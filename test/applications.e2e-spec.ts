@@ -186,7 +186,38 @@ describe('applications', () => {
     expect([cancelled.status, again.status]).toEqual([204, 201]);
   });
 
-  it('여러 동아리에 걸친 내 신청은 쪽 토큰으로 나눠 받고, 다른 목록의 토큰은 400이다', async () => {
+  it('거절된 신청은 결정 뒤 7일 동안만 내 신청 내역에 나온다', async () => {
+    const user = await database.user.findUniqueOrThrow({
+      where: { email: other.email },
+    });
+    const secondPart = await database.clubPart.findFirstOrThrow({
+      where: { clubId: secondClubId },
+    });
+    const daysAgo = (days: number) =>
+      new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const rejected = (days: number) =>
+      database.clubApplication.create({
+        data: {
+          clubId: secondClubId,
+          userId: user.id,
+          partId: secondPart.id,
+          state: 'REJECTED',
+          decidedAt: daysAgo(days),
+        },
+      });
+    const recent = await rejected(6);
+    const old = await rejected(8);
+
+    const response = await request(server())
+      .get('/clubs/-/applications?userId=me')
+      .set(as(other));
+
+    const ids = response.body.items.map((item: { id: string }) => item.id);
+    expect(ids).toContain(recent.id);
+    expect(ids).not.toContain(old.id);
+  });
+
+  it('여러 동아리에 걸친 내 신청은 페이지 토큰으로 페이지네이션하고, 다른 목록의 토큰은 400이다', async () => {
     const secondPart = await database.clubPart.findFirstOrThrow({
       where: { clubId: secondClubId },
     });
