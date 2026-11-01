@@ -93,7 +93,6 @@ export class StudySessionRepository {
     state: SessionState | undefined,
     now: Date,
     page: PageRequest,
-    query: string,
   ): Promise<Page<StudySession>> {
     // StudySession.state as a query: RUNNING is not ended and started after the mark; ENDED is everything else.
     const running = {
@@ -102,7 +101,7 @@ export class StudySessionRepository {
     };
     const byState =
       state === 'RUNNING' ? running : state === 'ENDED' ? { NOT: running } : {};
-    return newestFirstPage(query, page, toSession, ({ after, ...window }) =>
+    return newestFirstPage(page, toSession, ({ after, ...window }) =>
       this.database.userStudySession.findMany({
         where: { userId, AND: [byState, after] },
         select: sessionColumns,

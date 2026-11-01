@@ -9,7 +9,6 @@ export interface Page<T> {
 
 /** Builds the page from `rows` fetched with `take: size + 1`. */
 export function toPage<R extends Cursor, T>(
-  query: string,
   request: PageRequest,
   rows: readonly R[],
   map: (row: R) => T,
@@ -20,7 +19,7 @@ export function toPage<R extends Cursor, T>(
   const last = items[items.length - 1];
   return {
     items: items.map(map),
-    nextPageToken: encodeCursor(query, last),
+    nextPageToken: encodeCursor(request.query, last),
   };
 }
 

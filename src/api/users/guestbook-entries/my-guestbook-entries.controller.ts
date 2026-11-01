@@ -32,7 +32,6 @@ export class MyGuestbookEntriesController {
         caller.id,
         undefined,
         pageRequest(query, pageSize, pageToken),
-        query,
       ),
       this.rooms.guestbookCheckedAt(caller.id),
     ]);

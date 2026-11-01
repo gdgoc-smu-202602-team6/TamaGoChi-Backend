@@ -8,7 +8,6 @@ import { type Page, toPage } from './page.js';
  * than the page size, to tell whether another page follows.
  */
 export async function newestFirstPage<R extends Cursor, T>(
-  query: string,
   request: PageRequest,
   map: (row: R) => T,
   fetch: (window: {
@@ -22,5 +21,5 @@ export async function newestFirstPage<R extends Cursor, T>(
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: request.size + 1,
   });
-  return toPage(query, request, rows, map);
+  return toPage(request, rows, map);
 }

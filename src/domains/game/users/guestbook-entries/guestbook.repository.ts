@@ -34,9 +34,8 @@ export class GuestbookRepository {
     ownerId: Id<'User'>,
     clubId: Id<'Club'> | undefined,
     page: PageRequest,
-    query: string,
   ): Promise<Page<GuestbookEntry>> {
-    return newestFirstPage(query, page, toEntry, ({ after, ...window }) =>
+    return newestFirstPage(page, toEntry, ({ after, ...window }) =>
       this.database.userGuestbookEntry.findMany({
         where: { userId: ownerId, ...(clubId ? { clubId } : {}), ...after },
         select: entryColumns,

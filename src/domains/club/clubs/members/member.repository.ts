@@ -56,9 +56,8 @@ export class MemberRepository {
     clubId: Id<'Club'>,
     partId: Id<'Part'> | undefined,
     page: PageRequest,
-    query: string,
   ): Promise<Page<Member>> {
-    return newestFirstPage(query, page, toMember, ({ after, ...window }) =>
+    return newestFirstPage(page, toMember, ({ after, ...window }) =>
       this.database.clubMember.findMany({
         where: { clubId, ...(partId ? { partId } : {}), ...after },
         select: memberColumns,
@@ -70,9 +69,8 @@ export class MemberRepository {
   async listForUser(
     userId: Id<'User'>,
     page: PageRequest,
-    query: string,
   ): Promise<Page<Member>> {
-    return newestFirstPage(query, page, toMember, ({ after, ...window }) =>
+    return newestFirstPage(page, toMember, ({ after, ...window }) =>
       this.database.clubMember.findMany({
         where: { userId, ...after },
         select: memberColumns,

@@ -67,7 +67,6 @@ export class GuestbookEntriesController {
       ownerId,
       clubId,
       pageRequest(query, pageSize, pageToken),
-      query,
     );
     const checkedAt =
       ownerId === caller.id

@@ -63,7 +63,6 @@ export class ApplicationsController {
     const page = await this.applications.listForUser(
       caller.id,
       pageRequest(query, pageSize, pageToken),
-      query,
     );
     return this.toPageBody(page);
   }
@@ -110,7 +109,6 @@ export class ApplicationsController {
       clubId,
       state,
       pageRequest(query, pageSize, pageToken),
-      query,
     );
     return this.toPageBody(page);
   }

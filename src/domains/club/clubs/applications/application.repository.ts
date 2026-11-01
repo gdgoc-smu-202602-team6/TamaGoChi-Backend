@@ -101,9 +101,8 @@ export class ApplicationRepository {
     clubId: Id<'Club'>,
     state: ApplicationState | undefined,
     page: PageRequest,
-    query: string,
   ): Promise<Page<Application>> {
-    return newestFirstPage(query, page, toApplication, ({ after, ...window }) =>
+    return newestFirstPage(page, toApplication, ({ after, ...window }) =>
       this.database.clubApplication.findMany({
         where: { clubId, ...(state ? { state } : {}), ...after },
         select: applicationColumns,
@@ -129,9 +128,8 @@ export class ApplicationRepository {
   async listForUser(
     userId: Id<'User'>,
     page: PageRequest,
-    query: string,
   ): Promise<Page<Application>> {
-    return newestFirstPage(query, page, toApplication, ({ after, ...window }) =>
+    return newestFirstPage(page, toApplication, ({ after, ...window }) =>
       this.database.clubApplication.findMany({
         where: {
           userId,

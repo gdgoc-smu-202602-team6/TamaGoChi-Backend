@@ -74,7 +74,6 @@ export class NoticeRepository {
     memberId: Id<'Member'>,
     filter: NoticeFilter,
     page: PageRequest,
-    query: string,
   ): Promise<Page<Notice>> {
     const rows = await this.database.clubNotice.findMany({
       where: {
@@ -88,7 +87,6 @@ export class NoticeRepository {
       take: page.size + 1,
     });
     return toPage(
-      query,
       page,
       rows.map((row) => ({ ...row, leadingKey: row.pinned })),
       toNotice,

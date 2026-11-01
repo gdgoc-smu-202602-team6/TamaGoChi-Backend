@@ -70,7 +70,6 @@ export class StudySessionsController {
       state,
       now,
       pageRequest(query, pageSize, pageToken),
-      query,
     );
     return pageBody(page, (session) => toBody(session, now));
   }

@@ -2,6 +2,8 @@ import { BadRequest } from '../problem/problems/bad-request.js';
 import { type Cursor, decodeCursor } from './cursor.js';
 
 export interface PageRequest {
+  /** Names the list and its filters; the next page's token carries it, so it only resumes this list. */
+  readonly query: string;
   readonly size: number;
   /** Null for the first page. */
   readonly after: Cursor | null;
@@ -17,9 +19,9 @@ export function pageRequest(
   size: number,
   pageToken?: string,
 ): PageRequest {
-  if (!pageToken) return { size, after: null };
+  if (!pageToken) return { query, size, after: null };
   try {
-    return { size, after: decodeCursor(query, pageToken) };
+    return { query, size, after: decodeCursor(query, pageToken) };
   } catch {
     throw new BadRequest([
       { field: '/query/pageToken', message: 'not a token of this list' },

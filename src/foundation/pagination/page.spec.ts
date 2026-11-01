@@ -10,7 +10,7 @@ const rows = [
 
 describe('pageRequest and toPage', () => {
   it('페이지 크기보다 하나 더 읽혔으면 다음 페이지 토큰을 주고, 그 토큰은 마지막 항목 뒤에서 시작한다', () => {
-    const first = toPage('q', pageRequest('q', 2), rows, (row) => row.id);
+    const first = toPage(pageRequest('q', 2), rows, (row) => row.id);
 
     const next = pageRequest('q', 2, first.nextPageToken);
 
@@ -20,13 +20,12 @@ describe('pageRequest and toPage', () => {
 
   it('남은 행이 페이지 크기 이하이면 토큰이 없다', () => {
     expect(
-      toPage('q', pageRequest('q', 3), rows, (row) => row.id).nextPageToken,
+      toPage(pageRequest('q', 3), rows, (row) => row.id).nextPageToken,
     ).toBeUndefined();
   });
 
   it('다른 목록의 토큰이면 400이다', () => {
     const token = toPage(
-      'q',
       pageRequest('q', 1),
       rows,
       (row) => row.id,
@@ -44,7 +43,7 @@ describe('pageRequest and toPage', () => {
       ...row,
       leadingKey: index === 0,
     }));
-    const first = toPage('q', pageRequest('q', 1), pinned, (row) => row.id);
+    const first = toPage(pageRequest('q', 1), pinned, (row) => row.id);
 
     const next = pageRequest('q', 1, first.nextPageToken);
 
@@ -56,7 +55,7 @@ describe('pageRequest and toPage', () => {
   });
 
   it('페이지 크기가 0이면 항목도 토큰도 없다', () => {
-    expect(toPage('q', pageRequest('q', 0), rows, (row) => row.id)).toEqual({
+    expect(toPage(pageRequest('q', 0), rows, (row) => row.id)).toEqual({
       items: [],
     });
   });

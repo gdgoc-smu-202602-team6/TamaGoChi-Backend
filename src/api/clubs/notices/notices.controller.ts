@@ -76,7 +76,6 @@ export class NoticesController {
         access.memberId,
         filter,
         pageRequest(query, pageSize, pageToken),
-        query,
       ),
       String(totalSize) === 'true'
         ? this.notices.count(clubId, access.memberId, filter)

@@ -5,7 +5,6 @@ import { ApplicationRepository } from '../../domains/club/clubs/applications/app
 import { MemberRepository } from '../../domains/club/clubs/members/member.repository.js';
 import { GuestbookRepository } from '../../domains/game/users/guestbook-entries/guestbook.repository.js';
 import { ItemRepository } from '../../domains/game/items/item.repository.js';
-import { LevelCurve } from '../../domains/game/level/level-curve.js';
 import { LikeRepository } from '../../domains/game/users/likes/like.repository.js';
 import { ProgressService } from '../../domains/game/users/progress/progress.service.js';
 import { RoomRepository } from '../../domains/game/users/room/room.repository.js';
@@ -17,12 +16,11 @@ import { NotFound } from '../../foundation/problem/problems/not-found.js';
 import { resolveMe } from '../me.js';
 
 type RoomBody = components['schemas']['Room'];
-type StatsBody = components['schemas']['Stats'];
 
 /**
- * What the game shows of users: whom the caller may see (themselves, or someone in a club with them, api.md 3절) and
- * their rooms and stats as the contract shapes them. The account gives when each started, the club when each joined
- * clubs and who shares one; the game the rest.
+ * What the game shows of users: whom the caller may see (themselves, or someone in a club with them, api.md 3절),
+ * their stats, and their rooms as the contract shapes them. The account gives when each started, the club when each
+ * joined clubs and who shares one; the game the rest.
  */
 @Injectable()
 export class PlayerViews {
@@ -68,10 +66,6 @@ export class PlayerViews {
   async stats(user: User, now: Date): Promise<Stats> {
     const joinedAt = await this.applications.approvedAt(user.id);
     return this.statsService.of(user.id, user.createdAt, joinedAt, now);
-  }
-
-  async statsBody(user: User, now: Date): Promise<StatsBody> {
-    return toStatsBody(await this.stats(user, now));
   }
 
   /** Rooms as `viewer` sees them; the owner also sees the count of new guestbook entries. */
@@ -130,27 +124,4 @@ export class PlayerViews {
       }),
     );
   }
-}
-
-function toStatsBody(stats: Stats): StatsBody {
-  return {
-    userId: stats.userId,
-    xp: stats.xp,
-    level: stats.level,
-    levelXp: LevelCurve.xpFor(stats.level),
-    nextLevelXp: LevelCurve.xpFor(stats.level + 1),
-    volts: stats.volts,
-    todaySeconds: stats.todaySeconds,
-    todayAttended: stats.todayAttended,
-    weekSeconds: stats.weekSeconds,
-    week: stats.week.map((one) => ({
-      day: one.day.toString(),
-      studiedSeconds: one.studiedSeconds,
-      goalMinutes: one.goalMinutes,
-      goalMet: one.goalMet,
-    })),
-    attendanceStreak: stats.attendanceStreak,
-    absenceStreak: stats.absenceStreak,
-    dayNumber: stats.dayNumber,
-  };
 }

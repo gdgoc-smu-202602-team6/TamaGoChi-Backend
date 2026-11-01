@@ -60,7 +60,6 @@ export class MembersController {
     const page = await this.members.listForUser(
       caller.id,
       pageRequest(query, pageSize, pageToken),
-      query,
     );
     return this.toPageBody(page, caller);
   }
@@ -80,7 +79,6 @@ export class MembersController {
       clubId,
       partId,
       pageRequest(query, pageSize, pageToken),
-      query,
     );
     return this.toPageBody(page, caller);
   }
