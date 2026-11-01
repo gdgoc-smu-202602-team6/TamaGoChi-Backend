@@ -1,14 +1,16 @@
-// account area. user, session, account and verification are better-auth's tables; their table and column names
-// are the library's.
+// account domain. User, Session, Account and Verification are better-auth's models; their model and field names are
+// the library's, and @@map/@map give them snake_case table and column names.
 
 model User {
   id            String   @id
+  /// The nickname.
   name          String
   email         String   @unique
-  emailVerified Boolean
+  emailVerified Boolean  @map("email_verified")
   image         String?
-  createdAt     DateTime
-  updatedAt     DateTime
+  /// The day the account was created is day 1 of use.
+  createdAt     DateTime @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @map("updated_at") @db.Timestamptz
 
   sessions     Session[]
   accounts     Account[]
@@ -16,54 +18,65 @@ model User {
   memberships  ClubMember[]
   applications ClubApplication[]
 
-  @@map("user")
+  dailyGoals       UserDailyGoal[]
+  studySessions    UserStudySession[]
+  daySettlements   UserDaySettlement[]
+  items            UserItem[]
+  room             UserRoom?
+  likesReceived    UserLike[]           @relation("LikedRoom")
+  likesGiven       UserLike[]           @relation("Liker")
+  guestbookOfRoom  UserGuestbookEntry[] @relation("GuestbookHost")
+  guestbookWritten UserGuestbookEntry[] @relation("GuestbookAuthor")
+  noticesWritten   ClubNotice[]
+
+  @@map("users")
 }
 
 model Session {
   id        String   @id
-  expiresAt DateTime
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
   token     String   @unique
-  createdAt DateTime
-  updatedAt DateTime
-  ipAddress String?
-  userAgent String?
-  userId    String
+  createdAt DateTime @map("created_at") @db.Timestamptz
+  updatedAt DateTime @map("updated_at") @db.Timestamptz
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map("session")
+  @@map("sessions")
 }
 
 model Account {
   id                    String    @id
-  accountId             String
-  providerId            String
-  userId                String
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz
   scope                 String?
   password              String?
-  createdAt             DateTime
-  updatedAt             DateTime
+  createdAt             DateTime  @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @map("updated_at") @db.Timestamptz
 
   @@index([userId])
-  @@map("account")
+  @@map("accounts")
 }
 
 model Verification {
   id         String   @id
   identifier String
   value      String
-  expiresAt  DateTime
-  createdAt  DateTime
-  updatedAt  DateTime
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz
+  createdAt  DateTime @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @map("updated_at") @db.Timestamptz
 
   @@index([identifier])
-  @@map("verification")
+  @@map("verifications")
 }
 
 /// One device that receives push messages. Signing in with another account on the device moves the token.

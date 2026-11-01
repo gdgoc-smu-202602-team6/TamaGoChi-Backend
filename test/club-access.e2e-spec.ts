@@ -52,16 +52,16 @@ describe('club access and roles', () => {
         ],
       ),
     );
-    expect(byName).toEqual({ 운영진: 7, 부원: 0 });
+    expect(byName).toEqual({ 운영진: 6, 부원: 0 });
   });
 
-  it('운영진의 내 권한은 키 7개다', async () => {
+  it('운영진의 내 권한은 키 6개다', async () => {
     const response = await request(app.getHttpServer())
       .get(`/clubs/${club.clubId}/members/me/permissions`)
       .set(as(operator));
 
     expect(response.status).toBe(200);
-    expect(response.body.items).toHaveLength(7);
+    expect(response.body.items).toHaveLength(6);
   });
 
   it('부원의 내 권한은 비어 있다', async () => {

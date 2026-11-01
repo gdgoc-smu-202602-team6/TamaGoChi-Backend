@@ -17,7 +17,7 @@ export async function insertClub(
   return { clubId: club.id, partId: club.parts[0].id };
 }
 
-/** Makes the user with this email a member, with the role that has this assignment mark. */
+/** Makes the user with this email a member, with the role that has this assignment flag. */
 export async function insertMember(
   database: DatabaseClient,
   club: { clubId: string; partId: string },

@@ -1,4 +1,4 @@
-// club area: clubs, their parts and notice categories, roles, applications and members.
+// club domain: clubs, their parts and notice categories, roles, applications and members.
 
 model Club {
   id         String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
@@ -11,8 +11,8 @@ model Club {
   noticeCategories ClubNoticeCategory[]
   members          ClubMember[]
   applications     ClubApplication[]
-  rules            ClubRules[]
   notices          ClubNotice[]
+  guestbookEntries UserGuestbookEntry[]
 
   @@map("clubs")
 }
@@ -62,7 +62,7 @@ model ClubNoticeCategorySubcategory {
   @@map("club_notice_category_subcategories")
 }
 
-/// Seed data. Code never branches on a role's name; it reads the two assignment marks and the permissions.
+/// Seed data. Code never branches on a role's name; it reads the two assignment flags and the permissions.
 model Role {
   id               String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   name             String   @unique
@@ -97,20 +97,10 @@ model ClubMember {
   roleId          String   @map("role_id") @db.Uuid
   role            Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
   notificationsOn Boolean  @default(true) @map("notifications_on")
-  /// The day the member joined is day 1.
+  /// When the application was approved; the day of joining has no absence penalty (B-16).
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  dailyGoals       ClubMemberDailyGoal[]
-  studySessions    ClubMemberStudySession[]
-  daySettlements   ClubMemberDaySettlement[]
-  items            ClubMemberItem[]
-  room             ClubMemberRoom?
-  likesReceived    ClubMemberLike[]           @relation("LikedRoom")
-  likesGiven       ClubMemberLike[]           @relation("Liker")
-  guestbookOfRoom  ClubMemberGuestbookEntry[] @relation("GuestbookHost")
-  guestbookWritten ClubMemberGuestbookEntry[] @relation("GuestbookAuthor")
-  noticesWritten   ClubNotice[]
-  noticeReads      ClubNoticeRead[]
+  noticeReads ClubNoticeRead[]
 
   @@unique([clubId, userId])
   @@index([userId])

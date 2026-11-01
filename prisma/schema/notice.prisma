@@ -1,4 +1,4 @@
-// notice area: notices and who read them.
+// notice domain: notices and who read them.
 
 model ClubNotice {
   id                String                         @id @default(dbgenerated("uuidv7()")) @db.Uuid
@@ -8,9 +8,9 @@ model ClubNotice {
   category          ClubNoticeCategory             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   subcategoryId     String?                        @map("subcategory_id") @db.Uuid
   subcategory       ClubNoticeCategorySubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
-  /// Null once the author has left: shown as a former member.
-  authorMemberId    String?                        @map("author_member_id") @db.Uuid
-  author            ClubMember?                    @relation(fields: [authorMemberId], references: [id], onDelete: SetNull)
+  /// Null once the author has deleted their account; leaving the club keeps the author.
+  authorUserId      String?                        @map("author_user_id")
+  author            User?                          @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
   title             String
   body              String
   pinned            Boolean                        @default(false)
@@ -22,7 +22,7 @@ model ClubNotice {
   @@index([clubId, pinned(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
   @@index([categoryId])
   @@index([subcategoryId])
-  @@index([authorMemberId])
+  @@index([authorUserId])
   @@map("club_notices")
 }
 

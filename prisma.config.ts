@@ -8,6 +8,9 @@ try {
 
 export default defineConfig({
   schema: 'prisma/schema',
-  migrations: { path: 'prisma/migrations' },
+  migrations: {
+    path: 'prisma/migrations',
+    seed: 'sh prisma/seed.sh',
+  },
   datasource: { url: env('DATABASE_URL') },
 });

@@ -88,7 +88,7 @@ describe('parts and notice categories', () => {
       expect(response.status).toBe(403);
     });
 
-    it('부원이 쓰는 파트는 409 in-use, 쓰지 않는 파트는 지운다', async () => {
+    it('부원이 쓰는 파트는 409 in-use, 쓰지 않는 파트는 삭제한다', async () => {
       const created = await request(server())
         .post(`/clubs/${clubId}/parts`)
         .set(as(operator))
@@ -143,7 +143,7 @@ describe('parts and notice categories', () => {
       expect(JSON.parse(response.text).type).toBe('/problems/preset');
     });
 
-    it('세부 분류를 만들고, 이름이 겹치면 409, 지우면 204다', async () => {
+    it('세부 분류를 생성하고, 이름이 겹치면 409, 삭제하면 204다', async () => {
       const study = await request(server())
         .post(`/clubs/${clubId}/noticeCategories`)
         .set(as(operator))
@@ -172,14 +172,14 @@ describe('parts and notice categories', () => {
         .post(`/clubs/${clubId}/noticeCategories`)
         .set(as(operator))
         .send({ name: 'Dev', color: 'BLUE' });
-      const author = await database.clubMember.findFirstOrThrow({
-        where: { clubId, user: { email: operator.email } },
+      const author = await database.user.findUniqueOrThrow({
+        where: { email: operator.email },
       });
       await database.clubNotice.create({
         data: {
           clubId,
           categoryId: category.body.id,
-          authorMemberId: author.id,
+          authorUserId: author.id,
           title: '제목',
           body: '본문',
           notificationState: 'NONE',

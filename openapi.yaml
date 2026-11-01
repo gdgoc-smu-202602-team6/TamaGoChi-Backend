@@ -3,18 +3,19 @@ info:
   title: 다마GoC치 API
   version: 0.1.0
   description: |
-    다마GoC치 백엔드 API 계약. 근거와 약속은 api.md, 요구사항은 requirements.md, 타입은 object.md.
+    다마GoC치 백엔드 API 계약. 요구사항은 기능 명세(merged), 괄호 안은 그 기능 ID와 절 번호.
 
     - 인증: better-auth. 로그인·가입·로그아웃·비밀번호 재설정·Google/Kakao는 better-auth 경로(`/auth/*`)를
       그대로 쓰고 이 문서에 다시 적지 않는다. 모바일은 better-auth bearer 토큰을 `Authorization: Bearer`로 보낸다.
     - 오류 본문은 RFC 9457 Problem Details(`application/problem+json`).
-    - 시각은 RFC 3339 UTC, 날짜(`YYYY-MM-DD`)는 Asia/Seoul 기준 동아리의 하루.
-    - 목록은 `pageSize`(기본 50, 상한 200)와 `pageToken`. 응답의 `nextPageToken`이 없으면 끝.
-    - `me`: `/users/me`, `/clubs/{clubId}/members/me`. `-`: 여러 동아리에 걸친 목록(`/clubs/-/…`).
-    - 글자 수는 사람이 세는 글자(grapheme) 기준.
+    - 시각은 RFC 3339 UTC, 날짜(`YYYY-MM-DD`)는 한국 시간 오전 4시에 바뀌는 하루(7.4).
+    - 목록은 `pageSize`(기본 50, 상한 200)와 `pageToken`. 응답에 `nextPageToken`이 없으면 마지막 페이지.
+    - `me`: `/users/me`, `/clubs/{clubId}/members/me`. `-`: 와일드카드(`/clubs/-/…`, AIP-159)와 일괄 조회(`/users/-/…:batchGet`, AIP-231).
+    - 볼트·경험치·방·하트·버그·공부는 사용자 단위, 부원 자격·공지·방명록 노출은 동아리 단위(0.1).
+    - 글자 수는 grapheme cluster(Unicode UAX #29) 기준.
 servers:
   - url: https://api.example.com
-    description: 자리표시. 배포 주소가 정해지면 바꾼다
+    description: 플레이스홀더. 배포 주소가 정해지면 바꾼다
 security:
   - bearerAuth: []
 tags:
@@ -29,11 +30,11 @@ paths:
     get:
       tags: [system]
       operationId: getHealth
-      description: 서버가 살아 있는지. 인증 없음
+      description: 헬스 체크(liveness). 인증 없음
       security: []
       responses:
         '200':
-          description: 살아 있음
+          description: 정상
           content:
             application/json:
               schema: { type: object, required: [status], properties: { status: { type: string, const: ok } } }
@@ -49,7 +50,7 @@ paths:
     patch:
       tags: [account]
       operationId: updateMe
-      description: 닉네임 고치기 (R-8)
+      description: 닉네임 수정 (M-01, 3.2)
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/UserUpdate' } } }
@@ -61,7 +62,8 @@ paths:
       tags: [account]
       operationId: deleteMe
       description: |
-        계정 탈퇴 (R-10, Q6). 모든 동아리의 부원 자격과 게임 데이터를 지운다. 쓴 공지는 남고 작성자가 비워진다.
+        계정 탈퇴 (L-11, 3.2). 계정·공부 기록·방·좋아요와 모든 동아리의 부원 자격을 지운다.
+        쓴 방명록·공지는 남고 작성자가 비어 "탈퇴한 사용자"로 보인다.
         내가 어떤 동아리의 마지막 members.manage 보유자면 409(`last-manager`).
       responses:
         '204': { description: 지움 }
@@ -74,14 +76,14 @@ paths:
     put:
       tags: [account]
       operationId: putDeviceToken
-      description: FCM 토큰 등록. 반복해도 같음 (N-13)
+      description: FCM 토큰 등록. 멱등 (N-13)
       responses:
         '204': { description: 등록됨 }
         '401': { $ref: '#/components/responses/Unauthorized' }
     delete:
       tags: [account]
       operationId: deleteDeviceToken
-      description: 로그아웃할 때 토큰 빼기 (L-10)
+      description: 로그아웃할 때 토큰 삭제 (L-10)
       responses:
         '204': { description: 뺌 }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -92,7 +94,7 @@ paths:
       tags: [club]
       operationId: createClub
       description: |
-        동아리 만들기 (C-16, C-17). 기본 공지 분류 "전체공지"를 함께 만들고,
+        동아리 생성 (C-16, C-17). 기본 공지 분류 "전체공지"를 함께 만들고,
         만든 사람을 `assignedOnCreate` 역할의 부원으로 넣는다. `myPartName`은 `parts` 가운데 하나.
       requestBody:
         required: true
@@ -139,7 +141,7 @@ paths:
     patch:
       tags: [club]
       operationId: updateClub
-      description: 이름 고치기. 권한 club.update
+      description: 이름 수정. 권한 club.update
       parameters:
         - { name: If-Match, in: header, required: false, schema: { type: string } }
       requestBody:
@@ -158,7 +160,7 @@ paths:
     post:
       tags: [club]
       operationId: regenerateInviteCode
-      description: 새 초대 코드. 옛 코드는 바로 못 씀 (A-04, R-19). 권한 club.update
+      description: 새 초대 코드. 옛 코드는 바로 못 씀 (A-04). 권한 club.update
       responses:
         '200': { description: 새 코드가 든 동아리, content: { application/json: { schema: { $ref: '#/components/schemas/Club' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -320,7 +322,7 @@ paths:
       operationId: listApplications
       description: |
         신청 목록. `/clubs/{clubId}/applications?state=PENDING`은 대기 목록(A-05, 권한 applications.decide).
-        `/clubs/-/applications?userId=me`는 내가 낸 신청들(C-15).
+        `/clubs/-/applications?userId=me`는 내가 낸 신청들(C-19). 거절된 신청은 결정 뒤 7일간만 나온다.
       parameters:
         - { name: state, in: query, schema: { $ref: '#/components/schemas/ApplicationState' } }
         - { name: userId, in: query, schema: { type: string, enum: [me] } }
@@ -348,7 +350,7 @@ paths:
       tags: [club]
       operationId: decideApplication
       description: |
-        승인·거절 (A-06, A-07). 승인하면 `assignedOnJoin` 역할의 부원이 생긴다. 신청자에게 푸시 알림(Q4).
+        승인·거절 (A-06, A-07). 승인하면 `assignedOnJoin` 역할의 부원이 생긴다. 신청자에게 푸시 알림(C-20).
         PENDING이 아니면 409. 권한 applications.decide
       requestBody:
         required: true
@@ -363,7 +365,7 @@ paths:
     delete:
       tags: [club]
       operationId: cancelApplication
-      description: 신청 취소 (Q5). 신청자 본인만, PENDING일 때만(아니면 409)
+      description: 신청 취소 (C-18). 신청자 본인만, PENDING일 때만(아니면 409)
       responses:
         '204': { description: 취소함 }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -391,7 +393,8 @@ paths:
       operationId: listMembers
       description: |
         부원 목록 (R-01). `/clubs/-/members?userId=me`는 내가 속한 동아리들의 내 부원 자격.
-        친구 목록은 이 목록에서 나를 빼고, stats:batchGet의 오늘 공부 시간으로 내림차순 정렬한다(Q10).
+        친구 목록은 이 목록에서 나를 빼고 각 부원의 `userId`로 `/users/-/room:batchGet`, `/users/-/stats:batchGet`을 불러
+        오늘 공부 시간 내림차순으로 정렬한다(9.1).
       parameters:
         - { name: partId, in: query, schema: { $ref: '#/components/schemas/Id' } }
         - { name: userId, in: query, schema: { type: string, enum: [me] } }
@@ -417,7 +420,7 @@ paths:
       tags: [club]
       operationId: updateMember
       description: |
-        `partId`, `notificationsOn`은 본인만(M-13, Q5). `roleId`는 members.manage(Q5).
+        `partId`, `notificationsOn`은 본인만(A-13, M-13). `roleId`는 members.manage(A-50).
         members.manage 보유자가 0명이 되면 409(`last-manager`).
       requestBody:
         required: true
@@ -433,7 +436,7 @@ paths:
       tags: [club]
       operationId: removeMember
       description: |
-        `me`면 동아리 탈퇴, 다른 부원이면 강퇴(members.manage) (Q5). 그 부원의 게임 데이터를 지운다(Q6).
+        `me`면 동아리 탈퇴, 다른 부원이면 강퇴(members.manage) (A-51, A-52). 부원 자격·파트·권한·공지 읽음만 지우고 사용자 단위 데이터는 남는다(A-53).
         members.manage 보유자가 0명이 되면 409(`last-manager`).
       responses:
         '204': { description: 지움 }
@@ -447,7 +450,7 @@ paths:
     get:
       tags: [club]
       operationId: getMyPermissions
-      description: 내 권한 키. 화면이 운영진 버튼을 숨기는 데 씀 (A-41)
+      description: 내 권한 키. 클라이언트가 운영진 버튼을 숨기는 데 씀 (A-41)
       responses:
         '200':
           description: 권한들
@@ -457,62 +460,25 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  # ───────────────────────── game
-  /clubs/{clubId}/rules:
-    parameters: [ { $ref: '#/components/parameters/clubId' } ]
-    get:
-      tags: [game]
-      operationId: listRules
-      description: |
-        `?on=날짜`면 그날 적용되는 판 하나(판이 없으면 기본값 30·4·60·360, `startOn`은 null).
-        `on`이 없으면 적용 시작일 이력 전체.
-      parameters:
-        - { name: on, in: query, schema: { type: string, format: date } }
-      responses:
-        '200':
-          description: 판들
-          content:
-            application/json:
-              schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/ClubRules' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
-    post:
-      tags: [game]
-      operationId: createRules
-      description: 새 판 (A-33, A-34). `startOn`은 내일 이후(R-33). 같은 날짜 판이 있으면 409. 권한 rules.update
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/ClubRulesCreate' } } }
-      responses:
-        '201':
-          description: 넣은 판
-          content: { application/json: { schema: { $ref: '#/components/schemas/ClubRules' } } }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /clubs/{clubId}/members/me/dailyGoals:
-    parameters: [ { $ref: '#/components/parameters/clubId' } ]
+  # ───────────────────────── game (사용자 단위, merged 0.1)
+  /users/me/dailyGoals:
     get:
       tags: [game]
       operationId: listDailyGoals
-      description: '`?on=날짜`면 그날 목표 하나(판이 없으면 180분). 없으면 이력 전체 (M-11)'
+      description: '`?on=날짜`면 그날 목표 하나(버전이 없으면 180분). 없으면 이력 전체 (M-11)'
       parameters:
         - { name: on, in: query, schema: { type: string, format: date } }
       responses:
         '200':
-          description: 판들
+          description: 버전들
           content:
             application/json:
               schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/DailyGoal' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
     post:
       tags: [game]
       operationId: createDailyGoal
-      description: 새 목표. `startOn`은 내일 이후. 화면은 "내일부터 적용"을 안내 (R-56)
+      description: 새 목표. `startOn`은 내일 이후. 화면은 "내일부터 적용"을 안내 (M-11). 같은 적용일 버전이 있으면 409
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/DailyGoalCreate' } } }
@@ -520,41 +486,36 @@ paths:
         '201': { description: 넣은 목표, content: { application/json: { schema: { $ref: '#/components/schemas/DailyGoal' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /clubs/{clubId}/members/me/studySessions:
-    parameters: [ { $ref: '#/components/parameters/clubId' } ]
+  /users/me/studySessions:
     post:
       tags: [game]
       operationId: startStudySession
       description: |
-        공부 시작 (F-02, F-26). 본문 없음. 서버 시각이 `startedAt`. 진행 중 세션이 있으면 409(`session-running`).
-        상한을 넘긴 세션이 남아 있으면 그 세션을 상한 시각으로 닫고 시작한다.
+        공부 시작 (F-02). 본문 없음. 서버 시각이 `startedAt`. 사용자당 진행 중 세션은 하나라 있으면 409(`session-running`).
+        12시간을 넘긴 세션이 남아 있으면 그 세션을 12시간 시각으로 닫고 시작한다.
       responses:
         '201':
           description: 시작한 세션
           headers: { Location: { schema: { type: string } } }
           content: { application/json: { schema: { $ref: '#/components/schemas/StudySession' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
     get:
       tags: [game]
       operationId: listStudySessions
-      description: 내 세션들. 앱을 다시 켜면 `?state=RUNNING`으로 진행 중 세션을 찾는다 (F-15, F-26)
+      description: 내 세션들(최근 것 먼저). 앱을 다시 켜면 `?state=RUNNING`으로 진행 중 세션을 찾는다 (3.2, F-15)
       parameters:
         - { name: state, in: query, schema: { $ref: '#/components/schemas/SessionState' } }
         - { $ref: '#/components/parameters/pageSize' }
         - { $ref: '#/components/parameters/pageToken' }
       responses:
-        '200': { description: 세션들(최근 것 먼저), content: { application/json: { schema: { $ref: '#/components/schemas/StudySessionPage' } } } }
+        '200': { description: 세션들, content: { application/json: { schema: { $ref: '#/components/schemas/StudySessionPage' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
 
-  /clubs/{clubId}/members/me/studySessions/{sessionId}:
+  /users/me/studySessions/{sessionId}:
     parameters:
-      - { $ref: '#/components/parameters/clubId' }
       - { name: sessionId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
     get:
       tags: [game]
@@ -568,8 +529,8 @@ paths:
       tags: [game]
       operationId: endStudySession
       description: |
-        공부 끝내기 (F-20, F-23). `endedAt` = 도착 시각. `clientEndedAt`이 시작 뒤이고 도착보다 이르면 그 값(R-48).
-        상한을 넘겼으면 상한 시각. `endedAt`이 이미 있으면 409(`session-ended`).
+        공부 끝내기 (F-20, F-23). `endedAt` = 도착 시각. `clientEndedAt`이 시작 뒤이고 도착보다 이르면 그 값(6.3 시각 기준).
+        12시간을 넘겼으면 12시간 시각. `endedAt`이 이미 있으면 409(`session-ended`).
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/StudySessionEnd' } } }
@@ -580,14 +541,14 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /clubs/{clubId}/members/{memberId}/room:
-    parameters:
-      - { $ref: '#/components/parameters/clubId' }
-      - { $ref: '#/components/parameters/memberIdOrMe' }
+  /users/{userId}/room:
+    parameters: [ { $ref: '#/components/parameters/userIdOrMe' } ]
     get:
       tags: [game]
       operationId: getRoom
-      description: 방과 상태 (H-10~16, R-11). `newGuestbookCount`는 본인일 때만
+      description: |
+        방과 상태 (H-10~H-16, R-11). 본인, 또는 같은 동아리 부원만 볼 수 있다(아니면 404).
+        `newGuestbookCount`는 본인일 때만.
       responses:
         '200': { description: 방, content: { application/json: { schema: { $ref: '#/components/schemas/Room' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -596,8 +557,10 @@ paths:
       tags: [game]
       operationId: updateRoom
       description: |
-        꾸미기 '완료' 때 한 번에 저장(R-70). 본인만(`me`). 보유하지 않은 아이템이면 409(`not-owned`),
-        배치가 방 밖이면 400. 방명록을 열면 `guestbookCheckedAt`을 지금으로 보낸다(R-76).
+        꾸미기 '완료' 때 한 번에 저장(D-16). 본인만(`me`, 아니면 403).
+        `equipped`는 장착 전체를 바꾼다: 부위마다 하나, ROOM은 반드시 하나(D-03). 보유하지 않은 아이템이면 409(`not-owned`),
+        부위가 맞지 않거나 ROOM이 없으면 400, 배치가 방 밖이거나 장착하지 않은 대상이면 400.
+        내 방명록을 열면 `guestbookCheckedAt`을 지금으로 보낸다(M-21).
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/RoomUpdate' } } }
@@ -606,16 +569,14 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /clubs/{clubId}/members/-/room:batchGet:
-    parameters: [ { $ref: '#/components/parameters/clubId' } ]
+  /users/-/room:batchGet:
     get:
       tags: [game]
       operationId: batchGetRooms
-      description: 친구 목록 썸네일·버그·좋아요 (R-01~03, AIP-231)
-      parameters: [ { $ref: '#/components/parameters/memberIds' } ]
+      description: 친구 목록 썸네일·버그·좋아요 (R-01~R-03, AIP-231). 같은 동아리 부원이 아닌 사용자가 섞이면 404
+      parameters: [ { $ref: '#/components/parameters/userIds' } ]
       responses:
         '200':
           description: 방들(요청 순서)
@@ -626,26 +587,23 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /clubs/{clubId}/members/{memberId}/stats:
-    parameters:
-      - { $ref: '#/components/parameters/clubId' }
-      - { $ref: '#/components/parameters/memberIdOrMe' }
+  /users/{userId}/stats:
+    parameters: [ { $ref: '#/components/parameters/userIdOrMe' } ]
     get:
       tags: [game]
       operationId: getStats
-      description: 레벨·XP·볼트·공부 시간·출석 (H-02, H-20~22, M-02~04, R-12)
+      description: 레벨·XP·볼트·공부 시간·출석·이용 일차 (H-02, H-20~H-22, M-02~M-04, R-12). 본인 또는 같은 동아리 부원만
       responses:
         '200': { description: 통계, content: { application/json: { schema: { $ref: '#/components/schemas/Stats' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /clubs/{clubId}/members/-/stats:batchGet:
-    parameters: [ { $ref: '#/components/parameters/clubId' } ]
+  /users/-/stats:batchGet:
     get:
       tags: [game]
       operationId: batchGetStats
-      description: 친구 목록 카드용 (R-01, AIP-231)
-      parameters: [ { $ref: '#/components/parameters/memberIds' } ]
+      description: 친구 목록 카드용 (R-01, AIP-231). 같은 동아리 부원이 아닌 사용자가 섞이면 404
+      parameters: [ { $ref: '#/components/parameters/userIds' } ]
       responses:
         '200':
           description: 통계들(요청 순서)
@@ -660,9 +618,9 @@ paths:
     get:
       tags: [game]
       operationId: listItems
-      description: 카탈로그. 모든 동아리 공통 (S-01, S-02, R-66)
+      description: 아이템 카탈로그. 모든 사용자에게 같다 (8.2)
       parameters:
-        - { name: kind, in: query, schema: { $ref: '#/components/schemas/ItemKind' } }
+        - { name: category, in: query, schema: { $ref: '#/components/schemas/ItemCategory' } }
       responses:
         '200':
           description: 아이템들
@@ -671,12 +629,11 @@ paths:
               schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/Item' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
-  /clubs/{clubId}/members/me/items:
-    parameters: [ { $ref: '#/components/parameters/clubId' } ]
+  /users/me/items:
     get:
       tags: [game]
       operationId: listOwnedItems
-      description: 보유 아이템. 기본 보유(가격 0)를 포함 (D-02, M-12)
+      description: 보유 아이템. 카탈로그의 기본 보유를 포함 (D-02, M-12)
       responses:
         '200':
           description: 보유 아이템들
@@ -684,17 +641,15 @@ paths:
             application/json:
               schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/OwnedItem' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
 
-  /clubs/{clubId}/members/me/items/{itemId}:
+  /users/me/items/{itemId}:
     parameters:
-      - { $ref: '#/components/parameters/clubId' }
       - { name: itemId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
     put:
       tags: [game]
       operationId: purchaseItem
       description: |
-        구매 (S-06~S-09). 이미 보유했으면 바꾸지 않고 200. 아니면 볼트를 차감하고 자동 장착하며 201.
+        구매 (S-06~S-09). 이미 보유했으면 바꾸지 않고 200. 아니면 볼트를 차감하고 같은 부위를 교체해 장착하며 201.
         레벨 미달 409(`level-locked`, `requiredLevel`), 볼트 부족 409(`insufficient-volts`, `shortBy`).
       responses:
         '200': { description: 이미 보유, content: { application/json: { schema: { $ref: '#/components/schemas/OwnedItem' } } } }
@@ -703,14 +658,13 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /clubs/{clubId}/members/{memberId}/likes/me:
+  /users/{userId}/likes/me:
     parameters:
-      - { $ref: '#/components/parameters/clubId' }
-      - { $ref: '#/components/parameters/memberId' }
+      - { name: userId, in: path, required: true, schema: { type: string } }
     put:
       tags: [game]
       operationId: likeRoom
-      description: 좋아요 (R-13). 내 방이면 400 (Q11)
+      description: 좋아요 (R-13). 사용자 단위라 어느 동아리에서 눌러도 하나(9.2). 내 방이면 400, 같은 동아리 부원이 아니면 404
       responses:
         '204': { description: 좋아요 함 }
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -725,6 +679,18 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /users/me/guestbookEntries:
+    get:
+      tags: [game]
+      operationId: listMyGuestbookEntries
+      description: 내 방에 남겨진 글 전부(모든 동아리). 최신 글부터, 새 글 표시 (M-20, M-21, M-23)
+      parameters:
+        - { $ref: '#/components/parameters/pageSize' }
+        - { $ref: '#/components/parameters/pageToken' }
+      responses:
+        '200': { description: 글들, content: { application/json: { schema: { $ref: '#/components/schemas/GuestbookEntryPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /clubs/{clubId}/members/{memberId}/guestbookEntries:
     parameters:
       - { $ref: '#/components/parameters/clubId' }
@@ -732,7 +698,7 @@ paths:
     get:
       tags: [game]
       operationId: listGuestbookEntries
-      description: 최신 글부터 (R-15, M-20, M-23). `new`는 방 주인일 때만
+      description: 그 부원의 방에 이 동아리에서 남겨진 글. 최신 글부터 (R-15, 9.2 방명록). 이 동아리 부원만
       parameters:
         - { $ref: '#/components/parameters/pageSize' }
         - { $ref: '#/components/parameters/pageToken' }
@@ -743,7 +709,7 @@ paths:
     post:
       tags: [game]
       operationId: createGuestbookEntry
-      description: 방명록 쓰기 (R-14). 작성자는 나. 내 방이면 400 (Q11)
+      description: 이 동아리에서 그 부원의 방에 방명록 작성 (R-14). 작성자는 나. 내 방이면 400
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/GuestbookEntryCreate' } } }
@@ -764,7 +730,7 @@ paths:
     delete:
       tags: [game]
       operationId: deleteGuestbookEntry
-      description: 글 지우기. 작성자나 방 주인만 (Q5)
+      description: 방명록 삭제. 작성자나 방 주인만 (9.2 방명록)
       responses:
         '204': { description: 지움 }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -778,7 +744,7 @@ paths:
       tags: [notice]
       operationId: listNotices
       description: |
-        고정 먼저, 각 무리 안에서 최근 것 먼저 (N-04, R-82). 항목마다 `read`(나 기준).
+        고정 먼저, 각 그룹 안에서 최근 것 먼저 (N-04). 항목마다 `read`(나 기준).
         읽지 않은 수(C-04): `?read=false&totalSize=true&pageSize=0`.
       parameters:
         - { name: categoryId, in: query, schema: { $ref: '#/components/schemas/Id' } }
@@ -795,7 +761,7 @@ paths:
       tags: [notice]
       operationId: createNotice
       description: |
-        공지 쓰기 (N-08~N-15). `notify`가 true면 `notificationState`가 PENDING이고, 발송은 요청 밖에서.
+        공지 작성 (N-08~N-15). `notify`가 true면 `notificationState`가 PENDING이고, 발송은 응답한 뒤 비동기로.
         결과는 공지를 다시 읽어 SENT·FAILED로 확인(N-15). 권한 notices.write
       requestBody:
         required: true
@@ -824,7 +790,7 @@ paths:
     patch:
       tags: [notice]
       operationId: updateNotice
-      description: 공지 고치기 (Q5). 알림은 다시 보내지 않음. 권한 notices.write
+      description: 공지 수정 (N-16). 알림은 다시 보내지 않음. 권한 notices.write
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/NoticeUpdate' } } }
@@ -837,7 +803,7 @@ paths:
     delete:
       tags: [notice]
       operationId: deleteNotice
-      description: 공지 지우기 (Q5). 권한 notices.write
+      description: 공지 삭제 (N-16). 권한 notices.write
       responses:
         '204': { description: 지움 }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -851,7 +817,7 @@ paths:
     put:
       tags: [notice]
       operationId: markNoticeRead
-      description: 읽음. 본문을 펼칠 때 (N-07, R-83)
+      description: 읽음. 본문을 펼칠 때 (N-07)
       responses:
         '204': { description: 읽음 }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -879,11 +845,6 @@ components:
         oneOf:
           - { $ref: '#/components/schemas/Id' }
           - { type: string, const: '-' }
-    memberId:
-      name: memberId
-      in: path
-      required: true
-      schema: { $ref: '#/components/schemas/Id' }
     memberIdOrMe:
       name: memberId
       in: path
@@ -903,14 +864,20 @@ components:
       in: path
       required: true
       schema: { $ref: '#/components/schemas/Id' }
-    memberIds:
-      name: memberIds
+    userIdOrMe:
+      name: userId
+      in: path
+      required: true
+      description: 사용자 아이디, 또는 나면 `me`
+      schema: { type: string }
+    userIds:
+      name: userIds
       in: query
       required: true
       style: form
       explode: false
-      description: 쉼표로 이은 부원 아이디, 최대 100개
-      schema: { type: array, maxItems: 100, items: { $ref: '#/components/schemas/Id' } }
+      description: 쉼표로 이은 사용자 아이디, 최대 100개
+      schema: { type: array, maxItems: 100, items: { type: string } }
     pageSize:
       name: pageSize
       in: query
@@ -922,14 +889,14 @@ components:
 
   responses:
     BadRequest:
-      description: 요청만 보고 틀림(형식, 필드 사이 관계, 허용 목록)
+      description: 요청만 보고 틀림(형식, 필드 사이 관계, 허용 값(enum))
       content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
     Unauthorized:
       description: 토큰 없음·틀림·만료
       headers: { WWW-Authenticate: { schema: { type: string } } }
       content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
     Forbidden:
-      description: 볼 수는 있지만 그 동작의 권한이 없음
+      description: 볼 수는 있지만 그 오퍼레이션의 권한이 없음
       content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
     NotFound:
       description: 없거나, 볼 수 없음(그 동아리 부원이 아님 포함)
@@ -938,7 +905,7 @@ components:
       description: If-Match가 지금 ETag와 다름
       content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
     Conflict:
-      description: 지금 상태와 부딪힘. `type` 끝 조각으로 까닭을 가른다
+      description: 현재 상태와 충돌. 문제 유형(problem type)은 `type` URI의 마지막 경로 세그먼트로 가른다
       content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
 
   schemas:
@@ -951,7 +918,7 @@ components:
     InviteCode: { type: string, pattern: '^[A-Z0-9]{8}$' }
     Permission:
       type: string
-      enum: [club.update, parts.manage, noticeCategories.manage, applications.decide, members.manage, rules.update, notices.write]
+      enum: [club.update, parts.manage, noticeCategories.manage, applications.decide, members.manage, notices.write]
 
     Problem:
       type: object
@@ -961,7 +928,7 @@ components:
           type: string
           format: uri-reference
           description: |
-            409의 끝 조각: in-use, preset, last-manager, already-member, application-pending, not-pending,
+            409의 문제 유형(`type`의 마지막 경로 세그먼트): in-use, preset, last-manager, already-member, application-pending, not-pending,
             session-running, session-ended, not-owned, level-locked, insufficient-volts, duplicate-name, duplicate-start-on
         title: { type: string }
         status: { type: integer }
@@ -1122,19 +1089,6 @@ components:
         nextPageToken: { type: string }
 
     # game
-    ClubRules:
-      type: object
-      required: [attendanceMinutes, absenceDaysForBugs, minutesPerBug, maxSessionMinutes]
-      properties:
-        startOn: { type: [string, 'null'], format: date, description: null이면 기본값 }
-        attendanceMinutes: { type: integer, minimum: 10, maximum: 180 }
-        absenceDaysForBugs: { type: integer, minimum: 2, maximum: 14 }
-        minutesPerBug: { type: integer, minimum: 10, maximum: 180 }
-        maxSessionMinutes: { type: integer, minimum: 60, maximum: 720 }
-    ClubRulesCreate:
-      allOf:
-        - { $ref: '#/components/schemas/ClubRules' }
-        - { type: object, required: [startOn] }
     DailyGoal:
       type: object
       required: [minutes]
@@ -1157,8 +1111,8 @@ components:
         id: { $ref: '#/components/schemas/Id' }
         state: { $ref: '#/components/schemas/SessionState' }
         startedAt: { $ref: '#/components/schemas/DateTime' }
-        endedAt: { $ref: '#/components/schemas/DateTime', description: 실제 끝. 상한을 넘겼으면 상한 시각 }
-        maxEndAt: { $ref: '#/components/schemas/DateTime', description: '상한 시각. 기기는 이때 앱 잠금을 푼다 (R-43)' }
+        endedAt: { $ref: '#/components/schemas/DateTime', description: 실제 종료 시각. 12시간을 넘겼으면 12시간 시각 }
+        maxEndAt: { $ref: '#/components/schemas/DateTime', description: '12시간이 되는 시각. 기기는 이때 앱 잠금을 푼다 (6.3)' }
         studiedSeconds: { type: integer, description: 지금까지(끝났으면 전체) 공부한 초 }
         expectedVolts: { type: integer, description: 지금 끝내면 받을 볼트 (F-08) }
         result: { $ref: '#/components/schemas/SessionResult' }
@@ -1183,7 +1137,7 @@ components:
       required: [state]
       properties:
         state: { type: string, const: ENDED }
-        clientEndedAt: { $ref: '#/components/schemas/DateTime', description: 기기가 본 종료 시각. 끊겼다 다시 보낼 때 (R-48) }
+        clientEndedAt: { $ref: '#/components/schemas/DateTime', description: '기기가 본 종료 시각. 끊겼다 다시 보낼 때 (6.3)' }
     StudySessionPage:
       type: object
       required: [items]
@@ -1192,41 +1146,51 @@ components:
         nextPageToken: { type: string }
     RoomCondition:
       type: object
-      required: [hearts, bugs, bugProgressSeconds, bugSeconds]
+      required: [hearts, bugs, bugProgressSeconds]
       properties:
         hearts: { type: integer, minimum: 0, maximum: 4 }
         bugs: { type: integer, minimum: 0, maximum: 3 }
-        bugProgressSeconds: { type: integer, description: 다음 버그 퇴치까지 쌓인 초 }
-        bugSeconds: { type: integer, description: 버그 1마리 퇴치에 필요한 초(오늘 규칙) }
-    PlaceableKind:
+        bugProgressSeconds: { type: integer, description: '다음 버그 퇴치까지 쌓인 초. 1마리는 3600초 (7.0)' }
+    Slot:
       type: string
-      enum: [DESK, BOOKSHELF, PLANT, CHARACTER, RUG]
+      description: '아이템의 장착 부위. 같은 부위는 하나만 장착, ROOM(집)만 해제 불가 (D-03)'
+      enum: [CLOCK, WINDOW, DESK, LAMP, PLANT, BOOKSHELF, RUG, WALLPAPER, HEAD, FACE, NECK, ROOM]
+    ItemCategory:
+      type: string
+      description: '상점·인벤토리 탭. 부위에서 정해진다: 가구=CLOCK~RUG, 벽지=WALLPAPER, 캐릭터=HEAD·FACE·NECK, 방 확장=ROOM'
+      enum: [FURNITURE, WALLPAPER, ACCESSORY, ROOM_SIZE]
+    PlacementTarget:
+      type: string
+      description: '배치 대상. 장착 중인 DESK·BOOKSHELF·PLANT·RUG와 캐릭터 (D-10)'
+      enum: [DESK, BOOKSHELF, PLANT, RUG, CHARACTER]
     Placement:
       type: object
-      required: [kind, x, y]
+      required: [target, x, y]
       properties:
-        kind: { $ref: '#/components/schemas/PlaceableKind' }
+        target: { $ref: '#/components/schemas/PlacementTarget' }
         x: { type: number, description: 방 바닥 칸 단위 }
         y: { type: number, description: 방 바닥 칸 단위 }
+    EquippedItem:
+      type: object
+      required: [slot, itemId]
+      properties:
+        slot: { $ref: '#/components/schemas/Slot' }
+        itemId: { $ref: '#/components/schemas/Id' }
     Room:
       type: object
-      required: [memberId, roomSizeItemId, wallpaperItemId, itemIds, placements, condition, likeCount, likedByMe]
+      required: [userId, equipped, placements, condition, likeCount, likedByMe]
       properties:
-        memberId: { $ref: '#/components/schemas/Id' }
-        roomSizeItemId: { $ref: '#/components/schemas/Id' }
-        wallpaperItemId: { $ref: '#/components/schemas/Id' }
-        itemIds: { type: array, description: 장착 중인 가구·장식, items: { $ref: '#/components/schemas/Id' } }
+        userId: { type: string }
+        equipped: { type: array, description: '부위마다 하나. ROOM은 늘 있음', items: { $ref: '#/components/schemas/EquippedItem' } }
         placements: { type: array, items: { $ref: '#/components/schemas/Placement' } }
         condition: { $ref: '#/components/schemas/RoomCondition' }
         likeCount: { type: integer }
         likedByMe: { type: boolean }
-        newGuestbookCount: { type: integer, description: 방 주인일 때만 }
+        newGuestbookCount: { type: integer, description: 본인일 때만 }
     RoomUpdate:
       type: object
       properties:
-        roomSizeItemId: { $ref: '#/components/schemas/Id' }
-        wallpaperItemId: { $ref: '#/components/schemas/Id' }
-        itemIds: { type: array, items: { $ref: '#/components/schemas/Id' } }
+        equipped: { type: array, description: '장착 전체. ROOM을 반드시 포함', items: { $ref: '#/components/schemas/EquippedItem' } }
         placements: { type: array, items: { $ref: '#/components/schemas/Placement' } }
         guestbookCheckedAt: { $ref: '#/components/schemas/DateTime' }
     DayStudy:
@@ -1239,40 +1203,38 @@ components:
         goalMet: { type: boolean }
     Stats:
       type: object
-      required: [memberId, xp, level, levelXp, nextLevelXp, volts, todaySeconds, todayAttended, weekSeconds, week, attendanceStreak, absenceStreak, dayNumber]
+      required: [userId, xp, level, levelXp, nextLevelXp, volts, todaySeconds, todayAttended, weekSeconds, week, attendanceStreak, absenceStreak, dayNumber]
       properties:
-        memberId: { $ref: '#/components/schemas/Id' }
+        userId: { type: string }
         xp: { type: integer }
         level: { type: integer }
         levelXp: { type: integer, description: 지금 레벨의 누적 요구 XP }
         nextLevelXp: { type: integer, description: 다음 레벨의 누적 요구 XP }
         volts: { type: integer, description: 볼트 잔액 }
-        todaySeconds: { type: integer, description: 진행 중 세션 포함 (R-47) }
+        todaySeconds: { type: integer, description: '진행 중 세션 포함 (H-20)' }
         todayAttended: { type: boolean }
         weekSeconds: { type: integer }
         week: { type: array, description: '이번 주 월~일 (M-04)', items: { $ref: '#/components/schemas/DayStudy' } }
         attendanceStreak: { type: integer }
         absenceStreak: { type: integer }
-        dayNumber: { type: integer, description: 이용 일차 (H-21) }
-    ItemKind:
-      type: string
-      enum: [FURNITURE, WALLPAPER, ACCESSORY, ROOM_SIZE]
+        dayNumber: { type: integer, description: '이용 일차. 계정을 만든 날이 1일차 (H-21)' }
     Grade:
       type: string
       enum: [BASIC, COMMON, RARE, EPIC]
     Item:
       type: object
-      required: [id, code, kind, name, grade, price, minLevel]
+      required: [id, code, slot, category, name, grade, price, minLevel, defaultOwned]
       properties:
         id: { $ref: '#/components/schemas/Id' }
-        code: { type: string, description: 그림 연결용 }
-        kind: { $ref: '#/components/schemas/ItemKind' }
+        code: { type: string, description: 이미지 에셋 식별용 키 }
+        slot: { $ref: '#/components/schemas/Slot' }
+        category: { $ref: '#/components/schemas/ItemCategory' }
         name: { type: string }
         grade: { $ref: '#/components/schemas/Grade' }
-        price: { type: integer, description: 0이면 기본 보유 }
+        price: { type: integer }
         minLevel: { type: integer }
-        roomSize: { type: integer, description: ROOM_SIZE일 때 바닥 n×n }
-        placeableKind: { $ref: '#/components/schemas/PlaceableKind' }
+        defaultOwned: { type: boolean, description: '처음부터 보유 (8.2)' }
+        roomSize: { type: integer, description: 'ROOM일 때 바닥 n×n' }
     OwnedItem:
       type: object
       required: [itemId, pricePaid]
@@ -1282,11 +1244,13 @@ components:
         purchasedAt: { $ref: '#/components/schemas/DateTime', description: 기본 보유면 없음 }
     GuestbookEntry:
       type: object
-      required: [id, authorMemberId, body, createdAt]
+      required: [id, clubId, userId, authorUserId, body, createdAt]
       properties:
         id: { $ref: '#/components/schemas/Id' }
-        authorMemberId: { $ref: '#/components/schemas/Id' }
-        body: { type: string, description: 1~60자 }
+        clubId: { $ref: '#/components/schemas/Id', description: 쓴 동아리 }
+        userId: { type: string, description: 방 주인 }
+        authorUserId: { type: [string, 'null'], description: 'null이면 탈퇴한 사용자 (R-15)' }
+        body: { type: string, description: '1~60자' }
         createdAt: { $ref: '#/components/schemas/DateTime' }
         new: { type: boolean, description: 방 주인일 때만 }
     GuestbookEntryCreate:
@@ -1312,7 +1276,7 @@ components:
         id: { $ref: '#/components/schemas/Id' }
         categoryId: { $ref: '#/components/schemas/Id' }
         subcategoryId: { $ref: '#/components/schemas/Id' }
-        authorMemberId: { type: [string, 'null'], format: uuid, description: null이면 탈퇴한 부원 }
+        authorUserId: { type: [string, 'null'], description: 'null이면 탈퇴한 사용자 (10장)' }
         title: { type: string, description: 1~50자 }
         body: { type: string, description: '1~2,000자' }
         pinned: { type: boolean }
