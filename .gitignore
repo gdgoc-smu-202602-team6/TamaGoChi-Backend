@@ -5,5 +5,6 @@ coverage/
 .env
 .env.*
 !.env.example
-src/foundation/contract/openapi.d.ts
+src/foundation/contract/openapi.ts
+prisma/schema.sql
 src/foundation/database/generated/

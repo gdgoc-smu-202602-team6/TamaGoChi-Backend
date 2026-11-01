@@ -14,6 +14,7 @@ model ClubNotice {
   title             String
   body              String
   pinned            Boolean                        @default(false)
+  /// contract: NotificationState
   notificationState String                         @map("notification_state")
   createdAt         DateTime                       @default(now()) @map("created_at") @db.Timestamptz
 

@@ -1,17 +1,12 @@
-/**
- * What a club member may do beyond being a member. The list is code; which role has which permission is data.
- * Keys are `<resource>.<action>` and span domains (club, notice), so the list lives below them.
- */
-export const permissions = [
-  'club.update',
-  'parts.manage',
-  'noticeCategories.manage',
-  'applications.decide',
-  'members.manage',
-  'notices.write',
-] as const;
+import { type components, permissionValues } from '../contract/openapi.js';
 
-export type Permission = (typeof permissions)[number];
+/**
+ * What a club member may do beyond being a member. The list is the contract's; which role has which permission is
+ * data. Keys are `<resource>.<action>` and span domains (club, notice), so the list lives below them.
+ */
+export const permissions = permissionValues;
+
+export type Permission = components['schemas']['Permission'];
 
 export function isPermission(value: string): value is Permission {
   return (permissions as readonly string[]).includes(value);

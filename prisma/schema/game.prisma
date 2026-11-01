@@ -6,6 +6,7 @@ model UserDailyGoal {
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   startOn   DateTime @map("start_on") @db.Date
+  /// contract: DailyGoal.minutes
   minutes   Int
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
@@ -13,7 +14,7 @@ model UserDailyGoal {
   @@map("user_daily_goals")
 }
 
-/// At most one running session per user (a partial unique index in the migration).
+/// At most one running session per user (a partial unique index in prisma/sql/game.sql).
 model UserStudySession {
   id        String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
   userId    String    @map("user_id")
@@ -49,8 +50,10 @@ model UserDaySettlement {
 model Item {
   id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   code         String   @unique
+  /// contract: Slot
   slot         String
   name         String
+  /// contract: Grade
   grade        String
   price        Int
   minLevel     Int      @default(1) @map("min_level")
@@ -98,6 +101,7 @@ model UserRoom {
 model UserRoomItem {
   userId    String   @map("user_id")
   room      UserRoom @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  /// contract: Slot
   slot      String
   itemId    String   @map("item_id") @db.Uuid
   item      Item     @relation(fields: [itemId, slot], references: [id, slot], onDelete: Restrict)
@@ -112,6 +116,7 @@ model UserRoomItem {
 model UserRoomPlacement {
   userId    String   @map("user_id")
   room      UserRoom @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  /// contract: PlacementTarget
   target    String
   x         Float
   y         Float

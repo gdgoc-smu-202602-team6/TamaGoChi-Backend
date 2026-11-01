@@ -9,7 +9,7 @@ COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile
 COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 COPY src ./src
-RUN pnpm build && pnpm prune --prod --ignore-scripts
+RUN pnpm build && pnpm db:schema && pnpm prune --prod --ignore-scripts
 
 FROM node:26-slim
 WORKDIR /app

@@ -1,5 +1,6 @@
-// The generator and the datasource. Each domain has its own file (<domain>.prisma). CHECK constraints and partial
-// unique indexes are not expressible here; they are in the migration SQL.
+// The generator and the datasource. Each domain has its own file (<domain>.prisma). A `/// contract: <schema>` mark
+// makes a column the DOMAIN of that openapi.yaml schema; what neither states is in prisma/sql. prisma/build-schema.ts
+// puts them together into prisma/schema.sql.
 
 generator client {
   provider               = "prisma-client"

@@ -3,6 +3,7 @@
 model Club {
   id         String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   name       String
+  /// contract: InviteCode
   inviteCode String   @unique @map("invite_code")
   revision   Int      @default(1)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -22,6 +23,7 @@ model ClubPart {
   clubId    String   @map("club_id") @db.Uuid
   club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
   name      String
+  /// contract: PaletteColor
   color     String
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
@@ -37,6 +39,7 @@ model ClubNoticeCategory {
   clubId    String   @map("club_id") @db.Uuid
   club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
   name      String
+  /// contract: PaletteColor
   color     String
   /// "전체공지". One per club, never deleted.
   preset    Boolean  @default(false)
@@ -79,6 +82,7 @@ model Role {
 model RolePermission {
   roleId     String   @map("role_id") @db.Uuid
   role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  /// contract: Permission
   permission String
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
 
@@ -117,6 +121,7 @@ model ClubApplication {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   partId    String    @map("part_id") @db.Uuid
   part      ClubPart  @relation(fields: [partId], references: [id], onDelete: Restrict)
+  /// contract: ApplicationState
   state     String    @default("PENDING")
   decidedAt DateTime? @map("decided_at") @db.Timestamptz
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz

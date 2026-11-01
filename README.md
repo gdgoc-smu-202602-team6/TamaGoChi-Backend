@@ -23,12 +23,18 @@ cp .env.example .env
 openssl rand -base64 32
 ```
 
-로컬 PostgreSQL 18을 띄우고 마이그레이션과 시드(역할·권한, 아이템 카탈로그)를 적용합니다. 시드는 멱등이라 여러 번 돌려도 됩니다.
+로컬 PostgreSQL 18을 띄우고 스키마와 시드(역할·권한, 아이템 카탈로그)를 적용합니다. `db:deploy`는 빈 DB에만 적용됩니다. 시드는 멱등이라 여러 번 돌려도 됩니다.
 
 ```bash
 docker compose up -d --wait
-pnpm db:migrate
+pnpm db:deploy
 pnpm db:seed
+```
+
+스키마가 바뀌면 로컬 DB를 지우고 다시 만듭니다. 데이터가 모두 지워집니다.
+
+```bash
+docker compose down -v
 ```
 
 서버를 띄웁니다. `http://localhost:3000/health`가 `{"status":"ok"}`를 돌려주면 됩니다.
@@ -52,11 +58,15 @@ pnpm test:e2e
 
 `test:e2e`는 로컬 PostgreSQL이 떠 있어야 합니다. CI(`.github/workflows/ci.yml`)도 PR마다 같은 검사를 돌립니다.
 
+## 스키마
+
+`prisma/build-schema.ts`가 `prisma/schema.sql`(커밋하지 않음)을 만듭니다. 값 목록과 형식(색, 권한, 신청 상태, 부위 등)은 `openapi.yaml`에만 있습니다. Prisma 스키마의 `/// contract: <스키마 이름>` 표시가 그 컬럼을 계약에서 만든 DOMAIN으로 바꿉니다. Prisma와 계약 어느 쪽도 말하지 않는 제약 조건은 `prisma/sql/<도메인>.sql`에 둡니다.
+
 ## 구조
 
 ```
 openapi.yaml       API 계약
-prisma/            스키마(도메인마다 파일 하나), 마이그레이션, 시드
+prisma/            Prisma 스키마(도메인마다 파일 하나), 도메인별 SQL, 시드, 스키마 빌드 스크립트
 src/foundation/    foundation 계층: 설정, DB 클라이언트, 오류 응답, 계약 검증, 세션 확인
 src/domains/       도메인: account, club, game, notice
 src/api/           컨트롤러
@@ -70,10 +80,10 @@ src/api/           컨트롤러
 docker build --platform linux/amd64 -t tamagochi-backend .
 ```
 
-컨테이너에서 마이그레이션과 시드를 적용한 뒤 서버를 띄웁니다.
+이미지에는 빌드할 때 생성한 `prisma/schema.sql`이 들어 있습니다. 빈 DB에 스키마와 시드를 적용한 뒤 서버를 띄웁니다.
 
 ```bash
-docker run --rm --env-file .env tamagochi-backend node_modules/.bin/prisma migrate deploy
+docker run --rm --env-file .env tamagochi-backend node_modules/.bin/prisma db execute --file prisma/schema.sql
 ```
 
 ```bash

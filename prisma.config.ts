@@ -8,9 +8,7 @@ try {
 
 export default defineConfig({
   schema: 'prisma/schema',
-  migrations: {
-    path: 'prisma/migrations',
-    seed: 'sh prisma/seed.sh',
-  },
+  // No migrations: prisma/build-schema.ts builds the schema of an empty database (pnpm db:deploy).
+  migrations: { seed: 'sh prisma/seed.sh' },
   datasource: { url: env('DATABASE_URL') },
 });
