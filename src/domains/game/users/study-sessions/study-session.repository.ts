@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
-import type { Prisma } from '../../../../foundation/database/generated/client.js';
 import { orOnUniqueViolation } from '../../../../foundation/database/database-errors.js';
 import { asId, type Id } from '../../../../foundation/id/id.js';
 import { newestFirstPage } from '../../../../foundation/pagination/newest-first-page.js';
@@ -8,6 +7,7 @@ import type { PageRequest } from '../../../../foundation/pagination/page-request
 import type { Page } from '../../../../foundation/pagination/page.js';
 import { lockPlayer } from '../../lock/player-lock.js';
 import { type SessionState, StudySession } from './study-session.js';
+import type { QueryClient } from '../../../../foundation/database/query-client.js';
 
 const sessionColumns = {
   id: true,
@@ -78,7 +78,7 @@ export class StudySessionRepository {
   /** Every session of the user, oldest first. */
   async all(
     userId: Id<'User'>,
-    client: DatabaseClient | Prisma.TransactionClient = this.database,
+    client: QueryClient = this.database,
   ): Promise<StudySession[]> {
     const rows = await client.userStudySession.findMany({
       where: { userId },

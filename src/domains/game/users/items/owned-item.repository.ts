@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../../foundation/database/database-client.js';
-import type { Prisma } from '../../../../foundation/database/generated/client.js';
 import { asId, type Id } from '../../../../foundation/id/id.js';
 import type { Item } from '../../items/item.js';
 import type { OwnedItem } from './owned-item.js';
-
-type Client = DatabaseClient | Prisma.TransactionClient;
+import type { QueryClient } from '../../../../foundation/database/query-client.js';
 
 @Injectable()
 export class OwnedItemRepository {
@@ -15,7 +13,7 @@ export class OwnedItemRepository {
   async owned(
     userId: Id<'User'>,
     catalog: readonly Item[],
-    client: Client = this.database,
+    client: QueryClient = this.database,
   ): Promise<OwnedItem[]> {
     const rows = await client.userItem.findMany({
       where: { userId },
@@ -39,7 +37,7 @@ export class OwnedItemRepository {
   /** The volts the user has paid for items. */
   async spent(
     userId: Id<'User'>,
-    client: Client = this.database,
+    client: QueryClient = this.database,
   ): Promise<number> {
     const total = await client.userItem.aggregate({
       where: { userId },
@@ -52,7 +50,7 @@ export class OwnedItemRepository {
   async buy(
     userId: Id<'User'>,
     item: Item,
-    client: Client = this.database,
+    client: QueryClient = this.database,
   ): Promise<OwnedItem> {
     const row = await client.userItem.create({
       data: { userId, itemId: item.id, price: item.price },

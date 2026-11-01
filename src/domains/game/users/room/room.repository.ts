@@ -8,8 +8,7 @@ import { lockPlayer } from '../../lock/player-lock.js';
 import { Placement } from './placement.js';
 import type { PlacementTargetName } from './placement-target.js';
 import { Room } from './room.js';
-
-type Client = DatabaseClient | Prisma.TransactionClient;
+import type { QueryClient } from '../../../../foundation/database/query-client.js';
 
 @Injectable()
 export class RoomRepository {
@@ -19,7 +18,7 @@ export class RoomRepository {
   async find(
     userId: Id<'User'>,
     catalog: readonly Item[],
-    client: Client = this.database,
+    client: QueryClient = this.database,
   ): Promise<Room> {
     const row = await client.userRoom.findUnique({
       where: { userId },

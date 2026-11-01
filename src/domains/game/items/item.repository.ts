@@ -1,12 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
-import type { Prisma } from '../../../foundation/database/generated/client.js';
 import { asId } from '../../../foundation/id/id.js';
 import { type Grade, Item } from './item.js';
 import type { SlotName } from './slot/slot.js';
 import { slotOf } from './slot/slot-of.js';
-
-type Client = DatabaseClient | Prisma.TransactionClient;
+import type { QueryClient } from '../../../foundation/database/query-client.js';
 
 const itemColumns = {
   id: true,
@@ -25,7 +23,7 @@ export class ItemRepository {
   constructor(private readonly database: DatabaseClient) {}
 
   /** The whole catalog, in a fixed order. */
-  async catalog(client: Client = this.database): Promise<Item[]> {
+  async catalog(client: QueryClient = this.database): Promise<Item[]> {
     const rows = await client.item.findMany({
       select: itemColumns,
       orderBy: [{ minLevel: 'asc' }, { price: 'asc' }, { code: 'asc' }],
