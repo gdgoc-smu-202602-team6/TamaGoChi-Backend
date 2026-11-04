@@ -13,6 +13,13 @@ export class Grid {
     return this.step === null || Number.isInteger(value / this.step);
   }
 
+  /** The largest coordinate on the grid that is not above `value`. */
+  largestUpTo(value: number): number {
+    return this.step === null
+      ? value
+      : Math.floor(value / this.step) * this.step;
+  }
+
   /** The nearest coordinate on the grid. */
   snap(value: number): number {
     return this.step === null

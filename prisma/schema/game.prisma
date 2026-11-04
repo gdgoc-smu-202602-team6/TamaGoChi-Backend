@@ -140,12 +140,14 @@ model UserRoomItem {
   @@map("user_room_items")
 }
 
-/// Where a placement target stands, in floor cells.
+/// Where a placement target stands (openapi.yaml Placement).
 model UserRoomPlacement {
   userId    String   @map("user_id")
   room      UserRoom @relation(fields: [userId], references: [userId], onDelete: Cascade)
   /// contract: PlacementTarget
   target    String
+  /// contract: Surface
+  surface   String
   x         Float
   y         Float
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz

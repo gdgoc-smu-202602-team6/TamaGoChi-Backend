@@ -5,6 +5,7 @@ import { asId, type Id } from '../../../../foundation/id/id.js';
 import type { Item } from '../../items/item.js';
 import type { SlotName } from '../../items/slot/slot.js';
 import { lockPlayer } from '../../lock/player-lock.js';
+import { Surface, type SurfaceName } from '../../placement/surface/surface.js';
 import { Placement, type PlacementTarget } from './placement.js';
 import { Room } from './room.js';
 import type { QueryClient } from '../../../../foundation/database/query-client.js';
@@ -24,7 +25,9 @@ export class RoomRepository {
       select: {
         guestbookCheckedAt: true,
         items: { select: { slot: true, itemId: true } },
-        placements: { select: { target: true, x: true, y: true } },
+        placements: {
+          select: { target: true, surface: true, x: true, y: true },
+        },
       },
     });
     if (!row) return Room.default(userId, catalog);
@@ -38,7 +41,13 @@ export class RoomRepository {
       userId,
       equipped,
       row.placements.map(
-        (one) => new Placement(one.target as PlacementTarget, one.x, one.y),
+        (one) =>
+          new Placement(
+            one.target as PlacementTarget,
+            Surface.of(one.surface as SurfaceName),
+            one.x,
+            one.y,
+          ),
       ),
       row.guestbookCheckedAt,
       catalog,
@@ -94,6 +103,7 @@ export class RoomRepository {
       data: room.placements.map((placement) => ({
         userId: room.userId,
         target: placement.target,
+        surface: placement.surface.name,
         x: placement.x,
         y: placement.y,
       })),

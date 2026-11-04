@@ -579,7 +579,8 @@ paths:
       description: |
         꾸미기 '완료' 때 한 번에 저장(D-16). 본인만(`me`, 아니면 403).
         `equipped`는 장착 전체를 바꾼다: 부위마다 하나, ROOM은 반드시 하나(D-03). 보유하지 않은 아이템이면 409(`not-owned`),
-        부위가 맞지 않거나 ROOM이 없으면 400, 배치가 방 밖이거나 장착하지 않은 대상이면 400.
+        부위가 맞지 않거나 ROOM이 없으면 400. 배치는 장착하지 않았거나 배치 정책이 없는 대상, 대상마다 둘 이상,
+        정책의 surfaceKind와 다른 종류의 면, 크기 사각형이 면 밖, 격자(step) 밖, 같은 면에서 solid끼리 겹침이면 400.
         내 방명록을 열면 `guestbookCheckedAt`을 지금으로 보낸다(M-21).
       requestBody:
         required: true
@@ -1194,14 +1195,22 @@ components:
       type: string
       description: '배치하는 면의 종류: 바닥 또는 벽'
       enum: [FLOOR, WALL]
+    Surface:
+      type: string
+      description: |
+        배치가 놓인 면: 바닥, 쿼터뷰에서 보이는 왼쪽 벽, 오른쪽 벽. 원점은 두 벽이 만나는 안쪽 모서리의 바닥 쪽 끝이고 단위는 칸.
+        바닥(가로 roomSize × 세로 roomSize): x는 오른쪽 벽을 따라, y는 왼쪽 벽을 따라 늘어난다.
+        벽(가로 roomSize × 세로 Room.wallHeight): x는 그 모서리에서 벽을 따라, y는 바닥에서 위로 늘어난다.
+        그러므로 오른쪽 벽의 x는 바닥의 x와, 왼쪽 벽의 x는 바닥의 y와 같은 축이다.
+      enum: [FLOOR, LEFT_WALL, RIGHT_WALL]
     PlacementPolicy:
       type: object
       description: '아이템을 방에 놓는 방법 (D-10~D-14). 아이템 카탈로그 데이터'
       required: [surfaceKind, width, height, solid]
       properties:
         surfaceKind: { $ref: '#/components/schemas/SurfaceKind' }
-        width: { type: integer, description: 가로 칸 수 }
-        height: { type: integer, description: '세로 칸 수. 바닥이면 안쪽으로, 벽이면 위로' }
+        width: { type: integer, description: '면의 x축 방향 칸 수 (Surface의 축)' }
+        height: { type: integer, description: '면의 y축 방향 칸 수. 바닥이면 왼쪽 벽을 따라, 벽이면 위로 (Surface의 축)' }
         step: { type: number, description: '움직이는 칸 단위. 없으면 자유 이동' }
         solid: { type: boolean, description: '같은 면의 다른 solid 배치와 겹칠 수 없는지' }
     PlacementTarget:
@@ -1212,11 +1221,12 @@ components:
     Placement:
       type: object
       additionalProperties: false
-      required: [target, x, y]
+      required: [target, surface, x, y]
       properties:
         target: { $ref: '#/components/schemas/PlacementTarget' }
-        x: { type: number, description: 방 바닥 칸 단위 }
-        y: { type: number, description: 방 바닥 칸 단위 }
+        surface: { $ref: '#/components/schemas/Surface', description: '종류가 대상 정책의 surfaceKind인 면' }
+        x: { type: number, description: '대상 크기 사각형에서 면의 원점에 가장 가까운 꼭짓점의 x (Surface의 축)' }
+        y: { type: number, description: '대상 크기 사각형에서 면의 원점에 가장 가까운 꼭짓점의 y (Surface의 축)' }
     EquippedItem:
       type: object
       additionalProperties: false
@@ -1226,11 +1236,12 @@ components:
         itemId: { $ref: '#/components/schemas/Id' }
     Room:
       type: object
-      required: [userId, equipped, placements, condition, likeCount, likedByMe]
+      required: [userId, equipped, placements, wallHeight, condition, likeCount, likedByMe]
       properties:
         userId: { type: string }
         equipped: { type: array, description: '부위마다 하나. ROOM은 늘 있음', items: { $ref: '#/components/schemas/EquippedItem' } }
-        placements: { type: array, items: { $ref: '#/components/schemas/Placement' } }
+        placements: { type: array, description: '대상(target) 이름의 코드 포인트 순', items: { $ref: '#/components/schemas/Placement' } }
+        wallHeight: { type: integer, const: 3, description: '두 벽의 세로 칸 수. 모든 집이 같다' }
         condition: { $ref: '#/components/schemas/RoomCondition' }
         likeCount: { type: integer }
         likedByMe: { type: boolean }

@@ -1,5 +1,7 @@
 import type { components } from '../../../../foundation/contract/openapi.js';
 import type { PlacementPolicy } from '../../placement/placement-policy.js';
+import { Rectangle } from '../../placement/rectangle.js';
+import type { Surface } from '../../placement/surface/surface.js';
 
 /** What is placed: the slot of an equipped item that has a placement policy, or the character (D-10). */
 export type PlacementTarget = components['schemas']['PlacementTarget'];
@@ -7,51 +9,77 @@ export type PlacementTarget = components['schemas']['PlacementTarget'];
 const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max);
 
 /**
- * Where a placed thing stands, in floor cells (D-10~D-14), and whether that follows its target's placement policy. The
- * room has only its floor, so only a thing whose policy puts it on the floor is placed. Sticking to a wall and the feet
- * line are the screen's, which knows the sprites' sizes.
+ * Where a placed thing stands (D-10~D-14): the surface, and the corner of its size rectangle nearest the surface's
+ * origin, in cells. Whether that follows its target's placement policy is decided here. Sticking to a wall and the
+ * feet line are the screen's, which knows the sprites' sizes.
  */
 export class Placement {
   constructor(
     readonly target: PlacementTarget,
+    readonly surface: Surface,
     readonly x: number,
     readonly y: number,
   ) {}
 
-  /** Whether it follows the policy in a size × size room: on the floor, inside it, and on the policy's grid. */
+  /** The cells it covers, as large as the policy says. */
+  areaFor(policy: PlacementPolicy): Rectangle {
+    return new Rectangle(this.x, this.y, policy.width, policy.height);
+  }
+
+  /**
+   * Whether it follows the policy in a room whose floor is size × size: on a surface of the policy's kind, its size
+   * rectangle inside that surface, and on the policy's grid.
+   */
   fitsIn(size: number, policy: PlacementPolicy): boolean {
-    const inside =
-      this.x >= 0 && this.x <= size && this.y >= 0 && this.y <= size;
     return (
-      goesOnFloor(policy) &&
-      inside &&
+      this.surface.kind === policy.surfaceKind &&
+      this.areaFor(policy).within(this.surface.areaIn(size)) &&
       policy.grid.holds(this.x) &&
       policy.grid.holds(this.y)
     );
   }
 
+  /** Whether it and `other` cannot both stand: both solid, on the same surface, and their size rectangles overlap. */
+  clashesWith(
+    policy: PlacementPolicy,
+    other: Placement,
+    otherPolicy: PlacementPolicy,
+  ): boolean {
+    return (
+      policy.solid &&
+      otherPolicy.solid &&
+      this.surface === other.surface &&
+      this.areaFor(policy).overlaps(other.areaFor(otherPolicy))
+    );
+  }
+
   /**
-   * The position following the policy in a toSize room, from a fromSize one: scaled with the floor, onto the policy's
-   * grid and pulled inside it (S-09). None when the policy does not put it on the floor.
+   * The position following the policy in a toSize room, from a fromSize one: scaled from the surface's origin along
+   * each axis, onto the policy's grid and pulled inside the surface to the last grid point that fits (S-09). None when
+   * it then does not follow the policy, as when the policy puts it on another kind of surface or it is larger than the
+   * surface.
    */
   fittedTo(
     fromSize: number,
     toSize: number,
     policy: PlacementPolicy,
   ): Placement | null {
-    if (!goesOnFloor(policy)) return null;
-    const scale = (value: number) =>
+    const from = this.surface.areaIn(fromSize);
+    const to = this.surface.areaIn(toSize);
+    const scale = (value: number, fromLength: number, toLength: number) =>
+      fromLength === toLength ? value : (value * toLength) / fromLength;
+    const moved = new Placement(
+      this.target,
+      this.surface,
       clamp(
-        policy.grid.snap(
-          fromSize === toSize ? value : (value * toSize) / fromSize,
-        ),
-        toSize,
-      );
-    return new Placement(this.target, scale(this.x), scale(this.y));
+        policy.grid.snap(scale(this.x, from.width, to.width)),
+        policy.grid.largestUpTo(to.width - policy.width),
+      ),
+      clamp(
+        policy.grid.snap(scale(this.y, from.height, to.height)),
+        policy.grid.largestUpTo(to.height - policy.height),
+      ),
+    );
+    return moved.fitsIn(toSize, policy) ? moved : null;
   }
-}
-
-/** Whether the policy puts its thing on the floor, the room's only surface. */
-function goesOnFloor(policy: PlacementPolicy): boolean {
-  return policy.surfaceKind === 'FLOOR';
 }

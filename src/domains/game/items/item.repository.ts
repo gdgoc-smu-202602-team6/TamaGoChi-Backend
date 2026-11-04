@@ -3,7 +3,7 @@ import { DatabaseClient } from '../../../foundation/database/database-client.js'
 import { asId } from '../../../foundation/id/id.js';
 import { Grid } from '../placement/grid.js';
 import { PlacementPolicy } from '../placement/placement-policy.js';
-import type { SurfaceKind } from '../placement/surface-kind.js';
+import type { SurfaceKind } from '../placement/surface/surface-kind.js';
 import { type Grade, Item } from './item.js';
 import type { SlotName } from './slot/slot.js';
 import { slotOf } from './slot/slot-of.js';

@@ -30,6 +30,7 @@ export class Room {
   constructor(
     readonly userId: Id<'User'>,
     readonly equipped: ReadonlyMap<SlotName, Item>,
+    /** In target order (`inTargetOrder`). */
     readonly placements: readonly Placement[],
     readonly guestbookCheckedAt: Date | null,
   ) {}
@@ -112,11 +113,11 @@ export class Room {
 
   /**
    * Replaces the placements (updateRoom). Only the character and what is equipped with a placement policy are placed
-   * (D-10), each as its policy says.
+   * (D-10), each as its policy says, and no two solid ones overlap on a surface.
    */
   withPlacements(placements: readonly Placement[]): Room | RoomRefusal {
     const targets = targetsOf(this.equipped);
-    const seen = new Set<PlacementTarget>();
+    const placed: Placed[] = [];
     for (const [index, placement] of placements.entries()) {
       const at = { list: 'placements', index } as const;
       const policy = targets.get(placement.target);
@@ -126,20 +127,27 @@ export class Room {
           ...at,
           message: `${placement.target} is not equipped, or is not placed`,
         };
-      if (seen.has(placement.target))
+      if (placed.some(([one]) => one.target === placement.target))
         return { kind: 'invalid', ...at, message: 'one placement per target' };
       if (!placement.fitsIn(this.size, policy))
         return {
           kind: 'invalid',
           ...at,
-          message: 'not on the floor, outside the room or off its grid',
+          message:
+            'not on a surface of its kind, outside the surface or off its grid',
         };
-      seen.add(placement.target);
+      if (clashes(placement, policy, placed))
+        return {
+          kind: 'invalid',
+          ...at,
+          message: 'overlaps another placement on its surface',
+        };
+      placed.push([placement, policy]);
     }
     return new Room(
       this.userId,
       this.equipped,
-      placements,
+      inTargetOrder(placements),
       this.guestbookCheckedAt,
     );
   }
@@ -161,8 +169,9 @@ export class Room {
 
 /**
  * A room's placements always follow what is equipped and its placement policies (D-10~D-14, S-09): each placement,
- * made in a fromSize room, is fitted to its target's policy in the equipped house; one whose target is not placed now
- * goes, so the screen puts it where it starts.
+ * made in a fromSize room, is fitted to its target's policy in the equipped house. One whose target is not placed now,
+ * that no longer fits, or that then overlaps one kept before it in target order goes, so the screen puts it where it
+ * starts.
  */
 function fitted(
   placements: readonly Placement[],
@@ -171,11 +180,37 @@ function fitted(
 ): Placement[] {
   const targets = targetsOf(equipped);
   const toSize = floorSizeOf(equipped);
-  return placements.flatMap((placement) => {
+  const kept: Placed[] = [];
+  for (const placement of inTargetOrder(placements)) {
     const policy = targets.get(placement.target);
     const moved = policy && placement.fittedTo(fromSize, toSize, policy);
-    return moved ? [moved] : [];
-  });
+    if (moved && !clashes(moved, policy, kept)) kept.push([moved, policy]);
+  }
+  return kept.map(([placement]) => placement);
+}
+
+/**
+ * The placements ordered by their target's name, compared by code point: the order a room keeps and answers them in,
+ * and so which of two that come to overlap stays (the earlier).
+ */
+function inTargetOrder(placements: readonly Placement[]): Placement[] {
+  return [...placements].sort((a, b) =>
+    a.target < b.target ? -1 : a.target > b.target ? 1 : 0,
+  );
+}
+
+/** A placement with its target's policy. */
+type Placed = readonly [Placement, PlacementPolicy];
+
+/** Whether the placement, placed as `policy` says, cannot stand with one already placed. */
+function clashes(
+  placement: Placement,
+  policy: PlacementPolicy,
+  placed: readonly Placed[],
+): boolean {
+  return placed.some(([other, otherPolicy]) =>
+    placement.clashesWith(policy, other, otherPolicy),
+  );
 }
 
 /** What can be placed, with how: the character, and the slot of each equipped item that has a placement policy. */

@@ -11,6 +11,7 @@ import {
   ProgressService,
 } from '../../domains/game/users/progress/progress.service.js';
 import { RoomRepository } from '../../domains/game/users/room/room.repository.js';
+import { rules } from '../../domains/game/rules/rules.js';
 import type { Stats } from '../../domains/game/users/stats/stats.js';
 import { StatsService } from '../../domains/game/users/stats/stats.service.js';
 import type { AuthenticatedUser } from '../../foundation/auth/authenticated-user.js';
@@ -117,11 +118,13 @@ export class PlayerViews {
             slot,
             itemId: item.id,
           })),
-          placements: room.placements.map(({ target, x, y }) => ({
+          placements: room.placements.map(({ target, surface, x, y }) => ({
             target,
+            surface: surface.name,
             x,
             y,
           })),
+          wallHeight: rules.wallHeight,
           condition: {
             hearts: condition.hearts,
             bugs: condition.bugs,

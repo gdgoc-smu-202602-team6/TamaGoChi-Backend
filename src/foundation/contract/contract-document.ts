@@ -2,7 +2,10 @@ import document from './openapi.json' with { type: 'json' };
 
 type SchemaObject = {
   pattern?: string;
-  properties?: Record<string, { maximum?: number; default?: unknown }>;
+  properties?: Record<
+    string,
+    { maximum?: number; default?: unknown; const?: unknown }
+  >;
 };
 
 const schemas = document.components.schemas as Record<string, SchemaObject>;
@@ -18,7 +21,7 @@ export function contractPattern(schema: string): string {
 export function contractNumber(
   schema: string,
   property: string,
-  keyword: 'maximum' | 'default',
+  keyword: 'maximum' | 'default' | 'const',
 ): number {
   const value = schemas[schema]?.properties?.[property]?.[keyword];
   if (typeof value !== 'number')

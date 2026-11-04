@@ -1,4 +1,5 @@
 import { contractNumber } from '../../../foundation/contract/contract-document.js';
+import type { components } from '../../../foundation/contract/openapi.js';
 
 /**
  * The fixed game values, the same for every user (merged 7.0, 6.4, 8.2, M-11). Code, not data: changing one changes
@@ -21,4 +22,10 @@ export const rules = Object.freeze({
   startingVolts: 100,
   attendanceBonusXp: 10,
   goalBonusXp: 20,
+  /** How many cells a wall of the room is high, in every house: the contract's const, so its type too. */
+  wallHeight: contractNumber(
+    'Room',
+    'wallHeight',
+    'const',
+  ) as components['schemas']['Room']['wallHeight'],
 });
