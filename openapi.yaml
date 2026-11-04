@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 다마GoC치 API
-  version: 0.2.0
+  version: 0.1.0
   description: |
     다마GoC치 백엔드 API 계약. 요구사항은 기능 명세(merged), 괄호 안은 그 기능 ID와 절 번호.
 
