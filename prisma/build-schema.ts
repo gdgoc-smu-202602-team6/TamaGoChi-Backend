@@ -8,8 +8,11 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 interface ContractSchema {
+  readonly $ref?: string;
+  readonly anyOf?: readonly ContractSchema[];
   readonly type?: string | readonly string[];
   readonly enum?: readonly unknown[];
+  readonly const?: unknown;
   readonly pattern?: string;
   readonly minimum?: number;
   readonly maximum?: number;
@@ -97,9 +100,57 @@ function contractSchema(
   return schema;
 }
 
-/** `CREATE DOMAIN` for a contract schema: its base type, then its enum, pattern and bounds as one CHECK. */
+/** The schema's type other than null. */
+const typeOf = (schema: ContractSchema): string =>
+  [schema.type ?? []].flat().find((one) => one !== 'null') ?? '';
+
+/**
+ * The schema as one plain schema: a `$ref` followed, a `const` as an enum of one value, and an `anyOf` of value lists
+ * of one type as the enum of all their values (PlacementTarget = Slot | CHARACTER).
+ */
+function flattened(
+  contract: string,
+  schema: ContractSchema,
+  schemas: Readonly<Record<string, ContractSchema>>,
+): ContractSchema {
+  if (schema.$ref !== undefined) {
+    const name = /^#\/components\/schemas\/(\w+)$/.exec(schema.$ref)?.[1];
+    const referenced = name === undefined ? undefined : schemas[name];
+    if (!referenced)
+      throw new TypeError(`${contract}: cannot follow ${schema.$ref}`);
+    return flattened(contract, referenced, schemas);
+  }
+  if (schema.anyOf) {
+    const branches = schema.anyOf.map((one) =>
+      flattened(contract, one, schemas),
+    );
+    const types = new Set(branches.map(typeOf));
+    if (
+      types.size !== 1 ||
+      branches.some(
+        (one) =>
+          !one.enum ||
+          one.pattern !== undefined ||
+          one.minimum !== undefined ||
+          one.maximum !== undefined ||
+          one.multipleOf !== undefined,
+      )
+    )
+      throw new TypeError(
+        `${contract}: an anyOf becomes a DOMAIN only as value lists of one type`,
+      );
+    return {
+      type: [...types][0],
+      enum: [...new Set(branches.flatMap((one) => one.enum ?? []))],
+    };
+  }
+  if (schema.const !== undefined) return { ...schema, enum: [schema.const] };
+  return schema;
+}
+
+/** `CREATE DOMAIN` for a plain contract schema: its base type, then its enum, pattern and bounds as one CHECK. */
 function domain(contract: string, schema: ContractSchema): string {
-  const type = [schema.type ?? []].flat().find((one) => one !== 'null') ?? '';
+  const type = typeOf(schema);
   const base = baseTypes[type];
   if (!base) throw new TypeError(`${contract}: no DOMAIN for type ${type}`);
   const checks = [
@@ -153,7 +204,14 @@ function build(): string {
     [
       '-- A DOMAIN for each contract schema a column is marked with.',
       ...contracts.map((one) =>
-        domain(one, contractSchema(contract.components.schemas, one)),
+        domain(
+          one,
+          flattened(
+            one,
+            contractSchema(contract.components.schemas, one),
+            contract.components.schemas,
+          ),
+        ),
       ),
     ],
     [

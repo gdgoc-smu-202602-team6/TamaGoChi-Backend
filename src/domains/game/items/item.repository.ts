@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseClient } from '../../../foundation/database/database-client.js';
 import { asId } from '../../../foundation/id/id.js';
+import { Grid } from '../placement/grid.js';
+import { PlacementPolicy } from '../placement/placement-policy.js';
+import type { SurfaceKind } from '../placement/surface-kind.js';
 import { type Grade, Item } from './item.js';
 import type { SlotName } from './slot/slot.js';
 import { slotOf } from './slot/slot-of.js';
@@ -16,13 +19,22 @@ const itemColumns = {
   minLevel: true,
   defaultOwned: true,
   roomSize: true,
+  placementPolicy: {
+    select: {
+      surfaceKind: true,
+      width: true,
+      height: true,
+      step: true,
+      solid: true,
+    },
+  },
 } as const;
 
 @Injectable()
 export class ItemRepository {
   constructor(private readonly database: DatabaseClient) {}
 
-  /** The whole catalog, in a fixed order. */
+  /** The whole catalog with how each item is placed, in a fixed order. */
   async catalog(client: QueryClient = this.database): Promise<Item[]> {
     const rows = await client.item.findMany({
       select: itemColumns,
@@ -39,6 +51,14 @@ export class ItemRepository {
           row.price,
           row.minLevel,
           row.defaultOwned,
+          row.placementPolicy &&
+            new PlacementPolicy(
+              row.placementPolicy.surfaceKind as SurfaceKind,
+              row.placementPolicy.width,
+              row.placementPolicy.height,
+              new Grid(row.placementPolicy.step),
+              row.placementPolicy.solid,
+            ),
         ),
     );
   }

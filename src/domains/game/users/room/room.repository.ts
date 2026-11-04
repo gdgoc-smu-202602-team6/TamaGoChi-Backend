@@ -5,8 +5,7 @@ import { asId, type Id } from '../../../../foundation/id/id.js';
 import type { Item } from '../../items/item.js';
 import type { SlotName } from '../../items/slot/slot.js';
 import { lockPlayer } from '../../lock/player-lock.js';
-import { Placement } from './placement.js';
-import type { PlacementTargetName } from '../../floor/placement-target.js';
+import { Placement, type PlacementTarget } from './placement.js';
 import { Room } from './room.js';
 import type { QueryClient } from '../../../../foundation/database/query-client.js';
 
@@ -39,7 +38,7 @@ export class RoomRepository {
       userId,
       equipped,
       row.placements.map(
-        (one) => new Placement(one.target as PlacementTargetName, one.x, one.y),
+        (one) => new Placement(one.target as PlacementTarget, one.x, one.y),
       ),
       row.guestbookCheckedAt,
       catalog,

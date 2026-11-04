@@ -23,6 +23,11 @@ ALTER TABLE "items" ADD CONSTRAINT "items_min_level_check" CHECK ("min_level" >=
 ALTER TABLE "items" ADD CONSTRAINT "items_room_size_check"
   CHECK (("slot" = 'ROOM') = ("room_size" IS NOT NULL) AND ("room_size" IS NULL OR "room_size" BETWEEN 1 AND 20));
 
+ALTER TABLE "item_placement_policies" ADD CONSTRAINT "item_placement_policies_size_check"
+  CHECK ("width" >= 1 AND "height" >= 1);
+ALTER TABLE "item_placement_policies" ADD CONSTRAINT "item_placement_policies_step_check"
+  CHECK ("step" IS NULL OR "step" > 0);
+
 ALTER TABLE "user_items" ADD CONSTRAINT "user_items_price_check" CHECK ("price" >= 0);
 
 -- Nobody likes or writes in their own room.

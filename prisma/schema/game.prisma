@@ -73,11 +73,28 @@ model Item {
   roomSize     Int?     @map("room_size")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  owners   UserItem[]
-  equipped UserRoomItem[]
+  placementPolicy ItemPlacementPolicy?
+  owners          UserItem[]
+  equipped        UserRoomItem[]
 
   @@unique([id, slot])
   @@map("items")
+}
+
+/// An item's PlacementPolicy (openapi.yaml, game/placement/placement-policy.ts). No row means the item is not placed.
+/// Seed data.
+model ItemPlacementPolicy {
+  itemId      String   @id @map("item_id") @db.Uuid
+  item        Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  /// contract: SurfaceKind
+  surfaceKind String   @map("surface_kind")
+  width       Int
+  height      Int
+  step        Float?
+  solid       Boolean
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("item_placement_policies")
 }
 
 /// An item a user bought. Default-owned items are owned without a row.

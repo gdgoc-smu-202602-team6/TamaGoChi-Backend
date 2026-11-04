@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { ItemRepository } from '../../../domains/game/items/item.repository.js';
 import { OwnedItemRepository } from '../../../domains/game/users/items/owned-item.repository.js';
 import { Placement } from '../../../domains/game/users/room/placement.js';
-import type { PlacementTargetName } from '../../../domains/game/floor/placement-target.js';
 import type {
   Room,
   RoomRefusal,
@@ -88,10 +87,7 @@ export class RoomController {
         );
       if (body.placements && !isRefusal(room))
         room = room.withPlacements(
-          body.placements.map(
-            (one) =>
-              new Placement(one.target as PlacementTargetName, one.x, one.y),
-          ),
+          body.placements.map((one) => new Placement(one.target, one.x, one.y)),
         );
       if (body.guestbookCheckedAt && !isRefusal(room)) {
         const sent = new Date(body.guestbookCheckedAt);

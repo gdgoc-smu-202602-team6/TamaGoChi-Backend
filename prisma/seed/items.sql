@@ -27,3 +27,29 @@ ON CONFLICT ("code") DO UPDATE SET
   "min_level" = EXCLUDED."min_level",
   "default_owned" = EXCLUDED."default_owned",
   "room_size" = EXCLUDED."room_size";
+
+-- Each placed item's PlacementPolicy (openapi.yaml, game/placement/placement-policy.ts). An item left out here is not
+-- placed, and its row goes.
+WITH "policy" AS (
+  SELECT "items"."id" AS "item_id", "value"."surface_kind", "value"."width", "value"."height", "value"."step",
+         "value"."solid"
+  FROM (VALUES
+    ('basic_clock',            'WALL',  1, 1, 0.5::double precision,  true),
+    ('basic_window',           'WALL',  2, 2, 0.5::double precision,  true),
+    ('basic_desk',             'FLOOR', 2, 1, 0.5::double precision,  true),
+    ('bookshelf_of_knowledge', 'FLOOR', 1, 2, 0.5::double precision,  true),
+    ('green_plant',            'FLOOR', 1, 1, NULL::double precision, true),
+    ('royal_rug',              'FLOOR', 2, 2, NULL::double precision, false)
+  ) AS "value" ("code", "surface_kind", "width", "height", "step", "solid")
+  JOIN "items" ON "items"."code" = "value"."code"
+), "dropped" AS (
+  DELETE FROM "item_placement_policies" WHERE "item_id" NOT IN (SELECT "item_id" FROM "policy")
+)
+INSERT INTO "item_placement_policies" ("item_id", "surface_kind", "width", "height", "step", "solid")
+SELECT "item_id", "surface_kind", "width", "height", "step", "solid" FROM "policy"
+ON CONFLICT ("item_id") DO UPDATE SET
+  "surface_kind" = EXCLUDED."surface_kind",
+  "width" = EXCLUDED."width",
+  "height" = EXCLUDED."height",
+  "step" = EXCLUDED."step",
+  "solid" = EXCLUDED."solid";

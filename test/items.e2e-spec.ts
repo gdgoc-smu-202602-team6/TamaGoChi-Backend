@@ -20,6 +20,56 @@ describe('items', () => {
     ).toBe(true);
   });
 
+  it('가구 탭을 읽을 때 배치하는 아이템에만 placementPolicy가 있다', async () => {
+    const user = await testApp.signUp();
+
+    const response = await request(testApp.server())
+      .get('/items?category=FURNITURE')
+      .set(as(user));
+
+    const policyOf = new Map(
+      response.body.items.map(
+        (item: { code: string; placementPolicy?: unknown }) => [
+          item.code,
+          item.placementPolicy,
+        ],
+      ),
+    );
+    expect(Object.fromEntries(policyOf)).toStrictEqual({
+      basic_clock: {
+        surfaceKind: 'WALL',
+        width: 1,
+        height: 1,
+        step: 0.5,
+        solid: true,
+      },
+      basic_window: {
+        surfaceKind: 'WALL',
+        width: 2,
+        height: 2,
+        step: 0.5,
+        solid: true,
+      },
+      basic_desk: {
+        surfaceKind: 'FLOOR',
+        width: 2,
+        height: 1,
+        step: 0.5,
+        solid: true,
+      },
+      sparkle_stand: undefined,
+      green_plant: { surfaceKind: 'FLOOR', width: 1, height: 1, solid: true },
+      bookshelf_of_knowledge: {
+        surfaceKind: 'FLOOR',
+        width: 1,
+        height: 2,
+        step: 0.5,
+        solid: true,
+      },
+      royal_rug: { surfaceKind: 'FLOOR', width: 2, height: 2, solid: false },
+    });
+  });
+
   it('사면 201로 볼트가 줄고 자동 장착되며, 다시 사면 200이다', async () => {
     const user = await testApp.signUp();
     const plant = await itemByCode(testApp.database, 'green_plant');

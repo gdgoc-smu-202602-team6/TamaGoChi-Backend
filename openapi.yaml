@@ -1190,10 +1190,25 @@ components:
       type: string
       description: '상점·인벤토리 탭. 부위에서 정해진다: 가구=CLOCK~RUG, 벽지=WALLPAPER, 캐릭터=HEAD·FACE·NECK, 방 확장=ROOM'
       enum: [FURNITURE, WALLPAPER, ACCESSORY, ROOM_SIZE]
-    PlacementTarget:
+    SurfaceKind:
       type: string
-      description: '배치 대상. 장착 중인 DESK·BOOKSHELF·PLANT·RUG와 캐릭터 (D-10)'
-      enum: [DESK, BOOKSHELF, PLANT, RUG, CHARACTER]
+      description: '배치하는 면의 종류: 바닥 또는 벽'
+      enum: [FLOOR, WALL]
+    PlacementPolicy:
+      type: object
+      description: '아이템을 방에 놓는 방법 (D-10~D-14). 아이템 카탈로그 데이터'
+      required: [surfaceKind, width, height, solid]
+      properties:
+        surfaceKind: { $ref: '#/components/schemas/SurfaceKind' }
+        width: { type: integer, description: 가로 칸 수 }
+        height: { type: integer, description: '세로 칸 수. 바닥이면 안쪽으로, 벽이면 위로' }
+        step: { type: number, description: '움직이는 칸 단위. 없으면 자유 이동' }
+        solid: { type: boolean, description: '같은 면의 다른 solid 배치와 겹칠 수 없는지' }
+    PlacementTarget:
+      description: '배치 대상. 배치 정책이 있는 아이템을 장착한 부위, 또는 캐릭터 (D-10)'
+      anyOf:
+        - { $ref: '#/components/schemas/Slot' }
+        - { type: string, const: CHARACTER }
     Placement:
       type: object
       additionalProperties: false
@@ -1269,6 +1284,7 @@ components:
         minLevel: { type: integer }
         defaultOwned: { type: boolean, description: '처음부터 보유 (8.2)' }
         roomSize: { type: integer, description: 'ROOM일 때 바닥 n×n' }
+        placementPolicy: { $ref: '#/components/schemas/PlacementPolicy', description: 방에 배치하는 아이템만 }
     OwnedItem:
       type: object
       required: [itemId, pricePaid]

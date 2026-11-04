@@ -1,10 +1,7 @@
 import type { Item } from '../../items/item.js';
 import type { SlotName } from '../../items/slot/slot.js';
-import type { Placement } from './placement.js';
-import {
-  PlacementTarget,
-  type PlacementTargetName,
-} from '../../floor/placement-target.js';
+import { PlacementPolicy } from '../../placement/placement-policy.js';
+import type { Placement, PlacementTarget } from './placement.js';
 import type { Id } from '../../../../foundation/id/id.js';
 
 /**
@@ -46,7 +43,10 @@ export class Room {
     return new Room(userId, equipped, [], null);
   }
 
-  /** A stored room. A slot that cannot be emptied keeps the default room's item when none is stored for it. */
+  /**
+   * A stored room. A slot that cannot be emptied keeps the default room's item when none is stored for it, and the
+   * placements are fitted to what is equipped now, as its placement policies are now.
+   */
   static stored(
     userId: Id<'User'>,
     equipped: ReadonlyMap<SlotName, Item>,
@@ -57,7 +57,13 @@ export class Room {
     const kept = new Map(equipped);
     for (const [slot, item] of Room.default(userId, catalog).equipped)
       if (!item.slot.removable && !kept.has(slot)) kept.set(slot, item);
-    return new Room(userId, kept, placements, guestbookCheckedAt);
+    const size = floorSizeOf(kept);
+    return new Room(
+      userId,
+      kept,
+      fitted(placements, size, kept),
+      guestbookCheckedAt,
+    );
   }
 
   /** The floor is size × size cells; the house sets it. */
@@ -104,26 +110,29 @@ export class Room {
     return this.rearranged(equipped);
   }
 
-  /** Replaces the placements (updateRoom). Only what is equipped, and the character, is placed (D-10). */
+  /**
+   * Replaces the placements (updateRoom). Only the character and what is equipped with a placement policy are placed
+   * (D-10), each as its policy says.
+   */
   withPlacements(placements: readonly Placement[]): Room | RoomRefusal {
-    const targets = this.targets();
-    const seen = new Set<PlacementTargetName>();
+    const targets = targetsOf(this.equipped);
+    const seen = new Set<PlacementTarget>();
     for (const [index, placement] of placements.entries()) {
       const at = { list: 'placements', index } as const;
-      const target = targets.get(placement.target);
-      if (!target)
+      const policy = targets.get(placement.target);
+      if (!policy)
         return {
           kind: 'invalid',
           ...at,
-          message: `${placement.target} is not equipped`,
+          message: `${placement.target} is not equipped, or is not placed`,
         };
       if (seen.has(placement.target))
         return { kind: 'invalid', ...at, message: 'one placement per target' };
-      if (!placement.fitsIn(this.size, target.grid))
+      if (!placement.fitsIn(this.size, policy))
         return {
           kind: 'invalid',
           ...at,
-          message: 'outside the room or off its grid',
+          message: 'not on the floor, outside the room or off its grid',
         };
       seen.add(placement.target);
     }
@@ -139,33 +148,46 @@ export class Room {
     return new Room(this.userId, this.equipped, this.placements, moment);
   }
 
-  /** What can be placed, by name: the character and the equipped floor things. */
-  private targets(
-    equipped: ReadonlyMap<SlotName, Item> = this.equipped,
-  ): Map<PlacementTargetName, PlacementTarget> {
-    const targets = new Map([
-      [PlacementTarget.character.name, PlacementTarget.character],
-    ]);
-    for (const item of equipped.values()) {
-      const target = item.slot.target;
-      if (target) targets.set(target.name, target);
-    }
-    return targets;
-  }
-
-  /** The new equipment with the placements kept for what is still there, moved when the house changed (S-09). */
+  /** The new equipment, with the placements fitted to it (S-09). */
   private rearranged(equipped: ReadonlyMap<SlotName, Item>): Room {
-    const targets = this.targets(equipped);
-    const toSize = floorSizeOf(equipped);
-    const placements = this.placements.flatMap((placement) => {
-      const target = targets.get(placement.target);
-      if (!target) return [];
-      return toSize === this.size
-        ? [placement]
-        : [placement.movedTo(this.size, toSize, target.grid)];
-    });
-    return new Room(this.userId, equipped, placements, this.guestbookCheckedAt);
+    return new Room(
+      this.userId,
+      equipped,
+      fitted(this.placements, this.size, equipped),
+      this.guestbookCheckedAt,
+    );
   }
+}
+
+/**
+ * A room's placements always follow what is equipped and its placement policies (D-10~D-14, S-09): each placement,
+ * made in a fromSize room, is fitted to its target's policy in the equipped house; one whose target is not placed now
+ * goes, so the screen puts it where it starts.
+ */
+function fitted(
+  placements: readonly Placement[],
+  fromSize: number,
+  equipped: ReadonlyMap<SlotName, Item>,
+): Placement[] {
+  const targets = targetsOf(equipped);
+  const toSize = floorSizeOf(equipped);
+  return placements.flatMap((placement) => {
+    const policy = targets.get(placement.target);
+    const moved = policy && placement.fittedTo(fromSize, toSize, policy);
+    return moved ? [moved] : [];
+  });
+}
+
+/** What can be placed, with how: the character, and the slot of each equipped item that has a placement policy. */
+function targetsOf(
+  equipped: ReadonlyMap<SlotName, Item>,
+): Map<PlacementTarget, PlacementPolicy> {
+  const targets = new Map<PlacementTarget, PlacementPolicy>([
+    ['CHARACTER', PlacementPolicy.character],
+  ]);
+  for (const [slot, item] of equipped)
+    if (item.placementPolicy) targets.set(slot, item.placementPolicy);
+  return targets;
 }
 
 /** The floor the equipped house gives; none without one. */

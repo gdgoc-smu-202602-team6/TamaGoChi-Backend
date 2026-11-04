@@ -64,6 +64,122 @@ describe('room', () => {
     expect(ok.body.placements).toEqual([{ target: 'DESK', x: 1.5, y: 0 }]);
   });
 
+  it('같은 크기의 집에서 이동 단위가 다른 아이템으로 바꿀 때 배치가 그 격자에 붙는다', async () => {
+    const user = await testApp.signUp();
+    const house = await itemByCode(testApp.database, 'shabby_gosiwon');
+    const wholeCellDesk = await testApp.database.item.create({
+      data: {
+        code: 'e2e_whole_cell_desk',
+        slot: 'DESK',
+        name: '한 칸 책상',
+        grade: 'BASIC',
+        price: 0,
+        placementPolicy: {
+          create: {
+            surfaceKind: 'FLOOR',
+            width: 2,
+            height: 1,
+            step: 1,
+            solid: true,
+          },
+        },
+      },
+    });
+    try {
+      await testApp.database.userItem.create({
+        data: { userId: user.id, itemId: wholeCellDesk.id, price: 0 },
+      });
+      await request(testApp.server())
+        .patch('/users/me/room')
+        .set(as(user))
+        .send({ placements: [{ target: 'DESK', x: 1.5, y: 0 }] });
+
+      const response = await request(testApp.server())
+        .patch('/users/me/room')
+        .set(as(user))
+        .send({
+          equipped: [
+            { slot: 'ROOM', itemId: house.id },
+            { slot: 'DESK', itemId: wholeCellDesk.id },
+          ],
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.placements).toStrictEqual([
+        { target: 'DESK', x: 2, y: 0 },
+      ]);
+    } finally {
+      await testApp.database.userRoomItem.deleteMany({
+        where: { itemId: wholeCellDesk.id },
+      });
+      await testApp.database.userItem.deleteMany({
+        where: { itemId: wholeCellDesk.id },
+      });
+      await testApp.database.item.delete({ where: { id: wholeCellDesk.id } });
+    }
+  });
+
+  it('저장한 뒤 정책의 이동 단위가 바뀌었을 때 읽은 배치가 새 격자에 붙는다', async () => {
+    const user = await testApp.signUp();
+    const desk = await itemByCode(testApp.database, 'basic_desk');
+    const seeded = await testApp.database.itemPlacementPolicy.findUniqueOrThrow(
+      { where: { itemId: desk.id } },
+    );
+    await request(testApp.server())
+      .patch('/users/me/room')
+      .set(as(user))
+      .send({ placements: [{ target: 'DESK', x: 1.5, y: 0 }] });
+    await testApp.database.itemPlacementPolicy.update({
+      where: { itemId: desk.id },
+      data: { step: 1 },
+    });
+    try {
+      const response = await request(testApp.server())
+        .get('/users/me/room')
+        .set(as(user));
+
+      expect(response.body.placements).toStrictEqual([
+        { target: 'DESK', x: 2, y: 0 },
+      ]);
+    } finally {
+      await testApp.database.itemPlacementPolicy.update({
+        where: { itemId: desk.id },
+        data: { step: seeded.step },
+      });
+    }
+  });
+
+  it('저장한 뒤 정책이 지워졌을 때 읽은 방에서 그 배치가 빠진다', async () => {
+    const user = await testApp.signUp();
+    const desk = await itemByCode(testApp.database, 'basic_desk');
+    const seeded = await testApp.database.itemPlacementPolicy.findUniqueOrThrow(
+      { where: { itemId: desk.id } },
+    );
+    await request(testApp.server())
+      .patch('/users/me/room')
+      .set(as(user))
+      .send({
+        placements: [
+          { target: 'DESK', x: 1.5, y: 0 },
+          { target: 'CHARACTER', x: 1, y: 1 },
+        ],
+      });
+    await testApp.database.itemPlacementPolicy.delete({
+      where: { itemId: desk.id },
+    });
+    try {
+      const response = await request(testApp.server())
+        .get('/users/me/room')
+        .set(as(user));
+
+      expect(response.body.placements).toStrictEqual([
+        { target: 'CHARACTER', x: 1, y: 1 },
+      ]);
+    } finally {
+      await testApp.database.itemPlacementPolicy.create({ data: seeded });
+    }
+  });
+
   it('구매와 방 저장이 동시에 와도 둘 다 성공하고 산 아이템이 장착된다', async () => {
     const user = await testApp.signUp();
     const [plant, house] = await Promise.all([
