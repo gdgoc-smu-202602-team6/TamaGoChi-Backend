@@ -225,6 +225,10 @@ describe('room', () => {
       '크기 사각형이 바닥 밖으로 나가게',
       { target: 'DESK', surface: 'FLOOR', x: 1.5, y: 0 },
     ],
+    [
+      '벽에서 이동 단위 밖에',
+      { target: 'CLOCK', surface: 'RIGHT_WALL', x: 0.25, y: 0 },
+    ],
   ])('%s 놓을 때 400이다', async (_, placement) => {
     const user = await testApp.signUp();
 
