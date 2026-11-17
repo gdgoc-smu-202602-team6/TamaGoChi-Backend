@@ -596,6 +596,33 @@ describe('room', () => {
     }
   });
 
+  it('다른 캐릭터를 사면 그 캐릭터로 바뀌고 캐릭터 배치는 그대로다', async () => {
+    const user = await testApp.signUp();
+    const hamster = await itemByCode(testApp.database, 'hamster');
+    await request(testApp.server())
+      .patch('/users/me/room')
+      .set(as(user))
+      .send({
+        placements: [{ target: 'CHARACTER', surface: 'FLOOR', x: 1, y: 1.5 }],
+      });
+
+    const bought = await request(testApp.server())
+      .put(`/users/me/items/${hamster.id}`)
+      .set(as(user));
+    const room = await request(testApp.server())
+      .get('/users/me/room')
+      .set(as(user));
+
+    expect(bought.status).toBe(201);
+    expect(room.body.equipped).toContainEqual({
+      slot: 'CHARACTER',
+      itemId: hamster.id,
+    });
+    expect(room.body.placements).toStrictEqual([
+      { target: 'CHARACTER', surface: 'FLOOR', x: 1, y: 1.5 },
+    ]);
+  });
+
   it('구매와 방 저장이 동시에 와도 둘 다 성공하고 산 아이템이 장착된다', async () => {
     const user = await testApp.signUp();
     const [plant, house] = await Promise.all([

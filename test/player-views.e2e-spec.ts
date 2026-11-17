@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { insertClub, insertMember } from './club-fixtures.js';
+import { itemByCode } from './game-fixtures.js';
 import { as, type SignedInUser } from './sign-in.js';
 import { TestApp } from './test-app.js';
 
@@ -44,5 +45,18 @@ describe('player views', () => {
       batch.body.items.map((one: { userId: string }) => one.userId),
     ).toEqual([host.id, friend.id]);
     expect(hidden.status).toBe(404);
+  });
+
+  it('친구 방을 읽을 때 장착한 캐릭터가 들어 있다', async () => {
+    const robot = await itemByCode(testApp.database, 'robot');
+
+    const response = await request(testApp.server())
+      .get(`/users/-/room:batchGet?userIds=${host.id}`)
+      .set(as(friend));
+
+    expect(response.body.items[0].equipped).toContainEqual({
+      slot: 'CHARACTER',
+      itemId: robot.id,
+    });
   });
 });

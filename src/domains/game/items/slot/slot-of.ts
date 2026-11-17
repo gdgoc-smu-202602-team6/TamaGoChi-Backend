@@ -1,4 +1,4 @@
-import { FixedSlot } from './fixed-slot.js';
+import { CharacterSlot } from './character-slot.js';
 import { HouseSlot } from './house-slot.js';
 import { Slot, type SlotName } from './slot.js';
 
@@ -26,6 +26,6 @@ export function slotOf(name: SlotName, roomSize: number | null): Slot {
       if (roomSize === null) throw new Error('a house item has no room size');
       return new HouseSlot(name, 'ROOM_SIZE', roomSize);
     case 'CHARACTER':
-      return new FixedSlot(name, 'CHARACTER');
+      return new CharacterSlot(name, 'CHARACTER');
   }
 }

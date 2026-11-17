@@ -19,6 +19,11 @@ export class Slot {
     return true;
   }
 
+  /** Whether its item always stands in the room, and so always has a placement policy. */
+  get alwaysPlaced(): boolean {
+    return false;
+  }
+
   /** The floor its item gives the room, size × size cells. */
   get floorSize(): number | null {
     return null;

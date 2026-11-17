@@ -32,7 +32,10 @@ export class Item {
     readonly defaultOwned: boolean,
     /** How it is placed in the room (D-10~D-14); null for an item that is not placed. */
     readonly placementPolicy: PlacementPolicy | null,
-  ) {}
+  ) {
+    if (slot.alwaysPlaced && !placementPolicy)
+      throw new Error(`${code}: a ${slot.name} item has no placement policy`);
+  }
 
   /** The level comes first, then the volts (8.3). */
   purchaseVerdict(level: number, volts: number): PurchaseVerdict {
