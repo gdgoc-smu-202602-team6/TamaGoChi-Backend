@@ -8,16 +8,21 @@ describe('room', () => {
 
   it('기본 방은 기본 보유 아이템을 장착하고 하트 4개다', async () => {
     const user = await testApp.signUp();
-    const house = await itemByCode(testApp.database, 'shabby_gosiwon');
+    const [house, robot] = await Promise.all([
+      itemByCode(testApp.database, 'shabby_gosiwon'),
+      itemByCode(testApp.database, 'robot'),
+    ]);
 
     const response = await request(testApp.server())
       .get('/users/me/room')
       .set(as(user));
 
-    expect(response.body.equipped).toContainEqual({
-      slot: 'ROOM',
-      itemId: house.id,
-    });
+    expect(response.body.equipped).toEqual(
+      expect.arrayContaining([
+        { slot: 'ROOM', itemId: house.id },
+        { slot: 'CHARACTER', itemId: robot.id },
+      ]),
+    );
     expect(response.body).toMatchObject({
       condition: { hearts: 4, bugs: 0 },
       likeCount: 0,
@@ -27,16 +32,22 @@ describe('room', () => {
 
   it('방을 고칠 때 집이 없으면 400, 없는 아이템은 409 not-owned, 방 밖 배치는 400이다', async () => {
     const user = await testApp.signUp();
-    const [house, mansion, desk] = await Promise.all([
+    const [house, mansion, desk, robot] = await Promise.all([
       itemByCode(testApp.database, 'shabby_gosiwon'),
       itemByCode(testApp.database, 'dream_mansion'),
       itemByCode(testApp.database, 'basic_desk'),
+      itemByCode(testApp.database, 'robot'),
     ]);
 
     const noHouse = await request(testApp.server())
       .patch('/users/me/room')
       .set(as(user))
-      .send({ equipped: [{ slot: 'DESK', itemId: desk.id }] });
+      .send({
+        equipped: [
+          { slot: 'CHARACTER', itemId: robot.id },
+          { slot: 'DESK', itemId: desk.id },
+        ],
+      });
     const notOwned = await request(testApp.server())
       .patch('/users/me/room')
       .set(as(user))
@@ -53,6 +64,7 @@ describe('room', () => {
       .send({
         equipped: [
           { slot: 'ROOM', itemId: house.id },
+          { slot: 'CHARACTER', itemId: robot.id },
           { slot: 'DESK', itemId: desk.id },
         ],
         placements: [{ target: 'DESK', surface: 'FLOOR', x: 1, y: 0 }],
@@ -68,9 +80,50 @@ describe('room', () => {
     ]);
   });
 
-  it('같은 크기의 집에서 이동 단위가 다른 아이템으로 바꿀 때 배치가 그 격자에 붙는다', async () => {
+  it('방을 고칠 때 캐릭터가 없으면 400이다', async () => {
     const user = await testApp.signUp();
     const house = await itemByCode(testApp.database, 'shabby_gosiwon');
+
+    const response = await request(testApp.server())
+      .patch('/users/me/room')
+      .set(as(user))
+      .send({ equipped: [{ slot: 'ROOM', itemId: house.id }] });
+
+    expect(response.status).toBe(400);
+    expect(JSON.parse(response.text).errors).toStrictEqual([
+      { field: '/body/equipped', message: 'CHARACTER must be equipped' },
+    ]);
+  });
+
+  it('캐릭터 장착 없이 저장된 방을 읽을 때 기본 캐릭터가 장착되어 있다', async () => {
+    const user = await testApp.signUp();
+    const [house, robot] = await Promise.all([
+      itemByCode(testApp.database, 'shabby_gosiwon'),
+      itemByCode(testApp.database, 'robot'),
+    ]);
+    await testApp.database.userRoom.create({
+      data: {
+        userId: user.id,
+        items: { create: { slot: 'ROOM', itemId: house.id } },
+      },
+    });
+
+    const response = await request(testApp.server())
+      .get('/users/me/room')
+      .set(as(user));
+
+    expect(response.body.equipped).toContainEqual({
+      slot: 'CHARACTER',
+      itemId: robot.id,
+    });
+  });
+
+  it('같은 크기의 집에서 이동 단위가 다른 아이템으로 바꿀 때 배치가 그 격자에 붙는다', async () => {
+    const user = await testApp.signUp();
+    const [house, robot] = await Promise.all([
+      itemByCode(testApp.database, 'shabby_gosiwon'),
+      itemByCode(testApp.database, 'robot'),
+    ]);
     await withCatalogItem(
       testApp.database,
       {
@@ -106,6 +159,7 @@ describe('room', () => {
           .send({
             equipped: [
               { slot: 'ROOM', itemId: house.id },
+              { slot: 'CHARACTER', itemId: robot.id },
               { slot: 'DESK', itemId: wholeCellDesk.id },
             ],
           });
@@ -277,9 +331,10 @@ describe('room', () => {
 
   it('변만 닿거나, 다른 벽이거나, 러그와 겹칠 때 저장된다', async () => {
     const user = await testApp.signUp();
-    const [house, desk, rug, clock, basicWindow] = await Promise.all(
+    const [house, robot, desk, rug, clock, basicWindow] = await Promise.all(
       [
         'shabby_gosiwon',
+        'robot',
         'basic_desk',
         'royal_rug',
         'basic_clock',
@@ -303,6 +358,7 @@ describe('room', () => {
       .send({
         equipped: [
           { slot: 'ROOM', itemId: house.id },
+          { slot: 'CHARACTER', itemId: robot.id },
           { slot: 'DESK', itemId: desk.id },
           { slot: 'RUG', itemId: rug.id },
           { slot: 'CLOCK', itemId: clock.id },
@@ -317,9 +373,10 @@ describe('room', () => {
 
   it('작은 집으로 이사할 때 위치가 면을 따라 옮겨지고 겹치게 된 배치는 빠진다', async () => {
     const user = await testApp.signUp();
-    const [smallHouse, bigHouse, plant, clock] = await Promise.all([
+    const [smallHouse, bigHouse, robot, plant, clock] = await Promise.all([
       itemByCode(testApp.database, 'shabby_gosiwon'),
-      itemByCode(testApp.database, 'spacious_two_room'),
+      itemByCode(testApp.database, 'dream_mansion'),
+      itemByCode(testApp.database, 'robot'),
       itemByCode(testApp.database, 'green_plant'),
       itemByCode(testApp.database, 'basic_clock'),
     ]);
@@ -332,6 +389,7 @@ describe('room', () => {
     });
     const equippedWith = (house: { id: string }) => [
       { slot: 'ROOM', itemId: house.id },
+      { slot: 'CHARACTER', itemId: robot.id },
       { slot: 'PLANT', itemId: plant.id },
       { slot: 'CLOCK', itemId: clock.id },
     ];
@@ -361,8 +419,9 @@ describe('room', () => {
 
   it('큰 집으로 이사할 때 바닥은 두 축, 벽은 x만 비례로 옮겨지고 벽의 y는 그대로다', async () => {
     const user = await testApp.signUp();
-    const [bigHouse, clock] = await Promise.all([
-      itemByCode(testApp.database, 'spacious_two_room'),
+    const [bigHouse, robot, clock] = await Promise.all([
+      itemByCode(testApp.database, 'dream_mansion'),
+      itemByCode(testApp.database, 'robot'),
       itemByCode(testApp.database, 'basic_clock'),
     ]);
     await testApp.database.userItem.create({
@@ -384,6 +443,7 @@ describe('room', () => {
       .send({
         equipped: [
           { slot: 'ROOM', itemId: bigHouse.id },
+          { slot: 'CHARACTER', itemId: robot.id },
           { slot: 'CLOCK', itemId: clock.id },
         ],
       });
@@ -397,7 +457,10 @@ describe('room', () => {
 
   it('같은 부위를 더 큰 아이템으로 바꿔 겹치게 될 때 대상 순서에서 뒤의 배치가 빠진다', async () => {
     const user = await testApp.signUp();
-    const house = await itemByCode(testApp.database, 'shabby_gosiwon');
+    const [house, robot] = await Promise.all([
+      itemByCode(testApp.database, 'shabby_gosiwon'),
+      itemByCode(testApp.database, 'robot'),
+    ]);
     await withCatalogItem(
       testApp.database,
       {
@@ -436,6 +499,7 @@ describe('room', () => {
           .send({
             equipped: [
               { slot: 'ROOM', itemId: house.id },
+              { slot: 'CHARACTER', itemId: robot.id },
               { slot: 'DESK', itemId: wideDesk.id },
             ],
           });

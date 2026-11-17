@@ -1,8 +1,5 @@
 /** The positions a placed thing can take along one axis (D-12~D-14): every `step` cells, or anywhere with none. */
 export class Grid {
-  /** Moving freely: every coordinate is on it. */
-  static readonly free = new Grid(null);
-
   constructor(
     /** The cells it moves by; null moves freely. */
     readonly step: number | null,

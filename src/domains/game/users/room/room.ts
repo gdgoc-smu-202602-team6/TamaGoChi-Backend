@@ -1,7 +1,7 @@
 import type { Item } from '../../items/item.js';
 import type { SlotName } from '../../items/slot/slot.js';
-import { PlacementPolicy } from '../../placement/placement-policy.js';
-import type { Placement, PlacementTarget } from './placement.js';
+import type { PlacementPolicy } from '../../placement/placement-policy.js';
+import type { Placement } from './placement.js';
 import type { Id } from '../../../../foundation/id/id.js';
 
 /**
@@ -23,8 +23,8 @@ export interface EquipRequest {
 }
 
 /**
- * A user's room (merged 5장): one item per slot, always a house (D-03), the placed things (D-10), and when its owner
- * last opened the guestbook (M-21). No stored room is the default one: the items owned from the start.
+ * A user's room (merged 5장): one item per slot, always a house and a character (D-03), the placed things (D-10), and
+ * when its owner last opened the guestbook (M-21). No stored room is the default one: the items owned from the start.
  */
 export class Room {
   constructor(
@@ -99,7 +99,7 @@ export class Room {
         return {
           kind: 'invalid',
           list: 'equipped',
-          message: 'a house must be equipped',
+          message: `${item.slot.name} must be equipped`,
         };
     return this.rearranged(equipped);
   }
@@ -112,7 +112,7 @@ export class Room {
   }
 
   /**
-   * Replaces the placements (updateRoom). Only the character and what is equipped with a placement policy are placed
+   * Replaces the placements (updateRoom). Only what is equipped with a placement policy is placed
    * (D-10), each as its policy says, and no two solid ones overlap on a surface.
    */
   withPlacements(placements: readonly Placement[]): Room | RoomRefusal {
@@ -213,13 +213,11 @@ function clashes(
   );
 }
 
-/** What can be placed, with how: the character, and the slot of each equipped item that has a placement policy. */
+/** What can be placed, with how: the slot of each equipped item that has a placement policy. */
 function targetsOf(
   equipped: ReadonlyMap<SlotName, Item>,
-): Map<PlacementTarget, PlacementPolicy> {
-  const targets = new Map<PlacementTarget, PlacementPolicy>([
-    ['CHARACTER', PlacementPolicy.character],
-  ]);
+): Map<SlotName, PlacementPolicy> {
+  const targets = new Map<SlotName, PlacementPolicy>();
   for (const [slot, item] of equipped)
     if (item.placementPolicy) targets.set(slot, item.placementPolicy);
   return targets;

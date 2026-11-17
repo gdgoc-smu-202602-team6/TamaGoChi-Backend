@@ -140,11 +140,11 @@ model UserRoomItem {
   @@map("user_room_items")
 }
 
-/// Where a placement target stands (openapi.yaml Placement).
+/// Where the item equipped in a slot stands (openapi.yaml Placement).
 model UserRoomPlacement {
   userId    String   @map("user_id")
   room      UserRoom @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  /// contract: PlacementTarget
+  /// contract: Slot
   target    String
   /// contract: Surface
   surface   String

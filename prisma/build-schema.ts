@@ -9,7 +9,6 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 interface ContractSchema {
   readonly $ref?: string;
-  readonly anyOf?: readonly ContractSchema[];
   readonly type?: string | readonly string[];
   readonly enum?: readonly unknown[];
   readonly const?: unknown;
@@ -104,10 +103,7 @@ function contractSchema(
 const typeOf = (schema: ContractSchema): string =>
   [schema.type ?? []].flat().find((one) => one !== 'null') ?? '';
 
-/**
- * The schema as one plain schema: a `$ref` followed, a `const` as an enum of one value, and an `anyOf` of value lists
- * of one type as the enum of all their values (PlacementTarget = Slot | CHARACTER).
- */
+/** The schema as one plain schema: a `$ref` followed, and a `const` as an enum of one value. */
 function flattened(
   contract: string,
   schema: ContractSchema,
@@ -119,30 +115,6 @@ function flattened(
     if (!referenced)
       throw new TypeError(`${contract}: cannot follow ${schema.$ref}`);
     return flattened(contract, referenced, schemas);
-  }
-  if (schema.anyOf) {
-    const branches = schema.anyOf.map((one) =>
-      flattened(contract, one, schemas),
-    );
-    const types = new Set(branches.map(typeOf));
-    if (
-      types.size !== 1 ||
-      branches.some(
-        (one) =>
-          !one.enum ||
-          one.pattern !== undefined ||
-          one.minimum !== undefined ||
-          one.maximum !== undefined ||
-          one.multipleOf !== undefined,
-      )
-    )
-      throw new TypeError(
-        `${contract}: an anyOf becomes a DOMAIN only as value lists of one type`,
-      );
-    return {
-      type: [...types][0],
-      enum: [...new Set(branches.flatMap((one) => one.enum ?? []))],
-    };
   }
   if (schema.const !== undefined) return { ...schema, enum: [schema.const] };
   return schema;

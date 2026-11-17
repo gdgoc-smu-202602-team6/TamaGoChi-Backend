@@ -6,7 +6,7 @@ import type { Item } from '../../items/item.js';
 import type { SlotName } from '../../items/slot/slot.js';
 import { lockPlayer } from '../../lock/player-lock.js';
 import { Surface, type SurfaceName } from '../../placement/surface/surface.js';
-import { Placement, type PlacementTarget } from './placement.js';
+import { Placement } from './placement.js';
 import { Room } from './room.js';
 import type { QueryClient } from '../../../../foundation/database/query-client.js';
 
@@ -43,7 +43,7 @@ export class RoomRepository {
       row.placements.map(
         (one) =>
           new Placement(
-            one.target as PlacementTarget,
+            one.target as SlotName,
             Surface.of(one.surface as SurfaceName),
             one.x,
             one.y,

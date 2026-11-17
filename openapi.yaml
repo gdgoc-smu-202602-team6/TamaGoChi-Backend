@@ -578,8 +578,8 @@ paths:
       operationId: updateRoom
       description: |
         꾸미기 '완료' 때 한 번에 저장(D-16). 본인만(`me`, 아니면 403).
-        `equipped`는 장착 전체를 바꾼다: 부위마다 하나, ROOM은 반드시 하나(D-03). 보유하지 않은 아이템이면 409(`not-owned`),
-        부위가 맞지 않거나 ROOM이 없으면 400. 배치는 장착하지 않았거나 배치 정책이 없는 대상, 대상마다 둘 이상,
+        `equipped`는 장착 전체를 바꾼다: 부위마다 하나, ROOM과 CHARACTER는 반드시 하나(D-03). 보유하지 않은 아이템이면 409(`not-owned`),
+        부위가 맞지 않거나 ROOM·CHARACTER가 없으면 400. 배치는 장착하지 않았거나 배치 정책이 없는 대상, 대상마다 둘 이상,
         정책의 surfaceKind와 다른 종류의 면, 크기 사각형이 면 밖, 격자(step) 밖, 같은 면에서 solid끼리 겹침이면 400.
         내 방명록을 열면 `guestbookCheckedAt`을 지금으로 보낸다(M-21).
       requestBody:
@@ -1185,12 +1185,12 @@ components:
         bugProgressSeconds: { type: integer, description: '다음 버그 퇴치까지 쌓인 초. 1마리는 3600초 (7.0)' }
     Slot:
       type: string
-      description: '아이템의 장착 부위. 같은 부위는 하나만 장착, ROOM(집)만 해제 불가 (D-03)'
-      enum: [CLOCK, WINDOW, DESK, LAMP, PLANT, BOOKSHELF, RUG, WALLPAPER, HEAD, FACE, NECK, ROOM]
+      description: '아이템의 장착 부위. 같은 부위는 하나만 장착, ROOM(집)과 CHARACTER(캐릭터)는 해제 불가 (D-03)'
+      enum: [CLOCK, WINDOW, DESK, LAMP, PLANT, BOOKSHELF, RUG, WALLPAPER, HEAD, FACE, NECK, ROOM, CHARACTER]
     ItemCategory:
       type: string
-      description: '상점·인벤토리 탭. 부위에서 정해진다: 가구=CLOCK~RUG, 벽지=WALLPAPER, 캐릭터=HEAD·FACE·NECK, 방 확장=ROOM'
-      enum: [FURNITURE, WALLPAPER, ACCESSORY, ROOM_SIZE]
+      description: '상점·인벤토리 탭. 부위에서 정해진다: 가구=CLOCK~RUG, 벽지=WALLPAPER, 액세서리=HEAD·FACE·NECK, 방 확장=ROOM, 캐릭터=CHARACTER'
+      enum: [FURNITURE, WALLPAPER, ACCESSORY, ROOM_SIZE, CHARACTER]
     SurfaceKind:
       type: string
       description: '배치하는 면의 종류: 바닥 또는 벽'
@@ -1213,17 +1213,12 @@ components:
         height: { type: integer, description: '면의 y축 방향 칸 수. 바닥이면 왼쪽 벽을 따라, 벽이면 위로 (Surface의 축)' }
         step: { type: number, description: '움직이는 칸 단위. 없으면 자유 이동' }
         solid: { type: boolean, description: '같은 면의 다른 solid 배치와 겹칠 수 없는지' }
-    PlacementTarget:
-      description: '배치 대상. 배치 정책이 있는 아이템을 장착한 부위, 또는 캐릭터 (D-10)'
-      anyOf:
-        - { $ref: '#/components/schemas/Slot' }
-        - { type: string, const: CHARACTER }
     Placement:
       type: object
       additionalProperties: false
       required: [target, surface, x, y]
       properties:
-        target: { $ref: '#/components/schemas/PlacementTarget' }
+        target: { $ref: '#/components/schemas/Slot', description: '배치 정책이 있는 아이템을 장착한 부위 (D-10)' }
         surface: { $ref: '#/components/schemas/Surface', description: '종류가 대상 정책의 surfaceKind인 면' }
         x: { type: number, description: '대상 크기 사각형에서 면의 원점에 가장 가까운 꼭짓점의 x (Surface의 축)' }
         y: { type: number, description: '대상 크기 사각형에서 면의 원점에 가장 가까운 꼭짓점의 y (Surface의 축)' }
@@ -1239,7 +1234,7 @@ components:
       required: [userId, equipped, placements, wallHeight, condition, likeCount, likedByMe]
       properties:
         userId: { type: string }
-        equipped: { type: array, description: '부위마다 하나. ROOM은 늘 있음', items: { $ref: '#/components/schemas/EquippedItem' } }
+        equipped: { type: array, description: '부위마다 하나. ROOM과 CHARACTER는 늘 있음', items: { $ref: '#/components/schemas/EquippedItem' } }
         placements: { type: array, description: '대상(target) 이름의 코드 포인트 순', items: { $ref: '#/components/schemas/Placement' } }
         wallHeight: { type: integer, const: 3, description: '두 벽의 세로 칸 수. 모든 집이 같다' }
         condition: { $ref: '#/components/schemas/RoomCondition' }
@@ -1250,7 +1245,7 @@ components:
       type: object
       additionalProperties: false
       properties:
-        equipped: { type: array, description: '장착 전체. ROOM을 반드시 포함', items: { $ref: '#/components/schemas/EquippedItem' } }
+        equipped: { type: array, description: '장착 전체. ROOM과 CHARACTER를 반드시 포함', items: { $ref: '#/components/schemas/EquippedItem' } }
         placements: { type: array, items: { $ref: '#/components/schemas/Placement' } }
         guestbookCheckedAt: { $ref: '#/components/schemas/DateTime' }
     DayStudy:

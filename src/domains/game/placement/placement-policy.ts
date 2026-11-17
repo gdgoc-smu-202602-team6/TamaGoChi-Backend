@@ -1,20 +1,11 @@
-import { Grid } from './grid.js';
+import type { Grid } from './grid.js';
 import type { SurfaceKind } from './surface/surface-kind.js';
 
 /**
  * How a thing is placed in a room (D-10~D-14): the kind of surface it goes on, its size in cells, the grid it moves on
- * and whether it may not overlap. Catalog data for the items; only the character's is code.
+ * and whether it may not overlap. Catalog data.
  */
 export class PlacementPolicy {
-  /** The character is always in the room, stands on the floor and moves freely (D-13). */
-  static readonly character = new PlacementPolicy(
-    'FLOOR',
-    1,
-    1,
-    Grid.free,
-    true,
-  );
-
   constructor(
     readonly surfaceKind: SurfaceKind,
     /** In cells along its surface's x axis (openapi.yaml Surface). */

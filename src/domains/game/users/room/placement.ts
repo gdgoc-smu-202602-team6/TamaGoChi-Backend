@@ -1,10 +1,7 @@
-import type { components } from '../../../../foundation/contract/openapi.js';
+import type { SlotName } from '../../items/slot/slot.js';
 import type { PlacementPolicy } from '../../placement/placement-policy.js';
 import { Rectangle } from '../../placement/rectangle.js';
 import type { Surface } from '../../placement/surface/surface.js';
-
-/** What is placed: the slot of an equipped item that has a placement policy, or the character (D-10). */
-export type PlacementTarget = components['schemas']['PlacementTarget'];
 
 const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max);
 
@@ -15,7 +12,8 @@ const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max);
  */
 export class Placement {
   constructor(
-    readonly target: PlacementTarget,
+    /** The slot of an equipped item that has a placement policy (D-10). */
+    readonly target: SlotName,
     readonly surface: Surface,
     readonly x: number,
     readonly y: number,

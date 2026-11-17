@@ -20,6 +20,37 @@ describe('items', () => {
     ).toBe(true);
   });
 
+  it('캐릭터 탭을 읽을 때 로봇만 기본 보유이고 모두 바닥에 배치된다', async () => {
+    const user = await testApp.signUp();
+
+    const response = await request(testApp.server())
+      .get('/items?category=CHARACTER')
+      .set(as(user));
+
+    expect(
+      response.body.items.map(
+        (item: {
+          code: string;
+          slot: string;
+          defaultOwned: boolean;
+          placementPolicy: unknown;
+        }) => [item.code, item.slot, item.defaultOwned, item.placementPolicy],
+      ),
+    ).toStrictEqual(
+      [
+        ['robot', true],
+        ['hamster', false],
+        ['fox', false],
+        ['frog', false],
+      ].map(([code, defaultOwned]) => [
+        code,
+        'CHARACTER',
+        defaultOwned,
+        { surfaceKind: 'FLOOR', width: 1, height: 1, solid: true },
+      ]),
+    );
+  });
+
   it('가구 탭을 읽을 때 배치하는 아이템에만 placementPolicy가 있다', async () => {
     const user = await testApp.signUp();
 
