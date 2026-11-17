@@ -126,7 +126,7 @@ describe('notices', () => {
     expect(read.body.read).toBe(true);
   });
 
-  it('알림을 켜고 쓰면 PENDING으로 답하고, 보낸 뒤 SENT가 된다', async () => {
+  it('알림을 켜고 쓰면 PENDING으로 응답하고, 보낸 뒤 SENT가 된다', async () => {
     const written = await write('알림 공지', { notify: true });
 
     let state = written.body.notificationState;

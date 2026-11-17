@@ -21,7 +21,7 @@ const house = (code: string, size: number) =>
   );
 
 describe('Room', () => {
-  it('작은 집으로 이사해 당긴 끝이 격자 밖일 때 그 안쪽 마지막 격자 점으로 당겨진다', () => {
+  it('작은 집으로 이사해 당긴 끝이 그리드 밖일 때 그 안쪽 마지막 그리드 점으로 당겨진다', () => {
     const twoCellDesk = new Item(
       asId<'Item'>('two_cell_desk'),
       'two_cell_desk',

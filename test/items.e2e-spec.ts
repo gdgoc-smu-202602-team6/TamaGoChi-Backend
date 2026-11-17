@@ -6,7 +6,7 @@ import { TestApp } from './test-app.js';
 describe('items', () => {
   const testApp = TestApp.setUp();
 
-  it('카탈로그는 탭으로 거를 수 있다', async () => {
+  it('카탈로그는 탭으로 필터링할 수 있다', async () => {
     const user = await testApp.signUp();
 
     const response = await request(testApp.server())
@@ -127,7 +127,7 @@ describe('items', () => {
     });
   });
 
-  it('레벨이 모자라면 409 level-locked, 볼트가 모자라면 409 insufficient-volts다', async () => {
+  it('레벨이 부족하면 409 level-locked, 볼트가 부족하면 409 insufficient-volts다', async () => {
     const user = await testApp.signUp();
     const [glasses, stand] = await Promise.all([
       itemByCode(testApp.database, 'study_glasses'),

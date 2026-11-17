@@ -7,7 +7,7 @@ describe('FixedLengthFormat', () => {
     expect([format.alphabet, format.length]).toEqual(['ABC012_', 4]);
   });
 
-  it('그 모양이 아닌 pattern이면 실패한다', () => {
+  it('그 형식이 아닌 pattern이면 실패한다', () => {
     expect(() => FixedLengthFormat.of('^[a-z]+$')).toThrow(Error);
   });
 });

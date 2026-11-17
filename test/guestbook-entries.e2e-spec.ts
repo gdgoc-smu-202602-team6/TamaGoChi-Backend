@@ -35,7 +35,7 @@ describe('guestbookEntries', () => {
     await testApp.database.club.deleteMany({ where: { id: { in: clubIds } } });
   });
 
-  it('방명록은 쓰면 201, 내 방에는 400, 주인에게는 새 글로 보인다', async () => {
+  it('방명록은 쓰면 201, 내 방에는 400, 소유자에게는 새 글로 보인다', async () => {
     const path = `/clubs/${clubId}/members/${hostMemberId}/guestbookEntries`;
 
     const written = await request(testApp.server())
@@ -66,7 +66,7 @@ describe('guestbookEntries', () => {
     });
   });
 
-  it('방명록은 쓴 사람이나 주인만 지우고, 남은 403이다', async () => {
+  it('방명록은 쓴 사람이나 소유자만 지우고, 남은 403이다', async () => {
     const path = `/clubs/${clubId}/members/${hostMemberId}/guestbookEntries`;
     const written = await request(testApp.server())
       .post(path)

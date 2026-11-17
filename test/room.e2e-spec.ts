@@ -118,7 +118,7 @@ describe('room', () => {
     });
   });
 
-  it('같은 크기의 집에서 이동 단위가 다른 아이템으로 바꿀 때 배치가 그 격자에 붙는다', async () => {
+  it('같은 크기의 집에서 이동 단위가 다른 아이템으로 바꿀 때 배치가 그 그리드에 붙는다', async () => {
     const user = await testApp.signUp();
     const [house, robot] = await Promise.all([
       itemByCode(testApp.database, 'shabby_gosiwon'),
@@ -172,7 +172,7 @@ describe('room', () => {
     );
   });
 
-  it('저장한 뒤 정책의 이동 단위가 바뀌었을 때 읽은 배치가 새 격자에 붙는다', async () => {
+  it('저장한 뒤 정책의 이동 단위가 바뀌었을 때 읽은 배치가 새 그리드에 붙는다', async () => {
     const user = await testApp.signUp();
     const desk = await itemByCode(testApp.database, 'basic_desk');
     const seeded = await testApp.database.itemPlacementPolicy.findUniqueOrThrow(
@@ -329,7 +329,7 @@ describe('room', () => {
     ]);
   });
 
-  it('변만 닿거나, 다른 벽이거나, 러그와 겹칠 때 저장된다', async () => {
+  it('변만 도달하거나, 다른 벽이거나, 러그와 겹칠 때 저장된다', async () => {
     const user = await testApp.signUp();
     const [house, robot, desk, rug, clock, basicWindow] = await Promise.all(
       [

@@ -114,7 +114,7 @@ describe('/clubs', () => {
     ]);
   });
 
-  it('부원에게는 초대 코드를 보이지 않고, 운영진에게는 보인다', async () => {
+  it('부원에게는 초대 코드를 표시하지 않고, 운영진에게는 보인다', async () => {
     const asMember = await request(testApp.server())
       .get(`/clubs/${clubId}`)
       .set(as(member));

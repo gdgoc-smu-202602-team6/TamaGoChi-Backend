@@ -100,7 +100,7 @@ describe('members', () => {
     });
   });
 
-  it('파트로 거른 목록과 me 단건을 준다', async () => {
+  it('파트로 필터링한 목록과 me 단건을 준다', async () => {
     await request(testApp.server())
       .patch(path('me'))
       .set(as(alice))

@@ -27,7 +27,7 @@ describe('health and the contract', () => {
     });
   });
 
-  it('토큰 없이 인증이 필요한 경로를 부르면 401과 WWW-Authenticate를 준다', async () => {
+  it('토큰 없이 인증이 필요한 경로를 호출하면 401과 WWW-Authenticate를 준다', async () => {
     const response = await request(testApp.server()).get('/users/me');
 
     expect(response.status).toBe(401);

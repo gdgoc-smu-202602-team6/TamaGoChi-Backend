@@ -11,7 +11,7 @@ describe('textLength', () => {
 });
 
 describe('trimmedWithin', () => {
-  it('앞뒤 공백을 제거한 값을 돌려준다', () => {
+  it('앞뒤 공백을 제거한 값을 반환한다', () => {
     expect(trimmedWithin(' 가나 ', 1, 2, 'name')).toBe('가나');
   });
 

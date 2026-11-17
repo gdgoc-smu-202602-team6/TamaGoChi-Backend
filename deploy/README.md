@@ -7,7 +7,7 @@ API(`https://api.tmgoc.kro.kr`)는 EC2 한 대에서 컨테이너로 돌고, 데
 | `compose.yaml` | 앱 컨테이너와 Caddy(HTTPS 인증서를 스스로 받고 갱신하는 리버스 프록시) |
 | `Caddyfile` | `DOMAIN`으로 오는 요청을 앱으로 넘김 |
 | `deploy.sh` | 이미지 받기 → DB를 그 릴리스로 맞추기(`prisma/deploy.ts`) → 다시 띄우기 → `/health` 확인 |
-| `.env.example` | 서버의 `deploy/.env` 견본 |
+| `.env.example` | 서버의 `deploy/.env` 샘플 |
 
 ## 이미지 태그
 
@@ -36,7 +36,7 @@ API(`https://api.tmgoc.kro.kr`)는 EC2 한 대에서 컨테이너로 돌고, 데
    - SES가 주는 CNAME 3개를 내도메인.한국의 "별칭(CNAME)"에 넣습니다.
    - 확인이 끝나면 `noreply@tmgoc.kro.kr`처럼 이 도메인의 어떤 주소로도 보낼 수 있습니다.
    - Gmail 주소는 보내는 주소로 쓰지 않습니다(DMARC에 걸려 스팸함으로 갑니다).
-2. **샌드박스**: 새 계정의 SES는 샌드박스라서 **받는 주소도** 확인된 주소여야 합니다(아니면 `MessageRejected: Email address is not verified`). 시험하는 사람의 주소를 SES에 "이메일 주소" 자격 증명으로 하나씩 확인하거나, 계정 대시보드에서 프로덕션 액세스를 요청합니다(AWS 심사, 트랜잭션 메일).
+2. **샌드박스**: 새 계정의 SES는 샌드박스라서 **받는 주소도** 확인된 주소여야 합니다(아니면 `MessageRejected: Email address is not verified`). 테스트하는 사람의 주소를 SES에 "이메일 주소" 자격 증명으로 하나씩 확인하거나, 계정 대시보드에서 프로덕션 액세스를 요청합니다(AWS 심사, 트랜잭션 메일).
 3. **EC2 인스턴스 역할**: 신뢰 대상이 EC2인 IAM 역할을 만들어 EC2에 붙이고(작업 → 보안 → IAM 역할 수정), 아래 인라인 정책을 줍니다. 액세스 키는 만들지 않습니다.
    - 자격 증명(`identity/*`): 보내는 도메인과, 샌드박스에서는 받는 주소까지 검사합니다.
    - 설정 세트(`configuration-set/*`): SES 시작 마법사가 도메인에 기본 설정 세트(`my-first-configuration-set`)를 붙이면, 그 설정 세트에도 권한이 필요합니다(`not authorized to perform 'ses:SendEmail' on resource ...:configuration-set/...`).
@@ -113,6 +113,6 @@ DB 스키마는 앞으로만 갑니다. 새 릴리스 파일이 적용된 뒤 �
 스키마를 바꾸는 릴리스를 내는 순서입니다.
 
 1. Prisma 스키마, `openapi.yaml`, `prisma/sql/`을 고칩니다. 새 DB는 이것으로 만들어집니다.
-2. 이미 있는 DB를 같은 모양으로 바꾸는 `prisma/releases/<새 버전>.sql`을 손으로 씁니다.
+2. 이미 있는 DB를 같은 구조로 바꾸는 `prisma/releases/<새 버전>.sql`을 손으로 씁니다.
 3. `package.json`의 `version`을 새 버전으로 올리고 커밋한 뒤 `v<새 버전>` 태그를 푸시합니다.
 4. 서버에서 `./deploy.sh <새 버전>`을 실행합니다.
