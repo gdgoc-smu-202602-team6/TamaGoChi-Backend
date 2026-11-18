@@ -23,7 +23,7 @@ cp .env.example .env
 openssl rand -base64 32
 ```
 
-로컬 PostgreSQL 18을 띄우고 스키마와 시드(역할·권한, 아이템 카탈로그)를 적용합니다. `db:deploy`는 빈 DB에는 스키마를, 이미 있는 DB에는 새 릴리스 파일을 적용하고, 시드는 늘 적용합니다(자세히는 [`deploy/README.md`](deploy/README.md)의 "스키마 릴리스").
+로컬 PostgreSQL 18을 띄우고 스키마와 시드(아이템 카탈로그)를 적용합니다. `db:deploy`는 빈 DB에만 스키마와 시드를 넣고, 스키마가 이미 있는 DB는 건드리지 않습니다(자세히는 [`deploy/README.md`](deploy/README.md)의 "스키마").
 
 ```bash
 docker compose up -d --wait
@@ -66,7 +66,7 @@ pnpm test:e2e
 
 ```
 openapi.yaml       API 계약
-prisma/            Prisma 스키마(도메인마다 파일 하나), 도메인별 SQL, 시드, 릴리스 SQL, 스키마 빌드·적용 스크립트
+prisma/            Prisma 스키마(도메인마다 파일 하나), 도메인별 SQL, 시드, 스키마 빌드·적용 스크립트
 deploy/            EC2 배포: compose, Caddy, 배포 스크립트
 src/foundation/    foundation 계층: 설정, DB 클라이언트, 메일 클라이언트, 오류 응답, 계약 검증, 세션 확인, 푸시 발송 포트, 식별자 타입, 페이지 나누기, 글자 수
 src/domains/       도메인: account, club, game. 그 안은 루트 컬렉션/자식/ 순서(예: club/clubs/notices/)

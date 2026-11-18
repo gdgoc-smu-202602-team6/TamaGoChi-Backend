@@ -1,6 +1,5 @@
 {
   "name": "tamagochi-backend",
-  "version": "0.2.0",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",

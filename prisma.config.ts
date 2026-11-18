@@ -8,6 +8,6 @@ try {
 
 export default defineConfig({
   schema: 'prisma/schema',
-  // No Prisma migrations or seed: prisma/deploy.ts applies the built schema (with the first data) or the release files.
+  // No Prisma migrations or seed: prisma/deploy.ts applies the built schema and the first data to an empty database.
   datasource: { url: env('DATABASE_URL') },
 });

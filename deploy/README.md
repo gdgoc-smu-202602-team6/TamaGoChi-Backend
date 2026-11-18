@@ -6,7 +6,7 @@ API(`https://api.tmgoc.kro.kr`)는 EC2 한 대에서 컨테이너로 돌고, 데
 |---|---|
 | `compose.yaml` | 앱 컨테이너와 Caddy(HTTPS 인증서를 스스로 받고 갱신하는 리버스 프록시) |
 | `Caddyfile` | `DOMAIN`으로 오는 요청을 앱으로 넘김 |
-| `deploy.sh` | 이미지 받기 → DB를 그 릴리스로 맞추기(`prisma/deploy.ts`) → 다시 띄우기 → `/health` 확인 |
+| `deploy.sh` | 이미지 받기 → 빈 DB면 스키마와 처음 데이터 넣기(`prisma/deploy.ts`) → 다시 띄우기 → `/health` 확인 |
 | `.env.example` | 서버의 `deploy/.env` 샘플 |
 
 ## 이미지 태그
@@ -15,7 +15,6 @@ API(`https://api.tmgoc.kro.kr`)는 EC2 한 대에서 컨테이너로 돌고, 데
 |---|---|
 | `main` | main에 푸시할 때마다 |
 | `sha-<커밋>` | 커밋마다. 되돌릴 때 씀 |
-| `<x.y.z>` | `v<x.y.z>` git 태그를 푸시할 때 |
 
 ## 처음 한 번: AWS에서 만들 것
 
@@ -93,26 +92,14 @@ Caddy가 `DOMAIN`의 인증서를 받고 만료 전에 갱신합니다. 사람�
 ./deploy.sh
 ```
 
-인자 없이 실행하면 `main` 태그를 배포합니다. 특정 커밋이나 버전으로 되돌리거나 고정할 때는 태그를 줍니다.
+인자 없이 실행하면 `main` 태그를 배포합니다. 특정 커밋으로 되돌리거나 고정할 때는 태그를 줍니다.
 
 ```bash
 ./deploy.sh sha-cebe97d
 ```
 
-DB 스키마는 앞으로만 갑니다. 새 릴리스 파일이 적용된 뒤 옛 이미지로 되돌리면, 옛 코드가 새 스키마에서 돌게 됩니다. 스키마를 바꾸는 릴리스는 옛 코드와 함께 돌 수 있게 씁니다(컬럼은 먼저 더하고, 지우는 것은 다음 릴리스에서).
+## 스키마
 
-## 스키마 릴리스
+`prisma/deploy.ts`는 빈 DB에만 `prisma/schema.sql`과 처음 데이터(`prisma/seed/*.sql`, 아이템 카탈로그)를 한 트랜잭션으로 넣습니다. 스키마가 이미 있는 DB는 건드리지 않습니다. 그 뒤로는 DB가 카탈로그의 기준입니다.
 
-`prisma/deploy.ts`가 KodeKoreaIMS의 릴리스 마이그레이션 방식으로 DB를 맞춥니다.
-
-- 릴리스가 기록되지 않은 빈 DB에는 `prisma/schema.sql`을 적용하고, 지금 버전(`package.json`의 `version`)을 기준(baseline)으로 기록합니다.
-- 이미 있는 DB에는 마지막으로 기록한 릴리스보다 새롭고 지금 버전 이하인 `prisma/releases/<x.y.z>.sql`을 버전 순서대로 실행합니다. 파일마다 트랜잭션 하나이고 `schema_releases`에 기록합니다.
-- 이미 적용한 파일이 바뀌었거나 없어졌으면, 또는 DB가 지금 버전보다 새로우면 멈춥니다.
-- 처음 데이터(`prisma/seed/*.sql`, 아이템 카탈로그)는 빈 DB를 만들 때 `schema.sql`과 함께 한 번만 넣습니다. 그 뒤로는 DB가 카탈로그의 기준이라 배포가 건드리지 않습니다.
-
-스키마를 바꾸는 릴리스를 내는 순서입니다.
-
-1. Prisma 스키마, `openapi.yaml`, `prisma/sql/`을 고칩니다. 새 DB는 이것으로 만들어집니다.
-2. 이미 있는 DB를 같은 구조로 바꾸는 `prisma/releases/<새 버전>.sql`을 손으로 씁니다.
-3. `package.json`의 `version`을 새 버전으로 올리고 커밋한 뒤 `v<새 버전>` 태그를 푸시합니다.
-4. 서버에서 `./deploy.sh <새 버전>`을 실행합니다.
+스키마를 바꿀 때는 Prisma 스키마, `openapi.yaml`, `prisma/sql/`을 고치고(새 DB는 이것으로 만들어집니다), 운영 DB에는 같은 구조로 바꾸는 SQL을 직접 실행한 뒤 새 이미지를 배포합니다.

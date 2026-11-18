@@ -1,6 +1,6 @@
 #!/bin/sh
-# Deploys one image tag on the host: pull it, bring the database to its release (prisma/deploy.ts), then restart and
-# wait for /health. Usage: ./deploy.sh [tag]   (default main; a sha-<commit> or a version rolls back or pins)
+# Deploys one image tag on the host: pull it, create the database if it is empty (prisma/deploy.ts), then restart and
+# wait for /health. Usage: ./deploy.sh [tag]   (default main; a sha-<commit> rolls back or pins)
 set -eu
 cd "$(dirname "$0")"
 export TAG="${1:-main}"
