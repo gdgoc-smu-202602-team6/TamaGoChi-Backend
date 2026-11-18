@@ -88,7 +88,6 @@ describe('items', () => {
         step: 0.5,
         solid: true,
       },
-      sparkle_stand: undefined,
       green_plant: { surfaceKind: 'FLOOR', width: 1, height: 1, solid: true },
       bookshelf_of_knowledge: {
         surfaceKind: 'FLOOR',
@@ -129,9 +128,9 @@ describe('items', () => {
 
   it('레벨이 부족하면 409 level-locked, 볼트가 부족하면 409 insufficient-volts다', async () => {
     const user = await testApp.signUp();
-    const [glasses, stand] = await Promise.all([
+    const [glasses, scarf] = await Promise.all([
       itemByCode(testApp.database, 'study_glasses'),
-      itemByCode(testApp.database, 'sparkle_stand'),
+      itemByCode(testApp.database, 'cozy_scarf'),
     ]);
     await studied(testApp.database, user.id, 400, 330);
 
@@ -142,7 +141,7 @@ describe('items', () => {
       data: { userId: user.id, itemId: glasses.id, price: 400 },
     });
     const poor = await request(testApp.server())
-      .put(`/users/me/items/${stand.id}`)
+      .put(`/users/me/items/${scarf.id}`)
       .set(as(user));
 
     expect(JSON.parse(locked.text)).toMatchObject({

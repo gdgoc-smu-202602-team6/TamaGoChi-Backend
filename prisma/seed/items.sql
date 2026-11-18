@@ -6,7 +6,6 @@ INSERT INTO "items" ("code", "slot", "name", "grade", "price", "min_level", "def
   ('basic_clock',              'CLOCK',     '시계',            'BASIC',    0,  1, true,  NULL),
   ('basic_window',             'WINDOW',    '창문',            'BASIC',    0,  1, true,  NULL),
   ('basic_desk',               'DESK',      '책상',            'BASIC',    0,  1, true,  NULL),
-  ('sparkle_stand',            'LAMP',      '반짝 스탠드',     'COMMON',  60,  1, false, NULL),
   ('green_plant',              'PLANT',     '초록 화분',       'COMMON',  40,  1, false, NULL),
   ('bookshelf_of_knowledge',   'BOOKSHELF', '지식의 책장',     'EPIC',   120, 10, false, NULL),
   ('royal_rug',                'RUG',       '왕실 러그',       'RARE',    80,  5, false, NULL),
