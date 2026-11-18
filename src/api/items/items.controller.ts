@@ -38,6 +38,7 @@ function toBody(item: Item): ItemBody {
     price: item.price,
     minLevel: item.minLevel,
     defaultOwned: item.defaultOwned,
+    onSale: item.onSale,
     ...(floorSize !== null ? { roomSize: floorSize } : {}),
     ...(item.placementPolicy
       ? { placementPolicy: toPolicyBody(item.placementPolicy) }

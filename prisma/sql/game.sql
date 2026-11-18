@@ -23,10 +23,15 @@ ALTER TABLE "items" ADD CONSTRAINT "items_min_level_check" CHECK ("min_level" >=
 ALTER TABLE "items" ADD CONSTRAINT "items_room_size_check"
   CHECK (("slot" = 'ROOM') = ("room_size" IS NOT NULL) AND ("room_size" IS NULL OR "room_size" BETWEEN 1 AND 20));
 
-ALTER TABLE "item_placement_policies" ADD CONSTRAINT "item_placement_policies_size_check"
-  CHECK ("width" >= 1 AND "height" >= 1);
-ALTER TABLE "item_placement_policies" ADD CONSTRAINT "item_placement_policies_step_check"
-  CHECK ("step" IS NULL OR "step" > 0);
+-- A placement policy is all of surface_kind, width, height and solid, or none; step only with one. A character is
+-- always placed.
+ALTER TABLE "items" ADD CONSTRAINT "items_placement_policy_check"
+  CHECK (("surface_kind" IS NULL) = ("width" IS NULL) AND ("surface_kind" IS NULL) = ("height" IS NULL)
+    AND ("surface_kind" IS NULL) = ("solid" IS NULL) AND ("surface_kind" IS NOT NULL OR "step" IS NULL));
+ALTER TABLE "items" ADD CONSTRAINT "items_placement_size_check"
+  CHECK (("width" IS NULL OR "width" >= 1) AND ("height" IS NULL OR "height" >= 1) AND ("step" IS NULL OR "step" > 0));
+ALTER TABLE "items" ADD CONSTRAINT "items_character_placed_check"
+  CHECK ("slot" <> 'CHARACTER' OR "surface_kind" IS NOT NULL);
 
 ALTER TABLE "user_items" ADD CONSTRAINT "user_items_price_check" CHECK ("price" >= 0);
 

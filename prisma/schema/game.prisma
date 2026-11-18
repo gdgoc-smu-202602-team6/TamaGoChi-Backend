@@ -69,32 +69,25 @@ model Item {
   price        Int
   minLevel     Int      @default(1) @map("min_level")
   defaultOwned Boolean  @default(false) @map("default_owned")
+  /// False takes it out of the shop; who bought it keeps it (merged 8.3-6).
+  onSale       Boolean  @default(true) @map("on_sale")
   /// The floor is room_size × room_size; only for the ROOM slot.
   roomSize     Int?     @map("room_size")
+  /// The placement policy (openapi.yaml PlacementPolicy): all of surface_kind, width, height and solid, or none (not
+  /// placed).
+  /// contract: SurfaceKind
+  surfaceKind  String?  @map("surface_kind")
+  width        Int?
+  height       Int?
+  step         Float?
+  solid        Boolean?
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  placementPolicy ItemPlacementPolicy?
-  owners          UserItem[]
-  equipped        UserRoomItem[]
+  owners   UserItem[]
+  equipped UserRoomItem[]
 
   @@unique([id, slot])
   @@map("items")
-}
-
-/// An item's PlacementPolicy (openapi.yaml, game/placement/placement-policy.ts). No row means the item is not placed.
-/// Seed data.
-model ItemPlacementPolicy {
-  itemId      String   @id @map("item_id") @db.Uuid
-  item        Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  /// contract: SurfaceKind
-  surfaceKind String   @map("surface_kind")
-  width       Int
-  height      Int
-  step        Float?
-  solid       Boolean
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("item_placement_policies")
 }
 
 /// An item a user bought. Default-owned items are owned without a row.
@@ -119,8 +112,7 @@ model UserRoom {
   guestbookCheckedAt DateTime? @map("guestbook_checked_at") @db.Timestamptz
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  items      UserRoomItem[]
-  placements UserRoomPlacement[]
+  items UserRoomItem[]
 
   @@map("user_rooms")
 }
@@ -135,6 +127,8 @@ model UserRoomItem {
   item      Item     @relation(fields: [itemId, slot], references: [id, slot], onDelete: Restrict)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
+  placement UserRoomPlacement?
+
   @@id([userId, slot])
   @@index([itemId, slot])
   @@map("user_room_items")
@@ -142,15 +136,16 @@ model UserRoomItem {
 
 /// Where the item equipped in a slot stands (openapi.yaml Placement).
 model UserRoomPlacement {
-  userId    String   @map("user_id")
-  room      UserRoom @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  userId    String       @map("user_id")
   /// contract: Slot
   target    String
+  /// Only an equipped item is placed (D-10): unequipping deletes its placement.
+  equipped  UserRoomItem @relation(fields: [userId, target], references: [userId, slot], onDelete: Cascade)
   /// contract: Surface
   surface   String
   x         Float
   y         Float
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz
 
   @@id([userId, target])
   @@map("user_room_placements")

@@ -10,6 +10,7 @@ import {
   type ApplicationState,
   type Decision,
 } from './application.js';
+import { MemberRole } from '../members/member-role.js';
 
 const applicationColumns = {
   id: true,
@@ -81,11 +82,7 @@ export class ApplicationRepository {
               members: {
                 some: {
                   userId: viewerId,
-                  role: {
-                    permissions: {
-                      some: { permission: Application.decidedWith },
-                    },
-                  },
+                  role: { in: MemberRole.holding(Application.decidedWith) },
                 },
               },
             },
@@ -152,7 +149,7 @@ export class ApplicationRepository {
   }
 
   /**
-   * Decides a pending application. Approving makes the applicant a member with `joinRoleId` in the same
+   * Decides a pending application. Approving makes the applicant a member with MemberRole.onJoin in the same
    * transaction. 'not-pending': already decided. 'already-member': the applicant joined meanwhile. Whether it may
    * move is the update's condition, so two deciders at once cannot both move it.
    */
@@ -160,7 +157,6 @@ export class ApplicationRepository {
     clubId: Id<'Club'>,
     id: Id<'Application'>,
     decision: Decision,
-    joinRoleId: Id<'Role'>,
   ): Promise<Application | 'not-pending' | 'already-member' | null> {
     return orOnUniqueViolation(
       () =>
@@ -188,7 +184,7 @@ export class ApplicationRepository {
                 clubId,
                 userId: row.userId,
                 partId: row.partId,
-                roleId: joinRoleId,
+                role: MemberRole.onJoin,
               },
             });
           }

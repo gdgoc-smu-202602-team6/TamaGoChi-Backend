@@ -17,6 +17,7 @@ const house = (code: string, size: number) =>
     0,
     1,
     false,
+    true,
     null,
   );
 
@@ -31,6 +32,7 @@ describe('Room', () => {
       0,
       1,
       false,
+      true,
       new PlacementPolicy('FLOOR', 2, 2, new Grid(2), true),
     );
     const room = new Room(

@@ -1,6 +1,6 @@
 import type { Id } from '../../../../foundation/id/id.js';
 import type { Permission } from '../access/permission.js';
-import type { Role } from '../../roles/role.js';
+import { MemberRole } from './member-role.js';
 
 /** The members of one club who hold members.manage. Invariant: a club never drops to none. */
 export class ClubManagers {
@@ -10,9 +10,9 @@ export class ClubManagers {
   constructor(private readonly memberIds: ReadonlySet<Id<'Member'>>) {}
 
   /** Whether the member may take `role`: not when they are the last manager and the role does not manage. */
-  allowRole(memberId: Id<'Member'>, role: Role): boolean {
+  allowRole(memberId: Id<'Member'>, role: MemberRole): boolean {
     return (
-      role.permissions.has(ClubManagers.permission) ||
+      MemberRole.permissionsOf(role).has(ClubManagers.permission) ||
       this.allowLeaving(memberId)
     );
   }

@@ -120,7 +120,7 @@ export class MembersController {
     const targetId = resolveMe(memberId, access.memberId);
     const changes: MemberChanges = {
       partId: asId<'Part'>(body.partId),
-      roleId: asId<'Role'>(body.roleId),
+      role: body.role,
       notificationsOn: body.notificationsOn,
     };
     const refusal = Member.changeRefusal(access, targetId, changes);
@@ -130,10 +130,6 @@ export class MembersController {
     if (result === 'no-part')
       throw new BadRequest([
         { field: '/body/partId', message: 'not a part of this club' },
-      ]);
-    if (result === 'no-role')
-      throw new BadRequest([
-        { field: '/body/roleId', message: 'no such role' },
       ]);
     if (result === 'last-manager') throw new Conflict('last-manager');
     return this.toBody(result, caller);
@@ -196,7 +192,7 @@ function toBody(
     userId: member.userId,
     nickname: user?.nickname.value ?? '',
     partId: member.partId,
-    roleId: member.roleId,
+    role: member.role,
     joinedAt: member.joinedAt.toISOString(),
     ...(member.userId === caller.id
       ? { notificationsOn: member.notificationsOn }

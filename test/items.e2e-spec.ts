@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { itemByCode, studied } from './game-fixtures.js';
+import { itemByCode, studied, withCatalogItem } from './game-fixtures.js';
 import { as } from './sign-in.js';
 import { TestApp } from './test-app.js';
 
@@ -152,5 +152,52 @@ describe('items', () => {
       type: '/problems/insufficient-volts',
       shortBy: 30,
     });
+  });
+
+  it('판매하지 않는 아이템은 409 not-on-sale이고, 이미 산 사람은 계속 보유한다', async () => {
+    const [buyer, latecomer] = await Promise.all([
+      testApp.signUp(),
+      testApp.signUp(),
+    ]);
+    await withCatalogItem(
+      testApp.database,
+      {
+        code: 'e2e_retired_beanie',
+        slot: 'HEAD',
+        name: '단종 비니',
+        grade: 'COMMON',
+        price: 10,
+      },
+      async (beanie) => {
+        await request(testApp.server())
+          .put(`/users/me/items/${beanie.id}`)
+          .set(as(buyer));
+        await testApp.database.item.update({
+          where: { id: beanie.id },
+          data: { onSale: false },
+        });
+
+        const refused = await request(testApp.server())
+          .put(`/users/me/items/${beanie.id}`)
+          .set(as(latecomer));
+        const kept = await request(testApp.server())
+          .get('/users/me/items')
+          .set(as(buyer));
+        const listed = await request(testApp.server())
+          .get('/items?category=ACCESSORY')
+          .set(as(latecomer));
+
+        expect(JSON.parse(refused.text)).toMatchObject({
+          status: 409,
+          type: '/problems/not-on-sale',
+        });
+        expect(kept.body.items).toContainEqual(
+          expect.objectContaining({ itemId: beanie.id, pricePaid: 10 }),
+        );
+        expect(listed.body.items).toContainEqual(
+          expect.objectContaining({ id: beanie.id, onSale: false }),
+        );
+      },
+    );
   });
 });

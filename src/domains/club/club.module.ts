@@ -6,10 +6,8 @@ import { NoticeRepository } from './clubs/notices/notice.repository.js';
 import { MemberRepository } from './clubs/members/member.repository.js';
 import { NoticeCategoryRepository } from './clubs/notice-categories/notice-category.repository.js';
 import { PartRepository } from './clubs/parts/part.repository.js';
-import { RoleRepository } from './roles/role.repository.js';
 
 const providers = [
-  RoleRepository,
   ClubRepository,
   PartRepository,
   NoticeCategoryRepository,

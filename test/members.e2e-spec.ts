@@ -11,8 +11,6 @@ describe('members', () => {
   let clubId: string;
   let devPartId: string;
   let aiPartId: string;
-  let operatorRoleId: string;
-  let memberRoleId: string;
   let aliceMemberId: string;
   let bobMemberId: string;
   let operatorMemberId: string;
@@ -44,16 +42,6 @@ describe('members', () => {
     aiPartId = (
       await testApp.database.clubPart.findFirstOrThrow({
         where: { clubId, name: 'AI' },
-      })
-    ).id;
-    operatorRoleId = (
-      await testApp.database.role.findFirstOrThrow({
-        where: { assignedOnCreate: true },
-      })
-    ).id;
-    memberRoleId = (
-      await testApp.database.role.findFirstOrThrow({
-        where: { assignedOnJoin: true },
       })
     ).id;
     aliceMemberId = await insertMember(
@@ -134,7 +122,7 @@ describe('members', () => {
     const response = await request(testApp.server())
       .patch(path(bobMemberId))
       .set(as(alice))
-      .send({ roleId: operatorRoleId });
+      .send({ role: 'MANAGER' });
 
     expect(response.status).toBe(403);
   });
@@ -143,17 +131,17 @@ describe('members', () => {
     const response = await request(testApp.server())
       .patch(path('me'))
       .set(as(bob))
-      .send({ role: { connect: { id: operatorRoleId } } });
+      .send({ roleId: 'MANAGER' });
 
     expect(response.status).toBe(200);
-    expect(response.body.roleId).toBe(memberRoleId);
+    expect(response.body.role).toBe('MEMBER');
   });
 
   it('하나뿐인 운영진이 스스로 역할을 내려놓으면 409 last-manager다', async () => {
     const response = await request(testApp.server())
       .patch(path('me'))
       .set(as(operator))
-      .send({ roleId: memberRoleId });
+      .send({ role: 'MEMBER' });
 
     expect(JSON.parse(response.text)).toMatchObject({
       status: 409,
@@ -176,16 +164,16 @@ describe('members', () => {
     const promoted = await request(testApp.server())
       .patch(path(aliceMemberId))
       .set(as(operator))
-      .send({ roleId: operatorRoleId });
+      .send({ role: 'MANAGER' });
 
     const steppedDown = await request(testApp.server())
       .patch(path('me'))
       .set(as(operator))
-      .send({ roleId: memberRoleId });
+      .send({ role: 'MEMBER' });
 
-    expect(promoted.body.roleId).toBe(operatorRoleId);
+    expect(promoted.body.role).toBe('MANAGER');
     expect(steppedDown.status).toBe(200);
-    expect(steppedDown.body.roleId).toBe(memberRoleId);
+    expect(steppedDown.body.role).toBe('MEMBER');
   });
 
   it('권한 없는 부원은 남을 강퇴할 수 없고(403), 운영진은 강퇴할 수 있다', async () => {

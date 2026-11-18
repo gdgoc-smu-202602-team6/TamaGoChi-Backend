@@ -378,19 +378,6 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /roles:
-    get:
-      tags: [club]
-      operationId: listRoles
-      description: 역할 목록과 권한. 운영진 지정 화면에서 씀
-      responses:
-        '200':
-          description: 역할들
-          content:
-            application/json:
-              schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/Role' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
   /clubs/{clubId}/members:
     parameters: [ { $ref: '#/components/parameters/clubIdOrAll' } ]
     get:
@@ -425,8 +412,8 @@ paths:
       tags: [club]
       operationId: updateMember
       description: |
-        `partId`, `notificationsOn`은 본인만(A-13, M-13). `roleId`는 members.manage(A-50).
-        members.manage 보유자가 0명이 되면 409(`last-manager`).
+        `partId`, `notificationsOn`은 본인만(A-13, M-13). `role`은 members.manage(A-50).
+        운영진(MANAGER)이 0명이 되면 409(`last-manager`).
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/MemberUpdate' } } }
@@ -671,7 +658,7 @@ paths:
       operationId: purchaseItem
       description: |
         구매 (S-06~S-09). 이미 보유했으면 바꾸지 않고 200. 아니면 볼트를 차감하고 같은 부위를 교체해 장착하며 201.
-        레벨 미달 409(`level-locked`, `requiredLevel`), 볼트 부족 409(`insufficient-volts`, `shortBy`).
+        판매하지 않는 아이템 409(`not-on-sale`), 레벨 미달 409(`level-locked`, `requiredLevel`), 볼트 부족 409(`insufficient-volts`, `shortBy`).
       responses:
         '200': { description: 이미 보유, content: { application/json: { schema: { $ref: '#/components/schemas/OwnedItem' } } } }
         '201': { description: 구매함, content: { application/json: { schema: { $ref: '#/components/schemas/OwnedItem' } } } }
@@ -940,6 +927,10 @@ components:
     Permission:
       type: string
       enum: [club.update, parts.manage, noticeCategories.manage, applications.decide, members.manage, notices.write]
+    MemberRole:
+      type: string
+      description: 'MANAGER는 운영진으로 모든 Permission을, MEMBER는 부원으로 권한이 없다 (A-50)'
+      enum: [MANAGER, MEMBER]
 
     Problem:
       type: object
@@ -950,7 +941,7 @@ components:
           format: uri-reference
           description: |
             409의 문제 유형(`type`의 마지막 경로 세그먼트): in-use, preset, last-manager, already-member, application-pending, not-pending,
-            session-running, session-ended, not-owned, level-locked, insufficient-volts, duplicate-name, duplicate-start-on
+            session-running, session-ended, not-owned, not-on-sale, level-locked, insufficient-volts, duplicate-name, duplicate-start-on
         title: { type: string }
         status: { type: integer }
         detail: { type: string }
@@ -1085,23 +1076,16 @@ components:
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/Application' } }
         nextPageToken: { type: string }
-    Role:
-      type: object
-      required: [id, name, permissions]
-      properties:
-        id: { $ref: '#/components/schemas/Id' }
-        name: { type: string }
-        permissions: { type: array, items: { $ref: '#/components/schemas/Permission' } }
     Member:
       type: object
-      required: [id, clubId, userId, nickname, partId, roleId, joinedAt]
+      required: [id, clubId, userId, nickname, partId, role, joinedAt]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         clubId: { $ref: '#/components/schemas/Id' }
         userId: { type: string }
         nickname: { type: string, description: 계정의 닉네임 }
         partId: { $ref: '#/components/schemas/Id' }
-        roleId: { $ref: '#/components/schemas/Id' }
+        role: { $ref: '#/components/schemas/MemberRole' }
         joinedAt: { $ref: '#/components/schemas/DateTime', description: 부원이 된 시각. 이 날이 1일차 }
         notificationsOn: { type: boolean, description: 본인일 때만 }
     MemberUpdate:
@@ -1109,7 +1093,7 @@ components:
       additionalProperties: false
       properties:
         partId: { $ref: '#/components/schemas/Id' }
-        roleId: { $ref: '#/components/schemas/Id' }
+        role: { $ref: '#/components/schemas/MemberRole' }
         notificationsOn: { type: boolean }
     MemberPage:
       type: object
@@ -1278,7 +1262,7 @@ components:
       enum: [BASIC, COMMON, RARE, EPIC]
     Item:
       type: object
-      required: [id, code, slot, category, name, grade, price, minLevel, defaultOwned]
+      required: [id, code, slot, category, name, grade, price, minLevel, defaultOwned, onSale]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         code: { type: string, description: 이미지 에셋 식별용 키 }
@@ -1289,6 +1273,7 @@ components:
         price: { type: integer }
         minLevel: { type: integer }
         defaultOwned: { type: boolean, description: '처음부터 보유 (8.2)' }
+        onSale: { type: boolean, description: 'false면 살 수 없다. 이미 산 사람은 계속 보유한다 (8.3-6)' }
         roomSize: { type: integer, description: 'ROOM일 때 바닥 n×n' }
         placementPolicy: { $ref: '#/components/schemas/PlacementPolicy', description: 방에 배치하는 아이템만 }
     OwnedItem:

@@ -24,9 +24,12 @@ export class RoomRepository {
       where: { userId },
       select: {
         guestbookCheckedAt: true,
-        items: { select: { slot: true, itemId: true } },
-        placements: {
-          select: { target: true, surface: true, x: true, y: true },
+        items: {
+          select: {
+            slot: true,
+            itemId: true,
+            placement: { select: { surface: true, x: true, y: true } },
+          },
         },
       },
     });
@@ -40,14 +43,17 @@ export class RoomRepository {
     return Room.stored(
       userId,
       equipped,
-      row.placements.map(
-        (one) =>
-          new Placement(
-            one.target as SlotName,
-            Surface.of(one.surface as SurfaceName),
-            one.x,
-            one.y,
-          ),
+      row.items.flatMap(({ slot, placement }) =>
+        placement
+          ? [
+              new Placement(
+                slot as SlotName,
+                Surface.of(placement.surface as SurfaceName),
+                placement.x,
+                placement.y,
+              ),
+            ]
+          : [],
       ),
       row.guestbookCheckedAt,
       catalog,
@@ -90,6 +96,7 @@ export class RoomRepository {
       },
       update: { guestbookCheckedAt: room.guestbookCheckedAt },
     });
+    // Deleting what is equipped deletes its placements too (user_room_placements references user_room_items).
     await tx.userRoomItem.deleteMany({ where: { userId: room.userId } });
     await tx.userRoomItem.createMany({
       data: [...room.equipped].map(([slot, item]) => ({
@@ -98,7 +105,6 @@ export class RoomRepository {
         itemId: item.id,
       })),
     });
-    await tx.userRoomPlacement.deleteMany({ where: { userId: room.userId } });
     await tx.userRoomPlacement.createMany({
       data: room.placements.map((placement) => ({
         userId: room.userId,

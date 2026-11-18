@@ -5,9 +5,10 @@ import type { Slot } from './slot/slot.js';
 
 export type Grade = components['schemas']['Grade'];
 
-/** Why an item cannot be bought now (S-06, S-07), or that it can. */
+/** Why an item cannot be bought now (S-06, S-07, 8.3-6), or that it can. */
 export type PurchaseVerdict =
   | { readonly ok: true }
+  | { readonly ok: false; readonly reason: 'not-on-sale' }
   | {
       readonly ok: false;
       readonly reason: 'level-locked';
@@ -30,6 +31,8 @@ export class Item {
     readonly price: number,
     readonly minLevel: number,
     readonly defaultOwned: boolean,
+    /** False: out of the shop; whoever bought it keeps it (8.3-6). */
+    readonly onSale: boolean,
     /** How it is placed in the room (D-10~D-14); null for an item that is not placed. */
     readonly placementPolicy: PlacementPolicy | null,
   ) {
@@ -37,8 +40,9 @@ export class Item {
       throw new Error(`${code}: a ${slot.name} item has no placement policy`);
   }
 
-  /** The level comes first, then the volts (8.3). */
+  /** Whether it is on sale comes first, then the level, then the volts (8.3). */
   purchaseVerdict(level: number, volts: number): PurchaseVerdict {
+    if (!this.onSale) return { ok: false, reason: 'not-on-sale' };
     if (level < this.minLevel)
       return {
         ok: false,

@@ -55,6 +55,7 @@ export class OwnedItemsController {
     );
     if (!outcome) throw new NotFound('item not found');
     if ('reason' in outcome) {
+      if (outcome.reason === 'not-on-sale') throw new Conflict('not-on-sale');
       if (outcome.reason === 'level-locked')
         throw new Conflict('level-locked', {
           requiredLevel: outcome.requiredLevel,

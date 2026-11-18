@@ -65,31 +65,6 @@ model ClubNoticeCategorySubcategory {
   @@map("club_notice_category_subcategories")
 }
 
-/// Seed data. Code never branches on a role's name; it reads the two assignment flags and the permissions.
-model Role {
-  id               String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  name             String   @unique
-  assignedOnCreate Boolean  @default(false) @map("assigned_on_create")
-  assignedOnJoin   Boolean  @default(false) @map("assigned_on_join")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  permissions RolePermission[]
-  members     ClubMember[]
-
-  @@map("roles")
-}
-
-model RolePermission {
-  roleId     String   @map("role_id") @db.Uuid
-  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  /// contract: Permission
-  permission String
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@id([roleId, permission])
-  @@map("role_permissions")
-}
-
 model ClubMember {
   id              String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   clubId          String   @map("club_id") @db.Uuid
@@ -98,8 +73,8 @@ model ClubMember {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   partId          String   @map("part_id") @db.Uuid
   part            ClubPart @relation(fields: [partId], references: [id], onDelete: Restrict)
-  roleId          String   @map("role_id") @db.Uuid
-  role            Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  /// contract: MemberRole
+  role            String
   notificationsOn Boolean  @default(true) @map("notifications_on")
   /// When the application was approved; the day of joining has no absence penalty (B-16).
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -109,7 +84,6 @@ model ClubMember {
   @@unique([clubId, userId])
   @@index([userId])
   @@index([partId])
-  @@index([roleId])
   @@map("club_members")
 }
 

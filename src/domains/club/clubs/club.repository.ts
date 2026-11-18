@@ -9,6 +9,7 @@ import { Part } from './parts/part.js';
 import { Club } from './club.js';
 import { ClubName } from './club-name.js';
 import { InviteCode } from './invite-code.js';
+import { MemberRole } from './members/member-role.js';
 
 const inviteCodeAttempts = 3;
 
@@ -36,7 +37,6 @@ export interface NewClub {
   readonly creatorUserId: Id<'User'>;
   /** One of `parts`. */
   readonly creatorPartName: Label;
-  readonly creatorRoleId: Id<'Role'>;
 }
 
 @Injectable()
@@ -78,7 +78,7 @@ export class ClubRepository {
               clubId: created.id,
               userId: club.creatorUserId,
               partId: creatorPart.id,
-              roleId: club.creatorRoleId,
+              role: MemberRole.onCreate,
             },
           });
           return toClub(

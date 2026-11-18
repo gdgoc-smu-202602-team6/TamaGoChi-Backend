@@ -1,6 +1,7 @@
 import type { Id } from '../../../../foundation/id/id.js';
 import type { ClubAccess } from '../access/club-access.js';
 import { ClubManagers } from './club-managers.js';
+import type { MemberRole } from './member-role.js';
 
 /**
  * A member of a club, the subject of the game. The nickname is the account's; this keeps only what the club
@@ -12,7 +13,7 @@ export class Member {
     readonly clubId: Id<'Club'>,
     readonly userId: Id<'User'>,
     readonly partId: Id<'Part'>,
-    readonly roleId: Id<'Role'>,
+    readonly role: MemberRole,
     readonly notificationsOn: boolean,
     /** The day the member joined is day 1. */
     readonly joinedAt: Date,
@@ -34,7 +35,7 @@ export class Member {
     )
       return 'not-own';
     if (
-      changes.roleId !== undefined &&
+      changes.role !== undefined &&
       !access.permissions.has(ClubManagers.permission)
     )
       return 'not-manager';
@@ -56,7 +57,7 @@ export class Member {
 /** What a member update may change. Who may change which field: Member.changeRefusal. */
 export interface MemberChanges {
   readonly partId?: Id<'Part'>;
-  readonly roleId?: Id<'Role'>;
+  readonly role?: MemberRole;
   readonly notificationsOn?: boolean;
 }
 

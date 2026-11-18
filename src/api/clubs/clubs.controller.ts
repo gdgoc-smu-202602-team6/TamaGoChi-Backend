@@ -15,7 +15,6 @@ import { ClubName } from '../../domains/club/clubs/club-name.js';
 import { ClubRepository } from '../../domains/club/clubs/club.repository.js';
 import { InviteCode } from '../../domains/club/clubs/invite-code.js';
 import { Label } from '../../domains/club/label/label.js';
-import { RoleRepository } from '../../domains/club/roles/role.repository.js';
 import type { ClubAccess } from '../../domains/club/clubs/access/club-access.js';
 import { CurrentClubAccess, RequireClubAccess } from './club-access.guard.js';
 import {
@@ -36,10 +35,7 @@ type ClubUpdateBody = components['schemas']['ClubUpdate'];
 
 @Controller('clubs')
 export class ClubsController {
-  constructor(
-    private readonly clubs: ClubRepository,
-    private readonly roles: RoleRepository,
-  ) {}
+  constructor(private readonly clubs: ClubRepository) {}
 
   /** createClub */
   @Post()
@@ -75,7 +71,6 @@ export class ClubsController {
       parts,
       creatorUserId: caller.id,
       creatorPartName,
-      creatorRoleId: (await this.roles.assignedOnCreate()).id,
     });
     response
       .status(201)

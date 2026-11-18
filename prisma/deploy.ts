@@ -1,12 +1,12 @@
 /**
- * Brings the database at DATABASE_URL to this release (package.json `version`), then applies the seed. Follows
- * KodeKoreaIMS's release migrations:
- * - A database with no release recorded gets prisma/schema.sql (built by prisma/build-schema.ts) and this release as
- *   its baseline.
+ * Brings the database at DATABASE_URL to this release (package.json `version`). Follows KodeKoreaIMS's release
+ * migrations:
+ * - A database with no release recorded gets prisma/schema.sql (built by prisma/build-schema.ts), the first data
+ *   (prisma/seed/*.sql) and this release as its baseline. After that the database is the data's source of truth.
  * - Otherwise each prisma/releases/<x.y.z>.sql newer than the last release recorded, up to this one, runs in its own
  *   transaction with its row in schema_releases.
  * - A recorded release whose file changed or is gone, or a database newer than this release, is refused.
- * The seed files (prisma/seed/*.sql) are idempotent and run every time. One deploy at a time (advisory lock).
+ * One deploy at a time (advisory lock).
  */
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -76,6 +76,7 @@ async function migrate(client: pg.Client, current: string): Promise<void> {
     const schema = readFileSync('prisma/schema.sql', 'utf8');
     await inTransaction(client, async () => {
       await client.query(schema);
+      await seed(client);
       await client.query(
         'INSERT INTO schema_releases (version, sha256, baseline) VALUES ($1, $2, true)',
         [current, sha256(schema)],
@@ -118,15 +119,12 @@ async function migrate(client: pg.Client, current: string): Promise<void> {
     console.log(`schema is at ${last}, nothing to apply`);
 }
 
+/** The first data of a new database, in the baseline's transaction. */
 async function seed(client: pg.Client): Promise<void> {
   for (const name of readdirSync(seedFolder)
     .filter((one) => one.endsWith('.sql'))
-    .sort()) {
-    await inTransaction(client, async () => {
-      await client.query(readFileSync(`${seedFolder}/${name}`, 'utf8'));
-    });
-    console.log(`seed ${name} applied`);
-  }
+    .sort())
+    await client.query(readFileSync(`${seedFolder}/${name}`, 'utf8'));
 }
 
 async function main(): Promise<void> {
@@ -138,7 +136,6 @@ async function main(): Promise<void> {
   try {
     await client.query("SELECT pg_advisory_lock(hashtext('schema_releases'))");
     await migrate(client, current);
-    await seed(client);
   } finally {
     await client.end();
   }

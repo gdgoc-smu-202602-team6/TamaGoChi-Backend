@@ -19,7 +19,6 @@ import {
 } from '../../../domains/club/clubs/applications/application.js';
 import { decidedMessage } from '../../../domains/club/clubs/applications/application-messages.js';
 import { ApplicationRepository } from '../../../domains/club/clubs/applications/application.repository.js';
-import { RoleRepository } from '../../../domains/club/roles/role.repository.js';
 import { RequireClubAccess } from '../club-access.guard.js';
 import {
   CurrentUser,
@@ -45,7 +44,6 @@ type ApplicationDecisionBody = components['schemas']['ApplicationDecision'];
 export class ApplicationsController {
   constructor(
     private readonly applications: ApplicationRepository,
-    private readonly roles: RoleRepository,
     private readonly users: UserRepository,
     private readonly push: PushSender,
   ) {}
@@ -137,12 +135,10 @@ export class ApplicationsController {
     @Param('applicationId') applicationId: Id<'Application'>,
     @Body() body: ApplicationDecisionBody,
   ): Promise<ApplicationBody> {
-    const joinRole = await this.roles.assignedOnJoin();
     const result = await this.applications.decide(
       clubId,
       applicationId,
       body.state,
-      joinRole.id,
     );
     if (result === null) throw new NotFound('application not found');
     if (result === 'not-pending') throw new Conflict('not-pending');

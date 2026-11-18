@@ -3,7 +3,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { ClubsModule } from './api/clubs/clubs.module.js';
 import { HealthModule } from './api/health/health.module.js';
 import { ItemsModule } from './api/items/items.module.js';
-import { RolesModule } from './api/roles/roles.module.js';
 import { UsersModule } from './api/users/users.module.js';
 import { AccountModule } from './domains/account/account.module.js';
 import { authBasePath } from './domains/account/users/auth/auth.js';
@@ -30,7 +29,6 @@ import { DatabaseModule } from './foundation/database/database.module.js';
     PushModule,
     ClubModule,
     UsersModule,
-    RolesModule,
     ClubsModule,
     ItemsModule,
   ],

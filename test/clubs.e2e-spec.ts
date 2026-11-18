@@ -48,12 +48,12 @@ describe('/clubs', () => {
     const membership = await testApp.database.clubMember.findFirstOrThrow({
       where: { clubId, user: { email: creator.email } },
       select: {
-        role: { select: { assignedOnCreate: true } },
+        role: true,
         part: { select: { name: true } },
       },
     });
     expect(membership).toEqual({
-      role: { assignedOnCreate: true },
+      role: 'MANAGER',
       part: { name: 'Dev' },
     });
     const categories = await testApp.database.clubNoticeCategory.findMany({

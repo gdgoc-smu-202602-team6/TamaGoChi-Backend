@@ -18,16 +18,13 @@ const itemColumns = {
   price: true,
   minLevel: true,
   defaultOwned: true,
+  onSale: true,
   roomSize: true,
-  placementPolicy: {
-    select: {
-      surfaceKind: true,
-      width: true,
-      height: true,
-      step: true,
-      solid: true,
-    },
-  },
+  surfaceKind: true,
+  width: true,
+  height: true,
+  step: true,
+  solid: true,
 } as const;
 
 @Injectable()
@@ -51,14 +48,17 @@ export class ItemRepository {
           row.price,
           row.minLevel,
           row.defaultOwned,
-          row.placementPolicy &&
-            new PlacementPolicy(
-              row.placementPolicy.surfaceKind as SurfaceKind,
-              row.placementPolicy.width,
-              row.placementPolicy.height,
-              new Grid(row.placementPolicy.step),
-              row.placementPolicy.solid,
-            ),
+          row.onSale,
+          // items_placement_policy_check: the policy columns are all set or all null.
+          row.surfaceKind === null
+            ? null
+            : new PlacementPolicy(
+                row.surfaceKind as SurfaceKind,
+                row.width!,
+                row.height!,
+                new Grid(row.step),
+                row.solid!,
+              ),
         ),
     );
   }

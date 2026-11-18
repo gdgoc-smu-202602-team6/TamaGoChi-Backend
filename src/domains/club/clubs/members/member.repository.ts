@@ -6,21 +6,21 @@ import type { PageRequest } from '../../../../foundation/pagination/page-request
 import type { Page } from '../../../../foundation/pagination/page.js';
 import type { Prisma } from '../../../../foundation/database/generated/client.js';
 import type { ClubAccess } from '../access/club-access.js';
-import { roleColumns, toRole } from '../../roles/role.repository.js';
 import { ClubManagers } from './club-managers.js';
 import { Member, type MemberChanges } from './member.js';
+import { MemberRole } from './member-role.js';
 
 /** The members holding ClubManagers.permission, as a query condition. */
 const managing = {
-  role: { permissions: { some: { permission: ClubManagers.permission } } },
-} as const;
+  role: { in: MemberRole.holding(ClubManagers.permission) },
+};
 
 const memberColumns = {
   id: true,
   clubId: true,
   userId: true,
   partId: true,
-  roleId: true,
+  role: true,
   notificationsOn: true,
   createdAt: true,
 } as const;
@@ -30,7 +30,7 @@ type MemberRow = {
   clubId: string;
   userId: string;
   partId: string;
-  roleId: string;
+  role: string;
   notificationsOn: boolean;
   createdAt: Date;
 };
@@ -86,12 +86,12 @@ export class MemberRepository {
   ): Promise<ClubAccess | null> {
     const member = await this.database.clubMember.findUnique({
       where: { clubId_userId: { clubId, userId } },
-      select: { id: true, role: { select: roleColumns } },
+      select: { id: true, role: true },
     });
     return member
       ? {
           memberId: asId<'Member'>(member.id),
-          permissions: toRole(member.role).permissions,
+          permissions: MemberRole.permissionsOf(member.role as MemberRole),
         }
       : null;
   }
@@ -124,14 +124,14 @@ export class MemberRepository {
   }
 
   /**
-   * Null: no such member. 'no-part', 'no-role': the part is not the club's, the role does not exist.
+   * Null: no such member. 'no-part': the part is not the club's.
    * 'last-manager': ClubManagers refuses the role. Judged under the club lock, so two managers cannot both step down.
    */
   async update(
     clubId: Id<'Club'>,
     memberId: Id<'Member'>,
     changes: MemberChanges,
-  ): Promise<Member | 'no-part' | 'no-role' | 'last-manager' | null> {
+  ): Promise<Member | 'no-part' | 'last-manager' | null> {
     return this.database.$transaction(async (tx) => {
       await lockClub(tx, clubId);
       const current = await tx.clubMember.findFirst({
@@ -146,15 +146,11 @@ export class MemberRepository {
         }))
       )
         return 'no-part';
-      if (changes.roleId) {
-        const role = await tx.role.findUnique({
-          where: { id: changes.roleId },
-          select: roleColumns,
-        });
-        if (!role) return 'no-role';
-        if (!(await managersOf(tx, clubId)).allowRole(memberId, toRole(role)))
-          return 'last-manager';
-      }
+      if (
+        changes.role &&
+        !(await managersOf(tx, clubId)).allowRole(memberId, changes.role)
+      )
+        return 'last-manager';
       return toMember(
         await tx.clubMember.update({
           where: { id: memberId },
@@ -228,7 +224,7 @@ function toMember(row: MemberRow): Member {
     asId<'Club'>(row.clubId),
     asId<'User'>(row.userId),
     asId<'Part'>(row.partId),
-    asId<'Role'>(row.roleId),
+    row.role as MemberRole,
     row.notificationsOn,
     row.createdAt,
   );

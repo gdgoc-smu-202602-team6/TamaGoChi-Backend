@@ -17,7 +17,7 @@ export async function insertClub(
   return { clubId: club.id, partId: club.parts[0].id };
 }
 
-/** Makes the user with this email a member, with the role that has this assignment flag. */
+/** Makes the user with this email a member: an operator is a MANAGER, a member a MEMBER. */
 export async function insertMember(
   database: DatabaseClient,
   club: { clubId: string; partId: string },
@@ -28,17 +28,12 @@ export async function insertMember(
     where: { email },
     select: { id: true },
   });
-  const role = await database.role.findFirstOrThrow({
-    where:
-      as === 'operator' ? { assignedOnCreate: true } : { assignedOnJoin: true },
-    select: { id: true },
-  });
   const member = await database.clubMember.create({
     data: {
       clubId: club.clubId,
       userId: user.id,
       partId: club.partId,
-      roleId: role.id,
+      role: as === 'operator' ? 'MANAGER' : 'MEMBER',
     },
     select: { id: true },
   });

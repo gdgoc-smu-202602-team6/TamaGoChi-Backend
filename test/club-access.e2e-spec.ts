@@ -25,23 +25,6 @@ describe('club access and roles', () => {
     await testApp.database.club.delete({ where: { id: club.clubId } });
   });
 
-  it('역할 목록에 운영진(모든 권한)과 부원(권한 없음)이 있다', async () => {
-    const response = await request(testApp.server())
-      .get('/roles')
-      .set(as(outsider));
-
-    expect(response.status).toBe(200);
-    const byName = Object.fromEntries(
-      response.body.items.map(
-        (role: { name: string; permissions: string[] }) => [
-          role.name,
-          role.permissions.length,
-        ],
-      ),
-    );
-    expect(byName).toEqual({ 운영진: 6, 부원: 0 });
-  });
-
   it('운영진의 내 권한은 키 6개다', async () => {
     const response = await request(testApp.server())
       .get(`/clubs/${club.clubId}/members/me/permissions`)

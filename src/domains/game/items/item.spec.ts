@@ -14,6 +14,7 @@ const character = (placementPolicy: PlacementPolicy | null) =>
     0,
     1,
     false,
+    true,
     placementPolicy,
   );
 

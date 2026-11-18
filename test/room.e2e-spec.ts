@@ -132,15 +132,11 @@ describe('room', () => {
         name: '한 칸 책상',
         grade: 'BASIC',
         price: 0,
-        placementPolicy: {
-          create: {
-            surfaceKind: 'FLOOR',
-            width: 2,
-            height: 1,
-            step: 1,
-            solid: true,
-          },
-        },
+        surfaceKind: 'FLOOR',
+        width: 2,
+        height: 1,
+        step: 1,
+        solid: true,
       },
       async (wholeCellDesk) => {
         await testApp.database.userItem.create({
@@ -175,17 +171,24 @@ describe('room', () => {
   it('저장한 뒤 정책의 이동 단위가 바뀌었을 때 읽은 배치가 새 그리드에 붙는다', async () => {
     const user = await testApp.signUp();
     const desk = await itemByCode(testApp.database, 'basic_desk');
-    const seeded = await testApp.database.itemPlacementPolicy.findUniqueOrThrow(
-      { where: { itemId: desk.id } },
-    );
+    const seeded = await testApp.database.item.findUniqueOrThrow({
+      where: { id: desk.id },
+      select: {
+        surfaceKind: true,
+        width: true,
+        height: true,
+        step: true,
+        solid: true,
+      },
+    });
     await request(testApp.server())
       .patch('/users/me/room')
       .set(as(user))
       .send({
         placements: [{ target: 'DESK', surface: 'FLOOR', x: 0.5, y: 0 }],
       });
-    await testApp.database.itemPlacementPolicy.update({
-      where: { itemId: desk.id },
+    await testApp.database.item.update({
+      where: { id: desk.id },
       data: { step: 1 },
     });
     try {
@@ -197,8 +200,8 @@ describe('room', () => {
         { target: 'DESK', surface: 'FLOOR', x: 1, y: 0 },
       ]);
     } finally {
-      await testApp.database.itemPlacementPolicy.update({
-        where: { itemId: desk.id },
+      await testApp.database.item.update({
+        where: { id: desk.id },
         data: { step: seeded.step },
       });
     }
@@ -207,9 +210,16 @@ describe('room', () => {
   it('저장한 뒤 정책이 지워졌을 때 읽은 방에서 그 배치가 빠진다', async () => {
     const user = await testApp.signUp();
     const desk = await itemByCode(testApp.database, 'basic_desk');
-    const seeded = await testApp.database.itemPlacementPolicy.findUniqueOrThrow(
-      { where: { itemId: desk.id } },
-    );
+    const seeded = await testApp.database.item.findUniqueOrThrow({
+      where: { id: desk.id },
+      select: {
+        surfaceKind: true,
+        width: true,
+        height: true,
+        step: true,
+        solid: true,
+      },
+    });
     await request(testApp.server())
       .patch('/users/me/room')
       .set(as(user))
@@ -219,8 +229,15 @@ describe('room', () => {
           { target: 'CHARACTER', surface: 'FLOOR', x: 1, y: 1 },
         ],
       });
-    await testApp.database.itemPlacementPolicy.delete({
-      where: { itemId: desk.id },
+    await testApp.database.item.update({
+      where: { id: desk.id },
+      data: {
+        surfaceKind: null,
+        width: null,
+        height: null,
+        step: null,
+        solid: null,
+      },
     });
     try {
       const response = await request(testApp.server())
@@ -231,7 +248,10 @@ describe('room', () => {
         { target: 'CHARACTER', surface: 'FLOOR', x: 1, y: 1 },
       ]);
     } finally {
-      await testApp.database.itemPlacementPolicy.create({ data: seeded });
+      await testApp.database.item.update({
+        where: { id: desk.id },
+        data: seeded,
+      });
     }
   });
 
@@ -469,15 +489,11 @@ describe('room', () => {
         name: '긴 책상',
         grade: 'BASIC',
         price: 0,
-        placementPolicy: {
-          create: {
-            surfaceKind: 'FLOOR',
-            width: 3,
-            height: 1,
-            step: 0.5,
-            solid: true,
-          },
-        },
+        surfaceKind: 'FLOOR',
+        width: 3,
+        height: 1,
+        step: 0.5,
+        solid: true,
       },
       async (wideDesk) => {
         await testApp.database.userItem.create({
@@ -531,15 +547,11 @@ describe('room', () => {
         name: '탁상시계',
         grade: 'BASIC',
         price: 0,
-        placementPolicy: {
-          create: {
-            surfaceKind: 'FLOOR',
-            width: 1,
-            height: 1,
-            step: 0.5,
-            solid: true,
-          },
-        },
+        surfaceKind: 'FLOOR',
+        width: 1,
+        height: 1,
+        step: 0.5,
+        solid: true,
       },
       async (floorClock) => {
         const bought = await request(testApp.server())
@@ -564,9 +576,16 @@ describe('room', () => {
   it('저장한 뒤 정책의 면 종류가 바뀌었을 때 읽은 방에서 그 배치가 빠진다', async () => {
     const user = await testApp.signUp();
     const clock = await itemByCode(testApp.database, 'basic_clock');
-    const seeded = await testApp.database.itemPlacementPolicy.findUniqueOrThrow(
-      { where: { itemId: clock.id } },
-    );
+    const seeded = await testApp.database.item.findUniqueOrThrow({
+      where: { id: clock.id },
+      select: {
+        surfaceKind: true,
+        width: true,
+        height: true,
+        step: true,
+        solid: true,
+      },
+    });
     await request(testApp.server())
       .patch('/users/me/room')
       .set(as(user))
@@ -576,8 +595,8 @@ describe('room', () => {
           { target: 'CHARACTER', surface: 'FLOOR', x: 1, y: 1 },
         ],
       });
-    await testApp.database.itemPlacementPolicy.update({
-      where: { itemId: clock.id },
+    await testApp.database.item.update({
+      where: { id: clock.id },
       data: { surfaceKind: 'FLOOR' },
     });
     try {
@@ -589,8 +608,8 @@ describe('room', () => {
         { target: 'CHARACTER', surface: 'FLOOR', x: 1, y: 1 },
       ]);
     } finally {
-      await testApp.database.itemPlacementPolicy.update({
-        where: { itemId: clock.id },
+      await testApp.database.item.update({
+        where: { id: clock.id },
         data: { surfaceKind: seeded.surfaceKind },
       });
     }
